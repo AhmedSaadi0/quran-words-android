@@ -35,8 +35,6 @@
 
 `Kotlin` · `Compose Material3` · `Room` · `Navigation` · `DataStore` · `OkHttp`
 
-> ألوان النظام **Material You** مع مزج هوية زيتوني، وأشكال M3 `12/16/20 dp`، وحركة تيليجرام `250ms`.
-
 ### 🚀 التشغيل
 
 ```bash
@@ -68,5 +66,3 @@ https://github.com/AhmedSaadi0/quran-words/issues/new?title=...
 ### 📄 الترخيص
 
 بيانات المشروع مفتوحة، الكود متاح للاستفادة التعليمية. الأصل: [AhmedSaadi0/quran-words](https://github.com/AhmedSaadi0/quran-words)
-
-<p align="center"><sub>صُنع بعناية لخدمة كتاب الله</sub></p>
