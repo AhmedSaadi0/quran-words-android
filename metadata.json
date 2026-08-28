@@ -1,0 +1,6 @@
+{
+  "name": "كلمات القرآن",
+  "description": "تطبيق قرآني لغوي متخصص لعرض السور والآيات والجذور والمصادر والمشتقات والتحليل الصرفي الشامل",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
