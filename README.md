@@ -1,22 +1,72 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# كلمات القرآن — تطبيق أندرويد
 
-# Run and deploy your AI Studio app
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android" alt="Android" />
+  <img src="https://img.shields.io/badge/Compose-Material3-4285F4?style=for-the-badge&logo=jetpackcompose" alt="Compose" />
+  <img src="https://img.shields.io/badge/Kotlin-2.2-7F52FF?style=for-the-badge&logo=kotlin" alt="Kotlin" />
+  <img src="https://img.shields.io/badge/MinSDK-24-34A853?style=for-the-badge" alt="MinSDK" />
+</p>
 
-This contains everything you need to run your app locally.
+<p align="center">
+  <b>المعجم الشامل لألفاظ القرآن — جذور، مصادر، مشتقات، وآيات مع تحليل صرفي</b><br/>
+  امتداد مباشر لمشروع الويب والبيانات المفتوحة
+  <a href="https://github.com/AhmedSaadi0/quran-words"><b>AhmedSaadi0/quran-words</b></a>
+</p>
 
-View your app in AI Studio: https://ai.studio/apps/3c98bd00-3632-469d-a307-c303844b2657
+<p align="center">
+  <a href="https://github.com/AhmedSaadi0/quran-words">🌐 نسخة الويب</a> •
+  <a href="https://github.com/AhmedSaadi0/quran-words/issues">🐛 الإبلاغ عن معنى</a> •
+  <a href="https://github.com/AhmedSaadi0/quran-words#readme">📚 البيانات</a>
+</p>
 
-## Run Locally
+---
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+### ✨ المميزات
 
+- **معجم الجذور** — 1,642 جذر مع معاني من لسان العرب والصحاح ومقاييس اللغة
+- **المصادر والمشتقات** — 5,273 مصدر و 16,245 مشتق بأوزانها
+- **الآيات مع التمييز** — الكلمة المطابقة للجذر مميزة بلون داخل الآية
+- **تحليل صرفي + ملخص ذكي** — لكل كلمة، مع نموذج وتاريخ التوليد
+- **بحث شامل** — جذور، كلمات، مصادر، وآيات مع تطبيع عربي
+- **إشارات مرجعية ومتابعة** — حفظ سور/آيات والعودة لآخر موضع بدقة
+- **يعمل بدون إنترنت** — قاعدة بيانات 118 ميجابايت تُنزّل أو تُستورد يدوياً
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
-7. If you have already published your app in AI Studio, please [request upload key reset](https://support.google.com/googleplay/android-developer/answer/9842756#zippy=%2Crequest-an-upload-key-reset) in Google Play Console.
+### 🛠️ التقنية
+
+`Kotlin` · `Compose Material3` · `Room` · `Navigation` · `DataStore` · `OkHttp`
+
+> ألوان النظام **Material You** مع مزج هوية زيتوني، وأشكال M3 `12/16/20 dp`، وحركة تيليجرام `250ms`.
+
+### 🚀 التشغيل
+
+```bash
+git clone https://github.com/AhmedSaadi0/quran-words.git
+# افتح مجلد android (quran-words) في Android Studio
+```
+
+1. افتح `Android Studio` → `Open` → اختر مجلد المشروع
+2. انتظر `Gradle Sync`
+3. شغّل على محاكي أو جهاز (Min SDK 24)
+4. عند أول تشغيل حمّل قاعدة البيانات من **الرئيسية → تنزيل** أو **استيراد من الذاكرة** (`quran_words.db`)
+
+لا حاجة لـ `.env` أو مفاتيح.
+
+### 📥 قاعدة البيانات
+
+- التحميل التلقائي من `media.githubusercontent.com` / `github raw`
+- أو استيراد يدوي: ضع `quran_words.db` في `Download` ثم **استيراد من الذاكرة**
+- المسار الداخلي: `/data/data/com.aistudio.quranwords.wkzq/databases/quran_words.db`
+
+### 🤝 المساهمة
+
+وجدت معنى ناقصاً؟ من صفحة **تفاصيل الجذر** اضغط **؟** أو كرت **الإبلاغ عن معنى** — يُفتح نموذج جاهز على GitHub.
+
+```text
+https://github.com/AhmedSaadi0/quran-words/issues/new?title=...
+```
+
+### 📄 الترخيص
+
+بيانات المشروع مفتوحة، الكود متاح للاستفادة التعليمية. الأصل: [AhmedSaadi0/quran-words](https://github.com/AhmedSaadi0/quran-words)
+
+<p align="center"><sub>صُنع بعناية لخدمة كتاب الله</sub></p>

@@ -99,6 +99,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setDarkModeSetting(mode: Int) {
+        viewModelScope.launch { preferences.setDarkModeSetting(mode) }
+    }
+
     fun setColorMode(mode: Int) {
         viewModelScope.launch { preferences.setColorMode(mode) }
     }

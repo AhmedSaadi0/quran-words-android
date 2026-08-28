@@ -18,12 +18,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +41,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -42,12 +49,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -68,6 +77,8 @@ import com.example.ui.theme.QuranGold
 import com.example.ui.theme.ShapeLarge
 import com.example.ui.theme.ShapeSmall
 import com.example.ui.viewmodel.RootViewModel
+import com.example.util.BuildIssueUrlOptions
+import com.example.util.buildGithubIssueUrl
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -81,6 +92,7 @@ fun RootDetailScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+    var showReportDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(rootId) {
         viewModel.loadRootDetail(rootId)
@@ -184,18 +196,39 @@ fun RootDetailScreen(
                                         color = MaterialTheme.colorScheme.primary
                                     )
 
-                                    if (detail.ayatOccurrences.isNotEmpty()) {
-                                        Box(
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        if (detail.ayatOccurrences.isNotEmpty()) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.65f))
+                                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            ) {
+                                                Text(
+                                                    text = "${detail.ayatOccurrences.size} موضع في التنزيل",
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.tertiary
+                                                )
+                                            }
+                                        }
+                                        // زر تعجب/استفهام يظهر إرسال بلاغ مباشرة
+                                        IconButton(
+                                            onClick = { showReportDialog = true },
                                             modifier = Modifier
+                                                .size(32.dp)
                                                 .clip(RoundedCornerShape(8.dp))
-                                                .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.65f))
-                                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                                .background(MaterialTheme.colorScheme.secondaryContainer)
+                                                .testTag("report_help_button")
                                         ) {
-                                            Text(
-                                                text = "${detail.ayatOccurrences.size} موضع في التنزيل",
-                                                style = MaterialTheme.typography.labelMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = MaterialTheme.colorScheme.tertiary
+                                            Icon(
+                                                imageVector = Icons.Default.HelpOutline,
+                                                contentDescription = "الإبلاغ عن معنى",
+                                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
                                     }
@@ -264,6 +297,17 @@ fun RootDetailScreen(
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    // Report issue directly under card (so user sees without scrolling far) + quick help button in header
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp, vertical = 4.dp)
+                                .animateItem()
+                        ) {
+                            ReportIssueCard(rootText = item.root, rootId = item.id)
                         }
                     }
 
@@ -376,20 +420,39 @@ fun RootDetailScreen(
                         }
                     }
 
-                    // Report issue card - exactly like web frontend/src/components/report-issue-button.tsx
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 8.dp)
-                                .animateItem()
-                        ) {
-                            ReportIssueCard(rootText = item.root, rootId = item.id)
-                        }
-                    }
-
                     item {
                         Spacer(modifier = Modifier.height(24.dp))
                     }
+                }
+                if (showReportDialog) {
+                    val context = LocalContext.current
+                    AlertDialog(
+                        onDismissRequest = { showReportDialog = false },
+                        title = { Text("الإبلاغ عن معنى", fontWeight = FontWeight.Bold) },
+                        text = {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Text(
+                                    text = "هل وجدت معنى غير صحيح أو ناقص للجذر [${item.root}]؟",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                ReportIssueCard(rootText = item.root, rootId = item.id)
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    val url = buildGithubIssueUrl(BuildIssueUrlOptions(item.root, item.id, null))
+                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                    showReportDialog = false
+                                }
+                            ) { Text("فتح GitHub") }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showReportDialog = false }) { Text("إلغاء") }
+                        },
+                        shape = ShapeLarge
+                    )
                 }
             }
         }
