@@ -1,59 +1,43 @@
 package io.github.ahmedsaadi0.quranwords.ui.screens
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import android.os.Build
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
-import io.github.ahmedsaadi0.quranwords.ui.components.StatCard
+import io.github.ahmedsaadi0.quranwords.ui.home.components.BookmarksQuickCard
+import io.github.ahmedsaadi0.quranwords.ui.home.components.DbSetupBanner
+import io.github.ahmedsaadi0.quranwords.ui.home.components.HomeHeader
+import io.github.ahmedsaadi0.quranwords.ui.home.components.LastReadCard
+import io.github.ahmedsaadi0.quranwords.ui.home.components.QuickNavRow
+import io.github.ahmedsaadi0.quranwords.ui.home.components.StatsGrid
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeLarge
-import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeSmall
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.HomeViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
@@ -76,12 +60,11 @@ fun HomeScreen(
     val featuredRoots by homeViewModel.featuredRoots.collectAsState()
     val lastReadSurah by mainViewModel.lastReadSurah.collectAsState()
     val lastReadAyah by mainViewModel.lastReadAyah.collectAsState()
-    val dynamicEnabled by mainViewModel.dynamicColorEnabled.collectAsState()
     val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsState()
     val bookmarkedAyat by mainViewModel.bookmarkedAyat.collectAsState()
-
-    val lastSurahMeta = QuranMetaConstants.SURAHS.firstOrNull { it.id == lastReadSurah } ?: QuranMetaConstants.SURAHS[0]
     val darkModeSetting by mainViewModel.darkModeSetting.collectAsState()
+    val dynamicEnabled by mainViewModel.dynamicColorEnabled.collectAsState()
+    val lastSurahMeta = QuranMetaConstants.SURAHS.firstOrNull { it.id == lastReadSurah } ?: QuranMetaConstants.SURAHS[0]
     var showThemeDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -90,391 +73,55 @@ fun HomeScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .testTag("home_screen"),
+            modifier = Modifier.fillMaxSize().padding(innerPadding).testTag("home_screen"),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // Hero App Header - الآن يتبع الثيم (فاتح/غامق/نظام) وألوان النظام/الزيتوني - M3 Large 20dp
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateItem(
-                            placementSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        )
-                        .clip(ShapeLarge)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeLarge)
-                        .padding(20.dp)
-                ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "كلمات القرآن",
-                                    style = MaterialTheme.typography.displayMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = "المعجم والتحليل الصرفي الشامل لألفاظ التنزيل",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                                )
-                            }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                // زر الإعدادات الجديد - يفتح اختيار الثيم والألوان
-                                Box(
-                                    modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                                        .clickable { showThemeDialog = true }
-                                        .testTag("open_theme_dialog"),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("⚙️", fontSize = 20.sp)
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                                        .clickable { mainViewModel.toggleDynamicColor() }
-                                        .testTag("toggle_dynamic_color"),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("🎨", fontSize = 16.sp)
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.9f))
-                                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
-                                        .clickable { mainViewModel.toggleDarkMode() }
-                                        .testTag("toggle_dark_mode"),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text("🌓", fontSize = 16.sp)
-                                }
-                            }
-                        }
-
-                        // Search Trigger Bar - M3 Medium 16dp - الآن يتبع الثيم
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp)
-                                .clip(ShapeMedium)
-                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
-                                .clickable { onNavigateToSearch() }
-                                .animateContentSize(
-                                    animationSpec = tween(
-                                        durationMillis = AppMotion.DurationMedium,
-                                        easing = AppMotion.EasingStandard
-                                    )
-                                )
-                                .testTag("search_trigger_bar"),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            )
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Text("🔍", fontSize = 18.sp)
-                                Text(
-                                    text = "ابحث عن جذر، كلمة، مصدر، أو نص آية...",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
+                HomeHeader(
+                    dynamicEnabled = dynamicEnabled,
+                    onOpenThemeDialog = { showThemeDialog = true },
+                    onToggleDynamicColor = { mainViewModel.toggleDynamicColor() },
+                    onToggleDarkMode = { mainViewModel.toggleDarkMode() },
+                    onNavigateToSearch = onNavigateToSearch,
+                    modifier = Modifier.animateItem(tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))
+                )
             }
-
-            // Database status banner (if not downloaded) - M3 Medium 16dp + 250ms animateItem
             if (!isDbReady) {
                 item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .animateItem(
-                                placementSpec = tween(
-                                    durationMillis = AppMotion.DurationMedium,
-                                    easing = AppMotion.EasingStandard
-                                )
-                            )
-                            .clip(ShapeMedium)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
-                            .animateContentSize(
-                                animationSpec = tween(
-                                    durationMillis = AppMotion.DurationMedium,
-                                    easing = AppMotion.EasingStandard
-                                )
-                            )
-                            .testTag("db_setup_banner"),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text("💾", fontSize = 20.sp)
-                                Text(
-                                    text = "قاعدة البيانات الكاملة (118 ميجابايت)",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            Text(
-                                text = "يمكنك تنزيل المعجم الكامل وقاعدة الصرف للعمل محلياً دون اتصال بالإنترنت، أو الاستمرار ببيانات المعاينة السريعة.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                Button(
-                                    onClick = onNavigateToSetup,
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                    shape = ShapeSmall,
-                                    modifier = Modifier.testTag("download_db_btn")
-                                ) {
-                                    Text("تنزيل قاعدة البيانات")
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Quick Access Nav Chips - M3 Medium + Telegram 250ms stagger
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateItem(
-                            placementSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        )
-                        .animateContentSize(
-                            animationSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        ),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    QuickNavCard(
-                        title = "فهرس السور",
-                        subtitle = "114 سورة",
-                        icon = "📖",
-                        onClick = onNavigateToSurahIndex,
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickNavCard(
-                        title = "معجم الجذور",
-                        subtitle = "1642 جذر",
-                        icon = "🌿",
-                        onClick = onNavigateToRoots,
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuickNavCard(
-                        title = "دليل الصرف",
-                        subtitle = "أوزان وأبواب",
-                        icon = "📐",
-                        onClick = onNavigateToGuide,
-                        modifier = Modifier.weight(1f)
+                    DbSetupBanner(
+                        onDownloadClick = onNavigateToSetup,
+                        modifier = Modifier.animateItem(tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))
                     )
                 }
             }
-
-            // Last read card - M3 Medium 16dp + 250ms motion
             item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateItem(
-                            placementSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        )
-                        .clip(ShapeMedium)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
-                        .clickable { onNavigateToSurahDetail(lastReadSurah, lastReadAyah) }
-                        .animateContentSize(
-                            animationSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        )
-                        .testTag("continue_reading_card"),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("🔖", fontSize = 22.sp)
-                            }
-                            Column {
-                                Text(
-                                    text = "متابعة التلاوة والتحليل",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "سورة ${lastSurahMeta.nameAr} • الآية $lastReadAyah",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-
-                        Button(
-                            onClick = { onNavigateToSurahDetail(lastReadSurah, lastReadAyah) },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            shape = ShapeSmall
-                        ) {
-                            Text("فتح")
-                        }
-                    }
-                }
+                QuickNavRow(
+                    onSurahIndex = onNavigateToSurahIndex,
+                    onRoots = onNavigateToRoots,
+                    onGuide = onNavigateToGuide,
+                    modifier = Modifier.animateItem(tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))
+                )
             }
-
-            // Bookmarks quick card - always visible for easy access
             item {
-                val hasBookmarks = bookmarkedSurahs.isNotEmpty() || bookmarkedAyat.isNotEmpty()
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateItem(
-                            placementSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        )
-                        .clip(ShapeMedium)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
-                        .clickable { onNavigateToBookmarks() }
-                        .testTag("bookmarks_quick_card"),
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (hasBookmarks) MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
-                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (hasBookmarks) MaterialTheme.colorScheme.tertiaryContainer
-                                        else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(if (hasBookmarks) "⭐" else "🔖", fontSize = 22.sp)
-                            }
-                            Column {
-                                Text(
-                                    text = if (hasBookmarks) "إشاراتي المرجعية" else "إشاراتي المرجعية",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = if (hasBookmarks) "${bookmarkedSurahs.size} سور • ${bookmarkedAyat.size} آيات محفوظة"
-                                    else "احفظ السور والآيات للرجوع السريع",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        Button(
-                            onClick = onNavigateToBookmarks,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (hasBookmarks) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-                            ),
-                            shape = ShapeSmall,
-                            modifier = Modifier.testTag("open_bookmarks_btn")
-                        ) {
-                            Text(if (hasBookmarks) "عرض" else "فتح")
-                        }
-                    }
-                }
+                LastReadCard(
+                    surahNameAr = lastSurahMeta.nameAr,
+                    ayahNum = lastReadAyah,
+                    onClick = { onNavigateToSurahDetail(lastReadSurah, lastReadAyah) },
+                    modifier = Modifier.animateItem(tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))
+                )
             }
-
-            // Corpus Statistics Section Header - animated 250ms
             item {
-                Column(
-                    modifier = Modifier.animateItem(
-                        placementSpec = tween(
-                            durationMillis = AppMotion.DurationMedium,
-                            easing = AppMotion.EasingStandard
-                        )
-                    ),
+                BookmarksQuickCard(
+                    surahsCount = bookmarkedSurahs.size,
+                    ayatCount = bookmarkedAyat.size,
+                    onClick = onNavigateToBookmarks,
+                    modifier = Modifier.animateItem(tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))
+                )
+            }
+            item {
+                androidx.compose.foundation.layout.Column(
+                    modifier = Modifier.animateItem(tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard)),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
@@ -490,92 +137,14 @@ fun HomeScreen(
                     )
                 }
             }
-
-            // 6 Stats Cards (2 per row) - M3 + 250ms animateItem
             item {
-                Column(
-                    modifier = Modifier
-                        .animateItem(
-                            placementSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        )
-                        .animateContentSize(
-                            animationSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        ),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = "كلمات فريدة",
-                            value = QuranMetaConstants.STATS_UNIQUE_WORDS,
-                            icon = "📝",
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "جذور محققة",
-                            value = QuranMetaConstants.STATS_VERIFIED_ROOTS,
-                            icon = "🌿",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = "مصادر لغوية",
-                            value = QuranMetaConstants.STATS_MASADIR,
-                            icon = "📚",
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "مشتقات وأوزان",
-                            value = QuranMetaConstants.STATS_DERIVATIVES,
-                            icon = "✨",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = "مواضع الكلمات",
-                            value = QuranMetaConstants.STATS_WORD_POSITIONS,
-                            icon = "📍",
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "الآيات الكريمة",
-                            value = QuranMetaConstants.STATS_AYAT,
-                            icon = "۝",
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
+                StatsGrid(modifier = Modifier.animateItem(tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard)))
             }
-
-            // Featured Roots Header - animated 250ms
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .animateItem(
-                            placementSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        ),
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier.fillMaxWidth().animateItem(tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard)),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                 ) {
                     Text(
                         text = "نماذج من الجذور القرآنية",
@@ -583,46 +152,19 @@ fun HomeScreen(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    OutlinedButton(
-                        onClick = onNavigateToRoots,
-                        shape = ShapeSmall
-                    ) {
-                        Text("عرض الكل")
-                    }
+                    OutlinedButton(onClick = onNavigateToRoots, shape = ShapeSmall) { Text("عرض الكل") }
                 }
             }
-
-            // Featured Roots List - Telegram-like staggered 250ms animateItem
-            items(
-                count = featuredRoots.size,
-                key = { index -> featuredRoots[index].id }
-            ) { index ->
-                val rootItem = featuredRoots[index]
+            items(count = featuredRoots.size, key = { featuredRoots[it].id }) { index ->
                 RootItemCard(
-                    rootItem = rootItem,
-                    onClick = { onNavigateToRootDetail(rootItem.id) },
+                    rootItem = featuredRoots[index],
+                    onClick = { onNavigateToRootDetail(featuredRoots[index].id) },
                     modifier = Modifier.animateItem(
-                        placementSpec = tween(
-                            durationMillis = AppMotion.DurationMedium,
-                            delayMillis = (index * AppMotion.StaggerDelayStep.toInt()).coerceAtMost(120),
-                            easing = AppMotion.EasingStandard
-                        )
+                        tween(AppMotion.DurationMedium, delayMillis = (index * AppMotion.StaggerDelayStep.toInt()).coerceAtMost(120), easing = AppMotion.EasingStandard)
                     )
                 )
             }
-
-            item {
-                Spacer(
-                    modifier = Modifier
-                        .height(16.dp)
-                        .animateItem(
-                            placementSpec = tween(
-                                durationMillis = AppMotion.DurationMedium,
-                                easing = AppMotion.EasingStandard
-                            )
-                        )
-                )
-            }
+            item { Spacer(modifier = Modifier.height(16.dp).animateItem(tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))) }
         }
         if (showThemeDialog) {
             ThemeChooserDialog(
@@ -636,54 +178,6 @@ fun HomeScreen(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun QuickNavCard(
-    title: String,
-    subtitle: String,
-    icon: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .clip(ShapeMedium)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
-            .clickable(onClick = onClick)
-            .animateContentSize(
-                animationSpec = tween(
-                    durationMillis = AppMotion.DurationMedium,
-                    easing = AppMotion.EasingStandard
-                )
-            ),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            Text(icon, fontSize = 24.sp)
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
 @Composable
 private fun ThemeChooserDialog(
     darkModeSetting: Int,
@@ -692,65 +186,46 @@ private fun ThemeChooserDialog(
     onDynamicChange: (Boolean) -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("المظهر والألوان", fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Theme section
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("الثيم", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     ThemeOptionRow(label = "تلقائي حسب النظام", selected = darkModeSetting == 0, onClick = { onDarkModeChange(0) })
                     ThemeOptionRow(label = "فاتح", selected = darkModeSetting == 1, onClick = { onDarkModeChange(1) })
                     ThemeOptionRow(label = "غامق", selected = darkModeSetting == 2, onClick = { onDarkModeChange(2) })
                 }
-                // Colors section
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("الألوان", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    ThemeOptionRow(
-                        label = "ألوان التطبيق الزيتوني",
-                        subLabel = "Natural Tones",
-                        selected = !dynamicEnabled,
-                        onClick = { onDynamicChange(false) }
-                    )
+                    ThemeOptionRow(label = "ألوان التطبيق الزيتوني", subLabel = "Natural Tones", selected = !dynamicEnabled, onClick = { onDynamicChange(false) })
                     ThemeOptionRow(
                         label = "ألوان النظام",
-                        subLabel = if (Build.VERSION.SDK_INT >= 31) "Material You (Android 12+)" else "غير مدعوم على هذا الجهاز",
+                        subLabel = if (android.os.Build.VERSION.SDK_INT >= 31) "Material You (Android 12+)" else "غير مدعوم على هذا الجهاز",
                         selected = dynamicEnabled,
-                        enabled = Build.VERSION.SDK_INT >= 31,
-                        onClick = { if (Build.VERSION.SDK_INT >= 31) onDynamicChange(true) }
+                        enabled = android.os.Build.VERSION.SDK_INT >= 31,
+                        onClick = { if (android.os.Build.VERSION.SDK_INT >= 31) onDynamicChange(true) }
                     )
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss, modifier = androidx.compose.ui.Modifier.testTag("close_theme_dialog")) {
-                Text("إغلاق")
-            }
+            androidx.compose.material3.TextButton(onClick = onDismiss, modifier = Modifier.testTag("close_theme_dialog")) { Text("إغلاق") }
         },
-        shape = ShapeMedium
+        shape = io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
     )
 }
 
 @Composable
-private fun ThemeOptionRow(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    subLabel: String? = null,
-    enabled: Boolean = true
-) {
-    Row(
-        modifier = androidx.compose.ui.Modifier
-            .fillMaxWidth()
-            .clip(ShapeSmall)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+private fun ThemeOptionRow(label: String, selected: Boolean, onClick: () -> Unit, subLabel: String? = null, enabled: Boolean = true) {
+    androidx.compose.foundation.layout.Row(
+        modifier = Modifier.fillMaxWidth().clip(ShapeSmall).clickable(enabled = enabled, onClick = onClick).padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        RadioButton(selected = selected, onClick = onClick, enabled = enabled)
-        Column(modifier = androidx.compose.ui.Modifier.weight(1f)) {
+        androidx.compose.material3.RadioButton(selected = selected, onClick = onClick, enabled = enabled)
+        androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
@@ -758,11 +233,7 @@ private fun ThemeOptionRow(
                 color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
             subLabel?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else 0.5f)
-                )
+                Text(text = it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 1f else 0.5f))
             }
         }
     }
