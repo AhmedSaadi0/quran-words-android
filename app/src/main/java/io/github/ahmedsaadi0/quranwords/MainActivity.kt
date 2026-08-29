@@ -17,10 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.LayoutDirection
+import dagger.hilt.android.AndroidEntryPoint
 import io.github.ahmedsaadi0.quranwords.ui.navigation.AppNavigation
 import io.github.ahmedsaadi0.quranwords.ui.theme.MyApplicationTheme
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels()
 

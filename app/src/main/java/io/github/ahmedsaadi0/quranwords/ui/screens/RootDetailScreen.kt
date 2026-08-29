@@ -67,7 +67,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
@@ -89,7 +89,7 @@ fun RootDetailScreen(
     rootId: Int,
     onNavigateBack: () -> Unit,
     onNavigateToSurahDetail: (Int, Int) -> Unit,
-    viewModel: RootViewModel = viewModel()
+    viewModel: RootViewModel = hiltViewModel()
 ) {
     val rootDetail by viewModel.rootDetail.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

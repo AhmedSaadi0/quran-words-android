@@ -37,7 +37,7 @@ import io.github.ahmedsaadi0.quranwords.data.local.entities.WordEntity
         RootAiSummaryEntity::class
     ],
     version = 1,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class QuranDatabase : RoomDatabase() {
     abstract fun surahDao(): SurahDao

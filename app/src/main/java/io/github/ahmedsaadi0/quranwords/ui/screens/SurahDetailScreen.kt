@@ -52,7 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.ahmedsaadi0.quranwords.ui.components.AyahItemCard
 import io.github.ahmedsaadi0.quranwords.ui.components.MorphologyBottomSheet
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -69,7 +69,7 @@ fun SurahDetailScreen(
     mainViewModel: MainViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
-    viewModel: SurahDetailViewModel = viewModel()
+    viewModel: SurahDetailViewModel = hiltViewModel()
 ) {
     val surah by viewModel.surah.collectAsState()
     val ayat by viewModel.ayat.collectAsState()

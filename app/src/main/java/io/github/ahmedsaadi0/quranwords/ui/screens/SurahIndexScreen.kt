@@ -53,7 +53,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.ui.components.SurahItemCard
@@ -66,8 +66,8 @@ import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahViewModel
 fun SurahIndexScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSurahDetail: (Int) -> Unit,
-    surahViewModel: SurahViewModel = viewModel(),
-    mainViewModel: MainViewModel = viewModel()
+    surahViewModel: SurahViewModel = hiltViewModel(),
+    mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val surahs by surahViewModel.surahs.collectAsState()
     val filterType by surahViewModel.filterType.collectAsState()

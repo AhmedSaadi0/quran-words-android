@@ -47,7 +47,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
 import io.github.ahmedsaadi0.quranwords.ui.components.StatCard
@@ -70,7 +70,7 @@ fun HomeScreen(
     onNavigateToGuide: () -> Unit,
     onNavigateToSetup: () -> Unit,
     onNavigateToBookmarks: () -> Unit = {},
-    homeViewModel: HomeViewModel = viewModel()
+    homeViewModel: HomeViewModel = hiltViewModel()
 ) {
     val isDbReady by mainViewModel.isDbReady.collectAsState()
     val featuredRoots by homeViewModel.featuredRoots.collectAsState()

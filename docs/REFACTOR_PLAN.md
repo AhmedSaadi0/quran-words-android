@@ -37,6 +37,23 @@
 
 ---
 
+## ما تم تنفيذه فعلياً حتى 2026-08-29 — قبل الانتقال للواجهة
+
+> هذه المرحلة تسبق `Phase 0` الرسمية — نفذت كإصلاحات سريعة مطلوبة قبل إعادة الكتابة الكاملة.
+
+- [x] **الحزمة والإصدار (Phase 1.1):** `namespace`/`applicationId` → `io.github.ahmedsaadi0.quranwords`, `versionCode 2 / versionName 0.1.1`, نقل 33 ملف، تحديث 193 استيراد، حذف `com/` القديم، تحديث `README.md`.
+- [x] **Hilt البنية التحتية (Phase 1.3):** `AGENTS.md §6` — `hilt 2.59.2` (ترقية من 2.51.1 التي فشلت مع AGP 9.1.1 `Android BaseExtension not found` per dagger#4944), `ksp 2.3.6`, `kotlin.android` plugin مضاف، ترتيب plugins صحيح `android → kotlin.android → kotlin.compose → ksp → hilt`, `App @HiltAndroidApp`, `MainActivity @AndroidEntryPoint`, `core/di/*` 5 Modules, `core/util/Result` + `DatabaseConstants`, 7 ViewModels → `@HiltViewModel`, كل Screens → `hiltViewModel()`. **إصلاح الخطأ:** `Failed to apply plugin 'com.google.dagger.hilt.android' > Android BaseExtension not found` — السبب AGP 9 يزيل `BaseExtension`، الحل ترقية Hilt إلى 2.59.2+ و KSP إلى 2.3.6+ وإضافة `kotlin.android` (skill `agp-9-upgrade`).
+- [x] **إصلاحات سريعة للواجهة (قبل الخطة):** `SurahDetail` pagination لا يعود للأول (`hasHandledInitialScroll` + `viewModel.paging`), `RootDetail` pagination 30/صفحة مع حفظ scroll كل تاب (`meaningsState/masadirState/...`) + إزالة `LIMIT 100` → `LIMIT 30 OFFSET` + `COUNT(*)`، انتقال `surah:ayah` مباشر من تبويب الآيات (`onNavigateToSurahDetail(surahId, ayahNum)`).
+- [x] **Data جزئي (Phase 2):** `core/datastore/PreferencesKeys` + `core/util/SurahMetadata/MorphologyMaps/QuranStats` مقسمة من `QuranMetaConstants`, `QuranDatabase exportSchema=true` + `ksp room.schemaLocation`, حذف `getSeed*` و fallbacks في `QuranRepositoryImpl` (الآن ترجع `emptyList`/`null` وتظهر شاشة التنزيل).
+- [x] **Domain جزئي (Phase 3):** 7 UseCases في `domain/usecase/` (`SearchUseCase` مع `ArabicNormalizer` في `core/util`, `GetRootDetail`, `GetAyatPaged`, etc.) — مبررة فقط per `§9` / Base §11, `Result<T>` بدون `Loading`.
+- [x] **Build جزئي (Phase 6):** تنظيف `libs.versions.toml` (حذف `coil/retrofit/camera/accompanist` و `firebase-ai/appcheck` — بقي `crashlytics/analytics` فقط), حذف تعليقات `// implementation` الميتة في `app/build.gradle.kts`, إضافة `room.schemaLocation`.
+- [ ] **المتبقي قبل الواجهة:** تفعيل `ktlint/detekt` (`Phase 0.2`), إكمال `Result` في `QuranRepository` (حالياً UseCases تلتف حول repo الذي لا يزال `List`), وتحويل `QuranRepositoryImpl` بالكامل من `SQLiteDatabase` الخام إلى DAOs + `Mapper` (Phase 2.4-2.5).
+
+**حالة البناء:** `gradle help --no-daemon` الآن ينجح (exit 0) بعد إصلاح Hilt. `assembleDebug` يحتاج تنزيل Hilt 2.59.2/Paging لأول مرة — سيتم عبر Android Studio Sync القادم. لا يوجد `BaseExtension not found` بعد الترقية.
+
+
+---
+
 ## Phase 0 — التحضير والأساس (1-2 يوم) — `AGENTS.md §19.1 Step 1-2` / Base §33 Phase 1-2
 
 **الهدف:** تثبيت أدوات الجودة واختبارات توصيف قبل أي هدم + إقرار Discovery.
@@ -62,13 +79,13 @@
 
 ### 1.1 تغيير الحزمة — `§5`
 - [ ] `app/build.gradle.kts:13` `namespace = "io.github.ahmedsaadi0.quranwords"`
-- [ ] `app/build.gradle.kts:17` `applicationId = "io.github.ahmedsaadi0.quranwords"`
-- [ ] `app/src/main/AndroidManifest.xml:8` `package` + `android:label`
-- [ ] نقل المجلد: `app/src/main/java/com/example` → `app/src/main/java/io/github/ahmedsaadi0/quranwords`
-- [ ] تحديث كل `package com.example...` → `package io.github.ahmedsaadi0.quranwords...` (حوالي 30 ملف)
+- [x] `app/build.gradle.kts:17` `applicationId = "io.github.ahmedsaadi0.quranwords"`
+- [x] `app/src/main/AndroidManifest.xml:8` `package` + `android:label` (أضيف `android:name=".App"`)
+- [x] نقل المجلد: `app/src/main/java/com/example` → `app/src/main/java/io/github/ahmedsaadi0/quranwords` (33 ملف، 193 استيراد)
+- [x] تحديث كل `package com.example...` → `package io.github.ahmedsaadi0.quranwords...`
   - بحث: `grep -r "com.example" app/src`
-- [ ] نقل `app/src/test/java/com/example` و `androidTest` بنفس الطريقة
-- [ ] تحديث `README.md:58` مسار DB الداخلي إلى `/data/data/io.github.ahmedsaadi0.quranwords/databases/quran_words.db`
+- [x] نقل `app/src/test/java/com/example` و `androidTest` بنفس الطريقة
+- [x] تحديث `README.md:56` مسار DB الداخلي إلى `io.github.ahmedsaadi0.quranwords` إلى `/data/data/io.github.ahmedsaadi0.quranwords/databases/quran_words.db`
 
 ### 1.2 إعادة هيكلة المجلدات — `§7`
 ```
@@ -90,21 +107,21 @@ io/github/ahmedsaadi0/quranwords/
 ```
 
 ### 1.3 إضافة Hilt — `§6` (Base §6.2)
-- [ ] `gradle/libs.versions.toml` — إضافة `hilt = "2.51.1"`, `hilt-compiler`
-- [ ] `app/build.gradle.kts` — `plugins { id("dagger.hilt.android.plugin") }` + `ksp(libs.hilt.compiler)`
+- [x] `gradle/libs.versions.toml` — إضافة `hilt = "2.59.2"` (كان 2.51.1 غير متوافق مع AGP 9.1.1 — تمت الترقية per https://github.com/google/dagger/issues/4944) + `ksp 2.3.6` + `paging 3.3.6`
+- [x] `app/build.gradle.kts` — `plugins { id("dagger.hilt.android.plugin") }` + `ksp(libs.hilt.compiler)` + ترتيب `android.application → kotlin.android → kotlin.compose → ksp → hilt`
 - [ ] `build.gradle.kts` — `alias(libs.plugins.hilt) apply false`
-- [ ] إنشاء `App.kt`:
+- [x] إنشاء `App.kt`:
   ```kotlin
   @HiltAndroidApp class App: Application()
-  ```
-- [ ] `MainActivity.kt:24` → `@AndroidEntryPoint class MainActivity`
+  ``` ( + `AndroidManifest android:name=".App"` + `MainActivity @AndroidEntryPoint`)
+- [x] `MainActivity.kt:24` → `@AndroidEntryPoint class MainActivity`
 - [ ] إنشاء Modules:
-  - `core/di/DatabaseModule.kt` — يوفر `QuranDatabase` عبر `createFromFile` (§8.1)
-  - `core/di/RepositoryModule.kt` — يربط `QuranRepository` → `QuranRepositoryImpl`
-  - `core/di/NetworkModule.kt` — يوفر `OkHttpClient`
-  - `core/di/DispatcherModule.kt` — يوفر `@IoDispatcher`, `@MainDispatcher` (§18 / Base §22)
-  - `core/di/PreferencesModule.kt` — يوفر `UserPreferencesRepository`
-- [ ] تحويل كل ViewModel من `AndroidViewModel` → `@HiltViewModel class X @Inject constructor(...) : ViewModel()` (§10.2)
+  - [x] `core/di/DatabaseModule.kt` — يوفر `QuranDatabase` via `createFromFile` (§8.1) + DAOs عبر `createFromFile` (§8.1)
+  - [x] `core/di/RepositoryModule.kt` — يربط `QuranRepository` → `QuranRepositoryImpl` + `DatabaseDownloadDataSource`
+  - [x] `core/di/NetworkModule.kt` — يوفر `OkHttpClient`
+  - [x] `core/di/DispatcherModule.kt` — يوفر `@IoDispatcher`, `@MainDispatcher`, `@DefaultDispatcher` (§18 / Base §22)
+  - [x] `core/di/PreferencesModule.kt` — يوفر `UserPreferencesRepository` + `PreferencesKeys`
+- [x] تحويل كل ViewModel من `AndroidViewModel` → `@HiltViewModel class X @Inject constructor(...) : ViewModel()` (7 ViewModels) + كل `Screen` من `viewModel()` → `hiltViewModel()` (§10.2)
   - ملفات: `ui/viewmodel/ViewModels.kt` (كل الـ 6 ViewModels) — لا `Application` يُمرر للـ Repository (Base §8.1)
 
 **معيار الخروج:** لا يوجد `QuranRepositoryImpl(context)` في أي ViewModel. التطبيق يبني ويعمل مع Hilt. كل الاستيرادات تستخدم `io.github.ahmedsaadi0.quranwords`. §21 Code (لا unrelated files) يتحقق.

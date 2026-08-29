@@ -53,7 +53,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.ahmedsaadi0.quranwords.data.remote.DownloadState
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.Emerald700
@@ -66,7 +66,7 @@ import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
 fun DatabaseSetupScreen(
     mainViewModel: MainViewModel,
     onNavigateBack: () -> Unit,
-    viewModel: DatabaseSetupViewModel = viewModel()
+    viewModel: DatabaseSetupViewModel = hiltViewModel()
 ) {
     val downloadState by viewModel.downloadState.collectAsState()
     var showImportDialog by remember { mutableStateOf(false) }

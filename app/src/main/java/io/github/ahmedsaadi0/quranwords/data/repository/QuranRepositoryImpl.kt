@@ -325,7 +325,7 @@ class QuranRepositoryImpl(
                 // fallback
             }
         }
-        getSeedAyat(surahId).firstOrNull { it.ayah == ayahNum }
+        null // Seed removed per AGENTS.md §8.5 — show download screen when DB not ready
     }
 
     override suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem> = withContext(Dispatchers.IO) {
@@ -373,7 +373,7 @@ class QuranRepositoryImpl(
             if (list.isNotEmpty()) return@withContext list
         }
 
-        getSeedRoots().drop(offset).take(limit)
+        emptyList() // Seed removed
     }
 
     override suspend fun getRootDetail(rootId: Int): RootDetail? = withContext(Dispatchers.IO) {
@@ -537,7 +537,7 @@ class QuranRepositoryImpl(
             }
         }
 
-        getSeedRootDetail(rootId)
+        null // Seed removed
     }
 
     override suspend fun getRootOccurrencesPaged(rootId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel> = withContext(Dispatchers.IO) {
@@ -600,9 +600,7 @@ class QuranRepositoryImpl(
                 // fallback
             }
         }
-        getSeedRoots().firstOrNull { it.root == rootText }?.let {
-            getRootDetail(it.id)
-        }
+        null // Seed removed
     }
 
     override suspend fun searchAll(query: String): SearchResult = withContext(Dispatchers.IO) {
@@ -743,126 +741,7 @@ class QuranRepositoryImpl(
             }
         }
 
-        // Fallback search
-        val seedRoots = getSeedRoots().filter {
-            it.root.contains(trimmed) || it.root.contains(normalized)
-        }
-        val seedAyat = getSeedAyat(1).filter {
-            it.textUthmaniPlain.contains(normalized) || it.textImlaei.contains(trimmed)
-        }
-        SearchResult(roots = seedRoots, ayat = seedAyat)
-    }
-
-    // Seed Data Providers for offline preview / fallback
-    private fun getSeedAyat(surahId: Int): List<Ayah> {
-        return if (surahId == 1) {
-            listOf(
-                Ayah(1, 1, 1, "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", "بسم الله الرحمن الرحيم", "بسم الله الرحمن الرحيم", 4, listOf(
-                    WordToken(1, 1, 1, "بِسْمِ", "بسم", "In the name of", 1, "سمو", "P+N", "اسم مجرور", null, null, null, null, null, null, null, null, "GEN", null, null, null),
-                    WordToken(2, 2, 2, "اللَّهِ", "الله", "Allah", 2, "اله", "PN", "اسم علم", null, null, null, null, null, null, null, null, "GEN", "DEF", null, null),
-                    WordToken(3, 3, 3, "الرَّحْمَٰنِ", "الرحمن", "The Most Gracious", 3, "رحم", "ADJ", "صفة مشبهة", null, null, null, null, null, null, null, null, "GEN", "DEF", null, null),
-                    WordToken(4, 4, 4, "الرَّحِيمِ", "الرحيم", "The Most Merciful", 3, "رحم", "ADJ", "صفة مشبهة", null, null, null, null, null, null, null, null, "GEN", "DEF", null, null)
-                )),
-                Ayah(2, 1, 2, "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ", "الحمد لله رب العالمين", "الحمد لله رب العالمين", 4, listOf(
-                    WordToken(5, 5, 1, "الْحَمْدُ", "الحمد", "All praise is due to", 4, "حمد", "N", "اسم", null, null, null, null, null, null, null, null, "NOM", "DEF", null, null),
-                    WordToken(6, 6, 2, "لِلَّهِ", "لله", "Allah", 2, "اله", "P+PN", "جار ومجرور", null, null, null, null, null, null, null, null, "GEN", "DEF", null, null),
-                    WordToken(7, 7, 3, "رَبِّ", "رب", "Lord of", 5, "ربب", "N", "صفة / نعت", null, null, null, null, null, null, null, null, "GEN", null, null, null),
-                    WordToken(8, 8, 4, "الْعَالَمِينَ", "العالمين", "the worlds", 6, "علم", "N", "مضاف إليه", null, null, null, null, null, null, null, "MP", "GEN", "DEF", null, null)
-                )),
-                Ayah(3, 1, 3, "الرَّحْمَٰنِ الرَّحِيمِ", "الرحمن الرحيم", "الرحمن الرحيم", 2, listOf(
-                    WordToken(9, 9, 1, "الرَّحْمَٰنِ", "الرحمن", "The Most Gracious", 3, "رحم", "ADJ", "صفة", null, null, null, null, null, null, null, null, "GEN", "DEF", null, null),
-                    WordToken(10, 10, 2, "الرَّحِيمِ", "الرحيم", "The Most Merciful", 3, "رحم", "ADJ", "صفة", null, null, null, null, null, null, null, null, "GEN", "DEF", null, null)
-                )),
-                Ayah(4, 1, 4, "مَالِكِ يَوْمِ الدِّينِ", "مالك يوم الدين", "مالك يوم الدين", 3, listOf(
-                    WordToken(11, 11, 1, "مَالِكِ", "مالك", "Master of", 7, "ملك", "ACTPCPL", "اسم فاعل", null, null, null, null, null, null, null, null, "GEN", null, "ACTPCPL", null),
-                    WordToken(12, 12, 2, "يَوْمِ", "يوم", "the Day of", 8, "يوم", "N", "مضاف إليه", null, null, null, null, null, null, null, null, "GEN", null, null, null),
-                    WordToken(13, 13, 3, "الدِّينِ", "الدين", "Judgment", 9, "دين", "N", "مضاف إليه", null, null, null, null, null, null, null, null, "GEN", "DEF", null, null)
-                )),
-                Ayah(5, 1, 5, "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ", "إياك نعبد وإياك نستعين", "إياك نعبد وإياك نستعين", 4, listOf(
-                    WordToken(14, 14, 1, "إِيَّاكَ", "إياك", "You alone", 10, null, "PRON", "ضمير نصب منفصل", null, null, null, null, null, null, null, null, "ACC", null, null, null),
-                    WordToken(15, 15, 2, "نَعْبُدُ", "نعبد", "we worship", 11, "عبد", "V", "فعل مضارع", "I", "فعل ثلاثي مجرد", "IMPF", "IND", "ACT", "1", "M", "P", null, null, null, null),
-                    WordToken(16, 16, 3, "وَإِيَّاكَ", "وإياك", "and You alone", 10, null, "CONJ+PRON", "معطوف", null, null, null, null, null, null, null, null, "ACC", null, null, null),
-                    WordToken(17, 17, 4, "نَسْتَعِينُ", "نستعين", "we ask for help", 12, "عون", "V", "فعل استفعال", "X", "الاستفعال", "IMPF", "IND", "ACT", "1", "M", "P", null, null, null, null)
-                )),
-                Ayah(6, 1, 6, "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ", "اهدنا الصراط المستقيم", "اهدنا الصراط المستقيم", 3, listOf(
-                    WordToken(18, 18, 1, "اهْدِنَا", "اهدنا", "Guide us to", 13, "هدي", "V+PRON", "فعل أمر دعائي", "I", "مجرد ثلاثي", "IMPV", null, "ACT", "2", "M", "S", null, null, null, null),
-                    WordToken(19, 19, 2, "الصِّرَاطَ", "الصراط", "the straight path", 14, "صرط", "N", "مفعول به ثان", null, null, null, null, null, null, null, null, "ACC", "DEF", null, null),
-                    WordToken(20, 20, 3, "الْمُسْتَقِيمَ", "المستقيم", "straight", 15, "قوم", "ACTPCPL", "اسم فاعل", "X", "الاستفعال", null, null, null, null, null, null, "ACC", "DEF", "ACTPCPL", null)
-                )),
-                Ayah(7, 1, 7, "صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ", "صراط الذين أنعمت عليهم غير المغضوب عليهم ولا الضالين", "صراط الذين أنعمت عليهم غير المغضوب عليهم ولا الضالين", 9, listOf(
-                    WordToken(21, 21, 1, "صِرَاطَ", "صراط", "The path of", 14, "صرط", "N", "بدل", null, null, null, null, null, null, null, null, "ACC", null, null, null),
-                    WordToken(22, 22, 2, "الَّذِينَ", "الذين", "those", 16, null, "REL", "اسم موصول", null, null, null, null, null, null, null, null, "GEN", null, null, null),
-                    WordToken(23, 23, 3, "أَنْعَمْتَ", "أنعمت", "You have blessed", 17, "نعم", "V", "فعل ماض", "IV", "الإفعال", "PERF", null, "ACT", "2", "M", "S", null, null, null, null),
-                    WordToken(24, 24, 4, "عَلَيْهِمْ", "عليهم", "upon them", 18, null, "P+PRON", "جار ومجرور", null, null, null, null, null, null, null, null, null, null, null, null),
-                    WordToken(25, 25, 5, "غَيْرِ", "غير", "not of", 19, "غير", "N", "بدل / نعت", null, null, null, null, null, null, null, null, "GEN", null, null, null),
-                    WordToken(26, 26, 6, "الْمَغْضُوبِ", "المغضوب", "those who incurred anger", 20, "غضب", "PASSPCPL", "اسم مفعول", "I", "مجرد ثلاثي", null, null, null, null, null, null, "GEN", "DEF", "PASSPCPL", null),
-                    WordToken(27, 27, 7, "عَلَيْهِمْ", "عليهم", "upon them", 18, null, "P+PRON", "جار ومجرور", null, null, null, null, null, null, null, null, null, null, null, null),
-                    WordToken(28, 28, 8, "وَلَا", "ولا", "and not of", 21, null, "CONJ+NEG", "حرف عطف ونفي", null, null, null, null, null, null, null, null, null, null, null, null),
-                    WordToken(29, 29, 9, "الضَّالِّينَ", "الضالين", "those who are astray", 22, "ضلل", "ACTPCPL", "اسم فاعل", "I", "مجرد ثلاثي", null, null, null, null, "M", "P", "GEN", "DEF", "ACTPCPL", null)
-                ))
-            )
-        } else {
-            listOf(
-                Ayah(surahId * 1000 + 1, surahId, 1, "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", "بسم الله الرحمن الرحيم", "بسم الله الرحمن الرحيم", 4, listOf(
-                    WordToken(1, 1, 1, "بِسْمِ", "بسم", "In the name of", 1, "سمو", "P+N", "اسم مجرور"),
-                    WordToken(2, 2, 2, "اللَّهِ", "الله", "Allah", 2, "اله", "PN", "اسم علم"),
-                    WordToken(3, 3, 3, "الرَّحْمَٰنِ", "الرحمن", "The Most Gracious", 3, "رحم", "ADJ", "صفة مشبهة"),
-                    WordToken(4, 4, 4, "الرَّحِيمِ", "الرحيم", "The Most Merciful", 3, "رحم", "ADJ", "صفة مشبهة")
-                ))
-            )
-        }
-    }
-
-    private fun getSeedRoots(): List<RootItem> {
-        return listOf(
-            RootItem(1, "كتب", "الكِتابة والخَطّ وفرض الشيء وإيجابه", "To write, prescribe, record", "جذر يدل على جمع الشيء إلى الشيء، ومنه الكتابة والكتيبة، وورد في القرآن بمعنى الفريضة والإلزام والتسجيل.", 6, 18, 319),
-            RootItem(2, "علم", "إدراك الشيء بحقيقته واليقين والمعرفة", "To know, perceive, learn", "أصل صحيح يدل على أثر بالشيء يتميز به عن غيره، ومنه العلم وهو نقيض الجهل، والعلامة والعالم.", 9, 24, 854),
-            RootItem(3, "رحم", "الرِّقَّةُ والعَطْفُ والمَغْفِرَةُ والإحسان", "To show mercy, have compassion", "يدل على الرقة والعطف والشفقة، ومنه أسماء الله الحسنى: الرحمن الرحيم، والرحم القرابة.", 4, 12, 339),
-            RootItem(4, "حمد", "الثَّناءُ بالجَمِيلِ على جِهَةِ التَّعْظِيم", "To praise, commend, thank", "نقيض الذم، وهو الثناء على المحمود بجميل صفاته وأفعاله، والحمد أعم من الشكر.", 3, 8, 68),
-            RootItem(5, "قرا", "الجَمْعُ والضَّمُّ وتِلاوَةُ الكَلام", "To read, recite, proclaim", "أصله الجمع والضم، ومنه قراءة القرآن لأن القارئ يضم الحروف والكلمات بعضها إلى بعض في النطق.", 4, 10, 88),
-            RootItem(6, "هدي", "الإرْشادُ والدَّلالَةُ والتَّوْجِيهُ للحق", "To guide, direct, lead", "يدل على التقدم للإرشاد والدلالة على طريق الرشاد، ومنه الهدى والهدية.", 5, 15, 316),
-            RootItem(7, "نزل", "الانْحِطاطُ مِن عُلْوٍ والوُرُودُ والضِّيافة", "To descend, send down, reveal", "يدل على هبوط الشيء من علو إلى سفل، ومنه تنزيل القرآن وإنزاله والمنزل.", 7, 21, 293),
-            RootItem(8, "عبد", "الخُضُوعُ والتَّذَلُّلُ والطَّاعَة", "To worship, serve, obey", "أصل يدل على الذل والانقياد، ومنه طريق معبد، والعبادة أقصى غايات الخضوع لله وحده.", 4, 14, 275),
-            RootItem(9, "خلق", "التَّقْدِيرُ وإيجادُ الشَّيْءِ على غَيْرِ مِثال", "To create, measure, fashion", "أصلان: أحدهما تقدير الشيء، والآخر ملاسة الشيء، ومنه خلق الله تعالى المخلوقات.", 5, 16, 261),
-            RootItem(10, "أمن", "السَّكِينَةُ وطُمَأْنِينَةُ النَّفْسِ والتَّصْدِيق", "To be safe, trust, believe", "أصل يدل على سكون القلب وطمأنينته ونفي الخوف، ومنه الإيمان والأمانة والأمن.", 8, 22, 879)
-        )
-    }
-
-    private fun getSeedRootDetail(rootId: Int): RootDetail {
-        val rootItem = getSeedRoots().firstOrNull { it.id == rootId } ?: getSeedRoots()[0]
-        return RootDetail(
-            item = rootItem,
-            aiSummary = rootItem.aiSummary,
-            aiModel = "seed-preview",
-            aiGeneratedAt = "2026-08-25T00:00:00+00:00",
-            meanings = listOf(
-                RootMeaningModel(1, "لسان العرب: الكَتْبُ: الضم والجمع، وكَتَبَ الشيءَ يَكْتُبُهُ كَتْباً وكِتاباً وكِتابةً: خطه، وسُمّي الكِتابُ كِتاباً لاجتماع حُرُوفه وكَلِماته.", "لسان العرب لابن منظور"),
-                RootMeaningModel(2, "الصحاح في اللغة: الكَتْبُ: الخَرزُ، والكِتابُ والكِتابَةُ معروفان، واستكتَبْته: سأَلته أَن يَكْتُبَ لي، والكَتيبةُ: الجَيشُ لاجتماعهم.", "الصحاح للجوهري"),
-                RootMeaningModel(3, "معجم مقاييس اللغة: الكاف والتاء والباء أصلٌ صحيحٌ واحد يدلّ على جمع شيء إلى شيء، ومنه الكِتاب والكِتابة، والكَتيبة من الخيل.", "مقاييس اللغة لابن فارس")
-            ),
-            masadir = listOf(
-                MasdarModel(1, "I", "كِتَابَة", "فِعَالَة", true, "quran_vn"),
-                MasdarModel(2, "I", "كَتْب", "فَعْل", true, "quran_vn"),
-                MasdarModel(3, "II", "تَكْتِيب", "تَفْعِيل", false, "pattern"),
-                MasdarModel(4, "III", "مُكَاتَبَة", "مُفَاعَلَة", true, "quran_vn"),
-                MasdarModel(5, "VIII", "اكْتِتَاب", "افْتِعَال", true, "quran_vn"),
-                MasdarModel(6, "X", "اسْتِكْتَاب", "اسْتِفْعَال", false, "pattern")
-            ),
-            derivatives = listOf(
-                DerivativeModel(1, "كَاتِب", "فَاعِل", "اسم فاعل", true, "quranic"),
-                DerivativeModel(2, "مَكْتُوب", "مَفْعُول", "اسم مفعول", true, "quranic"),
-                DerivativeModel(3, "كِتَاب", "فِعَال", "اسم عين / مصدر", true, "quranic"),
-                DerivativeModel(4, "كُتُب", "فُعُل", "جمع تكسير", true, "quranic"),
-                DerivativeModel(5, "مَكْتَبَة", "مَفْعَلَة", "اسم مكان", false, "camel"),
-                DerivativeModel(6, "مُكْتَتِب", "مُفْتَعِل", "اسم فاعل مزيد", false, "pattern")
-            ),
-            ayatOccurrences = listOf(
-                AyahOccurrenceModel(2, "البقرة", 183, "يَا أَيُّهَا الَّذِينَ آمَنُوا كُتِبَ عَلَيْكُمُ الصِّيَامُ كَمَا كُتِبَ عَلَى الَّذِينَ مِن قَبْلِكُمْ", "كُتِبَ"),
-                AyahOccurrenceModel(2, "البقرة", 282, "يَا أَيُّهَا الَّذِينَ آمَنُوا إِذَا تَدَايَنتُم بِدَيْنٍ إِلَىٰ أَجَلٍ مُّسَمًّى فَاكْتُبُوهُ ۚ وَلْيَكْتُب بَّيْنَكُمْ كَاتِبٌ بِالْعَدْلِ", "فَاكْتُبُوهُ"),
-                AyahOccurrenceModel(2, "البقرة", 2, "ذَٰلِكَ الْكِتَابُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ", "الْكِتَابُ"),
-                AyahOccurrenceModel(4, "النساء", 103, "إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا", "كِتَابًا"),
-                AyahOccurrenceModel(6, "الأنعام", 12, "قُل لِّمَن مَّا فِي السَّمَاوَاتِ وَالْأَرْضِ ۖ قُل لِّلَّهِ ۚ كَتَبَ عَلَىٰ نَفْسِهِ الرَّحْمَةَ", "كَتَبَ")
-            )
-        )
+        // No fallback — Seed removed, return empty when DB not ready
+        SearchResult()
     }
 }

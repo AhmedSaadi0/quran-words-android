@@ -38,7 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -49,7 +49,7 @@ import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
 fun RootsListScreen(
     onNavigateBack: () -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
-    viewModel: RootViewModel = viewModel()
+    viewModel: RootViewModel = hiltViewModel()
 ) {
     val roots by viewModel.roots.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

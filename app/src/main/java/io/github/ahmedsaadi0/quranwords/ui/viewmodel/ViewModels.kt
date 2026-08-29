@@ -1,13 +1,21 @@
 package io.github.ahmedsaadi0.quranwords.ui.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.ahmedsaadi0.quranwords.core.util.Result
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
 import io.github.ahmedsaadi0.quranwords.data.remote.DownloadState
-import io.github.ahmedsaadi0.quranwords.data.repository.QuranRepositoryImpl
 import io.github.ahmedsaadi0.quranwords.data.repository.UserPreferencesRepository
-import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
+import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
+import io.github.ahmedsaadi0.quranwords.domain.usecase.GetAyatPagedUseCase
+import io.github.ahmedsaadi0.quranwords.domain.usecase.GetRootDetailUseCase
+import io.github.ahmedsaadi0.quranwords.domain.usecase.GetRootOccurrencesPagedUseCase
+import io.github.ahmedsaadi0.quranwords.domain.usecase.GetRootsPagedUseCase
+import io.github.ahmedsaadi0.quranwords.domain.usecase.GetSurahByIdUseCase
+import io.github.ahmedsaadi0.quranwords.domain.usecase.GetSurahsUseCase
+import io.github.ahmedsaadi0.quranwords.domain.usecase.SearchUseCase
+import javax.inject.Inject
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.RootDetail
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
@@ -21,10 +29,12 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-    val repository = QuranRepositoryImpl(application)
-    val preferences = UserPreferencesRepository(application)
-    val downloadManager = DatabaseDownloadManager(application)
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val repository: QuranRepository,
+    private val preferences: UserPreferencesRepository,
+    private val downloadManager: DatabaseDownloadManager
+) : ViewModel() {
 
     private val _isDbReady = MutableStateFlow(repository.isDatabaseReady())
     val isDbReady: StateFlow<Boolean> = _isDbReady.asStateFlow()
@@ -54,86 +64,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val lastReadAyah: StateFlow<Int> = _lastReadAyah.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            preferences.fontSize.collectLatest { _fontSize.value = it }
-        }
-        viewModelScope.launch {
-            preferences.darkModeSetting.collectLatest { _darkModeSetting.value = it }
-        }
-        viewModelScope.launch {
-            preferences.dynamicColorEnabled.collectLatest { _dynamicColorEnabled.value = it }
-        }
-        viewModelScope.launch {
-            preferences.colorMode.collectLatest { _colorMode.value = it }
-        }
-        viewModelScope.launch {
-            preferences.bookmarkedSurahs.collectLatest { _bookmarkedSurahs.value = it }
-        }
-        viewModelScope.launch {
-            preferences.bookmarkedAyat.collectLatest { _bookmarkedAyat.value = it }
-        }
-        viewModelScope.launch {
-            preferences.lastReadSurah.collectLatest { _lastReadSurah.value = it }
-        }
-        viewModelScope.launch {
-            preferences.lastReadAyah.collectLatest { _lastReadAyah.value = it }
-        }
+        viewModelScope.launch { preferences.fontSize.collectLatest { _fontSize.value = it } }
+        viewModelScope.launch { preferences.darkModeSetting.collectLatest { _darkModeSetting.value = it } }
+        viewModelScope.launch { preferences.dynamicColorEnabled.collectLatest { _dynamicColorEnabled.value = it } }
+        viewModelScope.launch { preferences.colorMode.collectLatest { _colorMode.value = it } }
+        viewModelScope.launch { preferences.bookmarkedSurahs.collectLatest { _bookmarkedSurahs.value = it } }
+        viewModelScope.launch { preferences.bookmarkedAyat.collectLatest { _bookmarkedAyat.value = it } }
+        viewModelScope.launch { preferences.lastReadSurah.collectLatest { _lastReadSurah.value = it } }
+        viewModelScope.launch { preferences.lastReadAyah.collectLatest { _lastReadAyah.value = it } }
     }
 
-    fun refreshDbStatus() {
-        _isDbReady.value = repository.isDatabaseReady()
-    }
-
-    fun setFontSize(size: Float) {
-        viewModelScope.launch { preferences.setFontSize(size) }
-    }
-
+    fun refreshDbStatus() { _isDbReady.value = repository.isDatabaseReady() }
+    fun setFontSize(size: Float) { viewModelScope.launch { preferences.setFontSize(size) } }
     fun toggleDarkMode() {
         viewModelScope.launch {
-            val next = when (_darkModeSetting.value) {
-                1 -> 2 // from light to dark
-                2 -> 1 // from dark to light
-                else -> 2 // from system to dark
-            }
+            val next = when (_darkModeSetting.value) { 1 -> 2; 2 -> 1; else -> 2 }
             preferences.setDarkModeSetting(next)
         }
     }
-
-    fun setDarkModeSetting(mode: Int) {
-        viewModelScope.launch { preferences.setDarkModeSetting(mode) }
-    }
-
-    fun setColorMode(mode: Int) {
-        viewModelScope.launch { preferences.setColorMode(mode) }
-    }
-
-    fun toggleDynamicColor() {
-        viewModelScope.launch { preferences.setDynamicColorEnabled(!_dynamicColorEnabled.value) }
-    }
-
-    fun setDynamicColorEnabled(enabled: Boolean) {
-        viewModelScope.launch { preferences.setDynamicColorEnabled(enabled) }
-    }
-
-    fun toggleSurahBookmark(surahId: Int) {
-        viewModelScope.launch { preferences.toggleSurahBookmark(surahId) }
-    }
-
-    fun toggleAyahBookmark(surahId: Int, ayahNum: Int) {
-        viewModelScope.launch { preferences.toggleAyahBookmark(surahId, ayahNum) }
-    }
-
-    fun updateLastRead(surahId: Int, ayahNum: Int) {
-        viewModelScope.launch { preferences.setLastRead(surahId, ayahNum) }
-    }
-
+    fun setDarkModeSetting(mode: Int) { viewModelScope.launch { preferences.setDarkModeSetting(mode) } }
+    fun setColorMode(mode: Int) { viewModelScope.launch { preferences.setColorMode(mode) } }
+    fun toggleDynamicColor() { viewModelScope.launch { preferences.setDynamicColorEnabled(!_dynamicColorEnabled.value) } }
+    fun setDynamicColorEnabled(enabled: Boolean) { viewModelScope.launch { preferences.setDynamicColorEnabled(enabled) } }
+    fun toggleSurahBookmark(surahId: Int) { viewModelScope.launch { preferences.toggleSurahBookmark(surahId) } }
+    fun toggleAyahBookmark(surahId: Int, ayahNum: Int) { viewModelScope.launch { preferences.toggleAyahBookmark(surahId, ayahNum) } }
+    fun updateLastRead(surahId: Int, ayahNum: Int) { viewModelScope.launch { preferences.setLastRead(surahId, ayahNum) } }
     fun isSurahBookmarked(surahId: Int): Boolean = _bookmarkedSurahs.value.contains(surahId.toString())
     fun isAyahBookmarked(surahId: Int, ayahNum: Int): Boolean = _bookmarkedAyat.value.contains("$surahId:$ayahNum")
 }
 
-class HomeViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
-    private val preferences = UserPreferencesRepository(application)
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val getRootsPaged: GetRootsPagedUseCase,
+    private val preferences: UserPreferencesRepository
+) : ViewModel() {
 
     private val _featuredRoots = MutableStateFlow<List<RootItem>>(emptyList())
     val featuredRoots: StateFlow<List<RootItem>> = _featuredRoots.asStateFlow()
@@ -144,13 +108,14 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val _lastReadAyah = MutableStateFlow(1)
     val lastReadAyah: StateFlow<Int> = _lastReadAyah.asStateFlow()
 
-    init {
-        loadData()
-    }
+    init { loadData() }
 
     fun loadData() {
         viewModelScope.launch {
-            _featuredRoots.value = repository.getRootsPaged(8, 0)
+            when (val res = getRootsPaged(8, 0)) {
+                is Result.Success -> _featuredRoots.value = res.data
+                is Result.Error -> _featuredRoots.value = emptyList()
+            }
         }
         viewModelScope.launch {
             _lastReadSurah.value = preferences.lastReadSurah.first()
@@ -159,13 +124,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 }
 
-class SurahViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
+@HiltViewModel
+class SurahViewModel @Inject constructor(
+    private val getSurahs: GetSurahsUseCase
+) : ViewModel() {
 
     private val _surahs = MutableStateFlow<List<Surah>>(emptyList())
     val surahs: StateFlow<List<Surah>> = _surahs.asStateFlow()
 
-    private val _filterType = MutableStateFlow("all") // "all", "meccan", "medinan"
+    private val _filterType = MutableStateFlow("all")
     val filterType: StateFlow<String> = _filterType.asStateFlow()
 
     private val _searchQuery = MutableStateFlow("")
@@ -173,24 +140,25 @@ class SurahViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            repository.getSurahs().collectLatest {
-                _surahs.value = it
+            getSurahs().collectLatest { result ->
+                when (result) {
+                    is Result.Success -> _surahs.value = result.data
+                    is Result.Error -> _surahs.value = emptyList()
+                }
             }
         }
     }
 
-    fun setFilter(type: String) {
-        _filterType.value = type
-    }
-
-    fun setSearchQuery(query: String) {
-        _searchQuery.value = query
-    }
+    fun setFilter(type: String) { _filterType.value = type }
+    fun setSearchQuery(query: String) { _searchQuery.value = query }
 }
 
-class SurahDetailViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
-    private val preferences = UserPreferencesRepository(application)
+@HiltViewModel
+class SurahDetailViewModel @Inject constructor(
+    private val getSurahById: GetSurahByIdUseCase,
+    private val getAyatPaged: GetAyatPagedUseCase,
+    private val preferences: UserPreferencesRepository
+) : ViewModel() {
 
     private val _surah = MutableStateFlow<Surah?>(null)
     val surah: StateFlow<Surah?> = _surah.asStateFlow()
@@ -222,80 +190,81 @@ class SurahDetailViewModel(application: Application) : AndroidViewModel(applicat
         _isLoading.value = true
         _ayat.value = emptyList()
         viewModelScope.launch {
-            // Delay until enter animation finishes (250ms + buffer) to avoid jank
             kotlinx.coroutines.delay(300)
-            _surah.value = repository.getSurahById(surahId)
-            val firstPage = repository.getAyatBySurahPaged(surahId, pageSize, 0)
-            _ayat.value = firstPage
-            currentOffset = firstPage.size
-            val total = _surah.value?.ayahCount ?: 0
-            hasMore = firstPage.size == pageSize && currentOffset < total
+            when (val res = getSurahById(surahId)) {
+                is Result.Success -> _surah.value = res.data
+                is Result.Error -> _surah.value = null
+            }
+            when (val res = getAyatPaged(surahId, pageSize, 0)) {
+                is Result.Success -> {
+                    _ayat.value = res.data
+                    currentOffset = res.data.size
+                    val total = _surah.value?.ayahCount ?: 0
+                    hasMore = res.data.size == pageSize && currentOffset < total
+                }
+                is Result.Error -> {
+                    _ayat.value = emptyList()
+                    hasMore = false
+                }
+            }
             _isLoading.value = false
         }
-        // Do not overwrite lastRead here; it will be updated via updateLastRead on scroll/enter
     }
 
     fun loadMoreIfNeeded(lastVisibleIndex: Int) {
         if (_isLoading.value || _isLoadingMore.value || !hasMore) return
-        // Trigger when within 5 items from end (account for Basmalah offset handled in UI, but approximate)
-        if (lastVisibleIndex >= _ayat.value.size - 5) {
-            loadNextPage()
-        }
+        if (lastVisibleIndex >= _ayat.value.size - 5) loadNextPage()
     }
 
     private fun loadNextPage() {
         if (_isLoadingMore.value || !hasMore) return
         viewModelScope.launch {
             _isLoadingMore.value = true
-            // Small debounce to avoid rapid triggers
             kotlinx.coroutines.delay(80)
-            val nextPage = repository.getAyatBySurahPaged(currentSurahId, pageSize, currentOffset)
-            if (nextPage.isNotEmpty()) {
-                _ayat.value = _ayat.value + nextPage
-                currentOffset += nextPage.size
-                val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
-                hasMore = nextPage.size == pageSize && currentOffset < total
-            } else {
-                hasMore = false
+            when (val res = getAyatPaged(currentSurahId, pageSize, currentOffset)) {
+                is Result.Success -> {
+                    val nextPage = res.data
+                    if (nextPage.isNotEmpty()) {
+                        _ayat.value = _ayat.value + nextPage
+                        currentOffset += nextPage.size
+                        val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
+                        hasMore = nextPage.size == pageSize && currentOffset < total
+                    } else hasMore = false
+                }
+                is Result.Error -> hasMore = false
             }
             _isLoadingMore.value = false
         }
     }
 
     suspend fun ensureAyahLoaded(targetAyah: Int) {
-        // Keep loading pages until targetAyah is in list or no more
         while (hasMore && _ayat.value.none { it.ayah == targetAyah }) {
-            val nextPage = repository.getAyatBySurahPaged(currentSurahId, pageSize, currentOffset)
-            if (nextPage.isEmpty()) {
-                hasMore = false
-                break
+            when (val res = getAyatPaged(currentSurahId, pageSize, currentOffset)) {
+                is Result.Success -> {
+                    val nextPage = res.data
+                    if (nextPage.isEmpty()) { hasMore = false; break }
+                    _ayat.value = _ayat.value + nextPage
+                    currentOffset += nextPage.size
+                    val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
+                    hasMore = nextPage.size == pageSize && currentOffset < total
+                }
+                is Result.Error -> { hasMore = false; break }
             }
-            _ayat.value = _ayat.value + nextPage
-            currentOffset += nextPage.size
-            val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
-            hasMore = nextPage.size == pageSize && currentOffset < total
-            // Small yield to not block UI
             kotlinx.coroutines.delay(10)
         }
     }
 
-    fun updateLastRead(surahId: Int, ayahNum: Int) {
-        viewModelScope.launch { preferences.setLastRead(surahId, ayahNum) }
-    }
-
-    fun selectWord(word: WordToken, ayah: Ayah) {
-        _selectedWord.value = word
-        _selectedWordAyah.value = ayah
-    }
-
-    fun clearSelectedWord() {
-        _selectedWord.value = null
-        _selectedWordAyah.value = null
-    }
+    fun updateLastRead(surahId: Int, ayahNum: Int) { viewModelScope.launch { preferences.setLastRead(surahId, ayahNum) } }
+    fun selectWord(word: WordToken, ayah: Ayah) { _selectedWord.value = word; _selectedWordAyah.value = ayah }
+    fun clearSelectedWord() { _selectedWord.value = null; _selectedWordAyah.value = null }
 }
 
-class RootViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
+@HiltViewModel
+class RootViewModel @Inject constructor(
+    private val getRootsPaged: GetRootsPagedUseCase,
+    private val getRootDetail: GetRootDetailUseCase,
+    private val getRootOccurrencesPaged: GetRootOccurrencesPagedUseCase
+) : ViewModel() {
 
     private val _roots = MutableStateFlow<List<RootItem>>(emptyList())
     val roots: StateFlow<List<RootItem>> = _roots.asStateFlow()
@@ -309,7 +278,6 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
-    // Paginated ayat occurrences for the current root
     private val _occurrences = MutableStateFlow<List<io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel>>(emptyList())
     val occurrences: StateFlow<List<io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel>> = _occurrences.asStateFlow()
 
@@ -324,14 +292,15 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
     private val occPageSize: Int = 30
     private var occTotalCount: Int = 0
 
-    init {
-        loadRoots()
-    }
+    init { loadRoots() }
 
     fun loadRoots() {
         viewModelScope.launch {
             _isLoading.value = true
-            _roots.value = repository.getRootsPaged(50, 0)
+            when (val res = getRootsPaged(50, 0)) {
+                is Result.Success -> _roots.value = res.data
+                is Result.Error -> _roots.value = emptyList()
+            }
             _isLoading.value = false
         }
     }
@@ -344,13 +313,21 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
             _occurrences.value = emptyList()
             _occurrencesHasMore.value = true
             occTotalCount = 0
-            val detail = repository.getRootDetail(rootId)
-            _rootDetail.value = detail
-            if (detail != null) {
-                _occurrences.value = detail.ayatOccurrences
-                occOffset = detail.ayatOccurrences.size
-                occTotalCount = detail.item.occurrencesCount
-                _occurrencesHasMore.value = occOffset < occTotalCount
+            when (val res = getRootDetail(rootId)) {
+                is Result.Success -> {
+                    val detail = res.data
+                    _rootDetail.value = detail
+                    if (detail != null) {
+                        _occurrences.value = detail.ayatOccurrences
+                        occOffset = detail.ayatOccurrences.size
+                        occTotalCount = detail.item.occurrencesCount
+                        _occurrencesHasMore.value = occOffset < occTotalCount
+                    }
+                }
+                is Result.Error -> {
+                    _rootDetail.value = null
+                    _occurrencesHasMore.value = false
+                }
             }
             _isLoading.value = false
         }
@@ -358,10 +335,7 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
 
     fun loadMoreOccurrencesIfNeeded(lastVisibleIndex: Int) {
         if (_isOccurrencesLoadingMore.value || !_occurrencesHasMore.value) return
-        // lastVisibleIndex is index inside occurrences list (0-based)
-        if (lastVisibleIndex >= _occurrences.value.size - 4) {
-            loadMoreOccurrences()
-        }
+        if (lastVisibleIndex >= _occurrences.value.size - 4) loadMoreOccurrences()
     }
 
     fun loadMoreOccurrences() {
@@ -370,33 +344,28 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _isOccurrencesLoadingMore.value = true
             kotlinx.coroutines.delay(80)
-            val next = repository.getRootOccurrencesPaged(rootId, occPageSize, occOffset)
-            if (next.isNotEmpty()) {
-                _occurrences.value = _occurrences.value + next
-                occOffset += next.size
-                _occurrencesHasMore.value = occOffset < occTotalCount
-            } else {
-                _occurrencesHasMore.value = false
+            when (val res = getRootOccurrencesPaged(rootId, occPageSize, occOffset)) {
+                is Result.Success -> {
+                    val next = res.data
+                    if (next.isNotEmpty()) {
+                        _occurrences.value = _occurrences.value + next
+                        occOffset += next.size
+                        _occurrencesHasMore.value = occOffset < occTotalCount
+                    } else _occurrencesHasMore.value = false
+                }
+                is Result.Error -> _occurrencesHasMore.value = false
             }
             _isOccurrencesLoadingMore.value = false
         }
     }
 
-    // Called from UI when ayat tab's LazyColumn nears bottom (with header offset already subtracted)
-    fun ensureOccurrencesLoadedForCount() {
-        // No-op if already has data; used if total count was unknown
-        if (_occurrences.value.isEmpty() && occTotalCount > 0) {
-            loadMoreOccurrences()
-        }
-    }
-
-    fun setQuery(q: String) {
-        _query.value = q
-    }
+    fun setQuery(q: String) { _query.value = q }
 }
 
-class SearchViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
+@HiltViewModel
+class SearchViewModel @Inject constructor(
+    private val searchUseCase: SearchUseCase
+) : ViewModel() {
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
@@ -409,20 +378,22 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
 
     fun onQueryChanged(newQuery: String) {
         _query.value = newQuery
-        if (newQuery.isBlank()) {
-            _results.value = SearchResult()
-            return
-        }
+        if (newQuery.isBlank()) { _results.value = SearchResult(); return }
         viewModelScope.launch {
             _isSearching.value = true
-            _results.value = repository.searchAll(newQuery)
+            when (val res = searchUseCase(newQuery)) {
+                is Result.Success -> _results.value = res.data
+                is Result.Error -> _results.value = SearchResult()
+            }
             _isSearching.value = false
         }
     }
 }
 
-class DatabaseSetupViewModel(application: Application) : AndroidViewModel(application) {
-    private val downloadManager = DatabaseDownloadManager(application)
+@HiltViewModel
+class DatabaseSetupViewModel @Inject constructor(
+    private val downloadManager: DatabaseDownloadManager
+) : ViewModel() {
 
     private val _downloadState = MutableStateFlow<DownloadState>(
         if (downloadManager.isDatabaseReady()) DownloadState.Completed else DownloadState.Idle
@@ -431,17 +402,13 @@ class DatabaseSetupViewModel(application: Application) : AndroidViewModel(applic
 
     fun startDownload() {
         viewModelScope.launch {
-            downloadManager.downloadDatabase().collectLatest { state ->
-                _downloadState.value = state
-            }
+            downloadManager.downloadDatabase().collectLatest { state -> _downloadState.value = state }
         }
     }
 
     fun importDatabase(uri: android.net.Uri) {
         viewModelScope.launch {
-            downloadManager.importDatabase(uri).collectLatest { state ->
-                _downloadState.value = state
-            }
+            downloadManager.importDatabase(uri).collectLatest { state -> _downloadState.value = state }
         }
     }
 
