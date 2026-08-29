@@ -53,7 +53,7 @@ git clone https://github.com/AhmedSaadi0/quran-words.git
 
 - التحميل التلقائي من `media.githubusercontent.com` / `github raw`
 - أو استيراد يدوي: ضع `quran_words.db` في `Download` ثم **استيراد من الذاكرة**
-- المسار الداخلي: `/data/data/com.aistudio.quranwords.wkzq/databases/quran_words.db`
+- المسار الداخلي: `/data/data/io.github.ahmedsaadi0.quranwords/databases/quran_words.db`
 
 ### 🤝 المساهمة
 
