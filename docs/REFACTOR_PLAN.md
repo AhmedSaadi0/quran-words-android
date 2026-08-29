@@ -463,4 +463,44 @@ Phase 0 (تحضير)
 
 ---
 
-<p align="center"><sub>صُنع بعناية لخدمة كتاب الله — كود نظيف لمعجم نظيف.</sub></p>
+---
+
+## Discovery Summary (Initial Generation — 2026-08-29)
+
+Archived per `AGENTS.md:22 / AGENTS.base.md:309` — required gate before generating project-specific `AGENTS.md`.
+
+```
+Product:            Quran Words — offline Arabic linguistic dictionary (114 surahs / 6236 ayat / 77k word positions)
+Business Model:     Offline reference utility, B2C free, no auth/billing/subscription/ads — freemium N/A
+                    Distribution: Google Play + GitHub Releases (APK) + direct DB download (media.githubusercontent.com)
+Users/Roles:        Single anonymous offline user. No registration/login/admin/moderator/tenancy. Multi-tenancy explicitly out of scope (AGENTS.md §2.1)
+Core Journeys:      1) First launch DB missing → Download/import DB → Home
+                    2) Browse Surahs by Surah/Juz → SurahDetail paged 20 → Tap word → Morphology sheet → RootDetail
+                    3) Search (Arabic-normalized) → Tabs Roots/Masadir/Derivatives/Ayat → Open result
+                    4) RootDetail Tabs Meanings/Masadir/Derivatives/AyatOccurrences paged 30 → Tap ayah → SurahDetail at exact ayah
+                    5) Bookmark surah/ayah → Bookmarks → Resume last-read
+Platform:           Android only, Min 24 Target 36, Compose Material3, single :app module, existing repository
+Backend/Data:       No REST API. Data source is prepackaged SQLite quran_words.db 118MB (11 tables), downloaded from AhmedSaadi0/quran-words raw
+                    Room is single source of truth after install; 6236 ayat immutable
+Connectivity:       OFFLINE_FIRST (Base §14). Everything works offline after DB. What needs internet: DB download/import only. No sync, no conflict, no retry queue
+Auth:               None. No tokens/sessions/OAuth/OTP/biometrics. No roles/permissions (AGENTS.md §2.1)
+Multi-Tenancy:      None
+Security/Privacy:   No sensitive data — Quran text is public. No PII/financial/health/location/auth tokens. No secure storage beyond DataStore for prefs/bookmarks. INTERNET permission only. dataExtractionRules must exclude DB (AGENTS.md §17.2)
+Localization:       Arabic primary (RTL required, full), English secondary (surah names + transliteration). No other locales. Font scaling via DataStore. Accessibility for Arabic readers (AGENTS.md §10.5)
+State Management:   UDF + StateFlow UiState/Event/Effect per feature; ViewModel → UseCase → Repository
+Architecture:       Medium app → Clean 3-layer (Presentation/UI → Domain → Data) + Core. Justified vs 2-layer (would leak Room into Composables) and vs full multi-module (deferred until team>3). Hilt DI justified for 6+ ViewModels (AGENTS.md §3/6)
+Testing:            JUnit + Turbine + Mockk (UseCases/ViewModels), Robolectric+Room inMemory (DAOs), Compose Test Rule (components), Roborazzi screenshots
+                    Required tags: <feature>_<element>_<id> per Base §25.3. Integration only for critical Download→Browse journey (Base §25.4)
+Performance/Scale:  286 ayat/surah max, 854 occurrences/root max → Paging3 20/30 required. No heavy media/realtime. Startup <2s. No premature optimization (Base §21)
+Observability:      Firebase Crashlytics only (+ Analytics). No AI/AppCheck/Auth/Firestore. No analytics without product requirement (Base §30)
+Constraints/Debt:   Current package com.example mismatched, no DI (manual new QuranRepositoryImpl in 6 ViewModels), SQLite raw + Room dead code + Seed data inside repository, God screens >400 lines, string routes, Context.dataStore global, silent catch+emptyList, commented dead deps (coil/camera/etc). All documented as tech debt to be fixed via this plan
+Open Questions:     None after 2026-08-29 decisions: package io.github.ahmedsaadi0.quranwords, Hilt confirmed, seed removed (download screen only), Crashlytics only
+Assumptions:        None pending — all critical discovery questions answered and confirmed on 2026-08-29 before AGENTS.md was generated
+Confirmation:       Developer confirmed Discovery Summary on 2026-08-29 and authorized AGENTS.md generation (AGENTS.base.md:335 gate passed)
+Date:               2026-08-29
+Base:               AGENTS.base.md (Android Project Engineering Guide)
+```
+
+> This summary is the single source of truth for the initial discovery. Any change to product/business/connectivity/auth assumptions requires an ADR in `AGENTS.md §20 Decision Log`.
+
+<p align="center"><sub>صُنع بعناية لخدمة كتاب الله — كود نظيف لمعجم نظيف. Base: AGENTS.base.md</sub></p>

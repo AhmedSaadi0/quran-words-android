@@ -61,7 +61,7 @@ import com.example.ui.viewmodel.SearchViewModel
 fun SearchScreen(
     onNavigateBack: () -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
-    onNavigateToSurahDetail: (Int) -> Unit,
+    onNavigateToSurahDetail: (Int, Int) -> Unit,
     viewModel: SearchViewModel = viewModel()
 ) {
     val query by viewModel.query.collectAsState()
@@ -281,7 +281,7 @@ fun SearchScreen(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .clip(RoundedCornerShape(16.dp))
-                                                .clickable { onNavigateToSurahDetail(ayah.surah) }
+                                                .clickable { onNavigateToSurahDetail(ayah.surah, ayah.ayah) }
                                                 .animateItem(),
                                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                             border = CardDefaults.outlinedCardBorder()

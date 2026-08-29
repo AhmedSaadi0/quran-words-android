@@ -211,8 +211,8 @@ fun AppNavigation(
                 RootDetailScreen(
                     rootId = rootId,
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSurahDetail = { surahId ->
-                        navController.navigate(Screen.SurahDetail.createRoute(surahId))
+                    onNavigateToSurahDetail = { surahId, ayahNum ->
+                        navController.navigate(Screen.SurahDetail.createRoute(surahId, ayahNum))
                     }
                 )
             }
@@ -229,8 +229,8 @@ fun AppNavigation(
                     onNavigateToRootDetail = { rootId ->
                         navController.navigate(Screen.RootDetail.createRoute(rootId))
                     },
-                    onNavigateToSurahDetail = { surahId ->
-                        navController.navigate(Screen.SurahDetail.createRoute(surahId))
+                    onNavigateToSurahDetail = { surahId, ayahNum ->
+                        navController.navigate(Screen.SurahDetail.createRoute(surahId, ayahNum))
                     }
                 )
             }

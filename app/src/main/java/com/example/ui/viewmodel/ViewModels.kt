@@ -350,11 +350,7 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
                 _occurrences.value = detail.ayatOccurrences
                 occOffset = detail.ayatOccurrences.size
                 occTotalCount = detail.item.occurrencesCount
-                _occurrencesHasMore.value = occOffset < occTotalCount && detail.ayatOccurrences.size == occPageSize
-                // Also fetch accurate total if first page was smaller but total is larger
-                if (occTotalCount == 0 && detail.ayatOccurrences.isNotEmpty()) {
-                    occTotalCount = detail.item.occurrencesCount
-                }
+                _occurrencesHasMore.value = occOffset < occTotalCount
             }
             _isLoading.value = false
         }
@@ -378,7 +374,7 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
             if (next.isNotEmpty()) {
                 _occurrences.value = _occurrences.value + next
                 occOffset += next.size
-                _occurrencesHasMore.value = next.size == occPageSize && occOffset < occTotalCount
+                _occurrencesHasMore.value = occOffset < occTotalCount
             } else {
                 _occurrencesHasMore.value = false
             }

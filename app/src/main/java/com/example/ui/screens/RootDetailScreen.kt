@@ -88,7 +88,7 @@ import com.example.util.buildGithubIssueUrl
 fun RootDetailScreen(
     rootId: Int,
     onNavigateBack: () -> Unit,
-    onNavigateToSurahDetail: (Int) -> Unit,
+    onNavigateToSurahDetail: (Int, Int) -> Unit,
     viewModel: RootViewModel = viewModel()
 ) {
     val rootDetail by viewModel.rootDetail.collectAsState()
@@ -433,7 +433,7 @@ fun RootDetailScreen(
                                     ) {
                                         AyahOccurrenceCard(
                                             occ = occ,
-                                            onClick = { onNavigateToSurahDetail(occ.surahId) }
+                                            onClick = { onNavigateToSurahDetail(occ.surahId, occ.ayahNum) }
                                         )
                                     }
                                 }
