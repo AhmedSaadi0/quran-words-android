@@ -52,6 +52,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.foundation.lazy.rememberLazyListState
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -90,12 +93,33 @@ fun RootDetailScreen(
 ) {
     val rootDetail by viewModel.rootDetail.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val occurrences by viewModel.occurrences.collectAsState()
+    val occurrencesHasMore by viewModel.occurrencesHasMore.collectAsState()
+    val isOccurrencesLoadingMore by viewModel.isOccurrencesLoadingMore.collectAsState()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showReportDialog by remember { mutableStateOf(false) }
 
+    // One LazyListState per tab — survives Crossfade switches, so scroll position is preserved
+    val meaningsState = rememberLazyListState()
+    val masadirState = rememberLazyListState()
+    val derivativesState = rememberLazyListState()
+    val ayatState = rememberLazyListState()
+
     LaunchedEffect(rootId) {
         viewModel.loadRootDetail(rootId)
+    }
+
+    // Pagination for ayat occurrences — only active when Ayat tab is selected
+    LaunchedEffect(ayatState, selectedTabIndex, occurrences, occurrencesHasMore, isOccurrencesLoadingMore) {
+        if (selectedTabIndex != 3) return@LaunchedEffect
+        snapshotFlow { ayatState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
+            .collectLatest { lastIdx ->
+                // Header(1) + Report(1) + stickyHeader(not counted) + occurrences items
+                // occurrences start at index 2, so adjust: lastIdx - 2 = occurrence index
+                val occIdx = lastIdx - 2
+                viewModel.loadMoreOccurrencesIfNeeded(occIdx)
+            }
     }
 
     Scaffold(
@@ -139,8 +163,8 @@ fun RootDetailScreen(
             val detail = rootDetail!!
             val item = detail.item
 
-            // Telegram-like tab switch animation: Crossfade with AppMotion.DurationMedium (250ms) + EasingStandard
-            // Wraps LazyColumn content so tab switches animate smoothly without breaking stickyHeader
+            // Each tab has its own LazyListState — switching tabs via Crossfade now preserves scroll position
+            // Header + Report + TabRow are inside each list so they scroll together, but state is remembered per tab
             Crossfade(
                 targetState = selectedTabIndex,
                 animationSpec = tween(
@@ -149,18 +173,22 @@ fun RootDetailScreen(
                 ),
                 label = "RootDetailTabCrossfade"
             ) { animatedTabIndex ->
-                // Whole page is now scrollable: header collapses like collapsing toolbar,
-                // TabRow sticks under TopAppBar, content scrolls underneath.
+                val currentState = when (animatedTabIndex) {
+                    0 -> meaningsState
+                    1 -> masadirState
+                    2 -> derivativesState
+                    else -> ayatState
+                }
                 LazyColumn(
+                    state = currentState,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .testTag("root_detail_screen"),
+                        .testTag("root_detail_screen_${animatedTabIndex}"),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
-                    // Header Banner - collapses on scroll (first item scrolls away)
-                    // Shape unification: uses ShapeLarge (20dp) and animateContentSize for Telegram-like expand
+                    // Header Banner — same for every tab, scrolls with content; state per tab preserves position
                     item {
                         Card(
                             modifier = Modifier
@@ -200,7 +228,9 @@ fun RootDetailScreen(
                                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        if (detail.ayatOccurrences.isNotEmpty()) {
+                                        if (occurrences.isNotEmpty() || detail.item.occurrencesCount > 0) {
+                                            val countToShow = if (occurrences.isNotEmpty()) occurrences.size else detail.item.occurrencesCount
+                                            val totalToShow = detail.item.occurrencesCount
                                             Box(
                                                 modifier = Modifier
                                                     .clip(RoundedCornerShape(8.dp))
@@ -208,14 +238,13 @@ fun RootDetailScreen(
                                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                                             ) {
                                                 Text(
-                                                    text = "${detail.ayatOccurrences.size} موضع في التنزيل",
+                                                    text = if (totalToShow > countToShow) "$countToShow / $totalToShow موضع" else "$totalToShow موضع في التنزيل",
                                                     style = MaterialTheme.typography.labelMedium,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.tertiary
                                                 )
                                             }
                                         }
-                                        // زر تعجب/استفهام يظهر إرسال بلاغ مباشرة
                                         IconButton(
                                             onClick = { showReportDialog = true },
                                             modifier = Modifier
@@ -234,7 +263,6 @@ fun RootDetailScreen(
                                     }
                                 }
 
-                                // AI Summary or gloss
                                 if (!detail.aiSummary.isNullOrBlank()) {
                                     Text(
                                         text = detail.aiSummary,
@@ -249,7 +277,6 @@ fun RootDetailScreen(
                                     )
                                 }
 
-                                // Model + generated_at chips - model on its own line, date+time on next line (fix long model wrapping)
                                 if (!detail.aiModel.isNullOrBlank() || !detail.aiGeneratedAt.isNullOrBlank()) {
                                     Column(
                                         modifier = Modifier.fillMaxWidth(),
@@ -273,7 +300,6 @@ fun RootDetailScreen(
                                         }
                                         detail.aiGeneratedAt?.let { rawDate ->
                                             val dateTimeFormatted = try {
-                                                // raw: 2026-08-25T16:03:12+00:00 -> 2026-08-25 16:03
                                                 val cleaned = rawDate.replace("T", " ")
                                                 if (cleaned.length >= 16) cleaned.substring(0, 16) else cleaned
                                             } catch (_: Exception) {
@@ -300,7 +326,6 @@ fun RootDetailScreen(
                         }
                     }
 
-                    // Report issue directly under card (so user sees without scrolling far) + quick help button in header
                     item {
                         Box(
                             modifier = Modifier
@@ -311,7 +336,6 @@ fun RootDetailScreen(
                         }
                     }
 
-                    // Tabs sticky header - stays pinned when header collapses
                     stickyHeader {
                         TabRow(
                             selectedTabIndex = selectedTabIndex,
@@ -335,14 +359,11 @@ fun RootDetailScreen(
                             Tab(
                                 selected = selectedTabIndex == 3,
                                 onClick = { selectedTabIndex = 3 },
-                                text = { Text("الآيات (${detail.ayatOccurrences.size})", fontWeight = FontWeight.Bold) }
+                                text = { Text("الآيات (${detail.item.occurrencesCount})", fontWeight = FontWeight.Bold) }
                             )
                         }
                     }
 
-                    // Tab Content - now part of same LazyColumn so whole page scrolls
-                    // Wrapped in Crossfade outer scope using animatedTabIndex for Telegram-like smooth switch
-                    // Each items block uses Modifier.animateItem() for list placement animation
                     when (animatedTabIndex) {
                         0 -> {
                             if (detail.meanings.isEmpty()) {
@@ -396,15 +417,15 @@ fun RootDetailScreen(
                             }
                         }
                         3 -> {
-                            if (detail.ayatOccurrences.isEmpty()) {
+                            if (occurrences.isEmpty() && !occurrencesHasMore && !isOccurrencesLoadingMore) {
                                 item {
                                     EmptyTabNotice(text = "لا توجد مواضع مسجلة لهذا الجذر في هذه النسخة")
                                 }
                             } else {
                                 itemsIndexed(
-                                    detail.ayatOccurrences,
-                                    key = { index, occ -> "$index-${occ.surahId}-${occ.ayahNum}-${occ.matchedWordText}-${occ.textUthmani.hashCode()}" }
-                                ) { _, occ ->
+                                    occurrences,
+                                    key = { index, occ -> "${occ.surahId}-${occ.ayahNum}-${occ.matchedWordText}-${occ.textUthmani.hashCode()}-$index" }
+                                ) { index, occ ->
                                     Box(
                                         modifier = Modifier
                                             .padding(horizontal = 16.dp, vertical = 5.dp)
@@ -416,14 +437,61 @@ fun RootDetailScreen(
                                         )
                                     }
                                 }
+                                if (isOccurrencesLoadingMore) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                color = MaterialTheme.colorScheme.primary,
+                                                strokeWidth = 2.dp
+                                            )
+                                        }
+                                    }
+                                } else if (occurrencesHasMore && occurrences.isNotEmpty()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "اسحب للأسفل لتحميل المزيد • ${occurrences.size} / ${detail.item.occurrencesCount}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                } else if (!occurrencesHasMore && occurrences.isNotEmpty()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = "تم عرض جميع الآيات • ${occurrences.size} موضع",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
 
                     item {
-                        Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(80.dp))
                     }
                 }
+                // Report dialog — outside LazyColumn, inside Crossfade but after lists (shown once per switch, keep outside list)
                 if (showReportDialog) {
                     val context = LocalContext.current
                     AlertDialog(

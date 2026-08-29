@@ -39,7 +39,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -84,29 +86,39 @@ fun SurahDetailScreen(
     val listState = rememberLazyListState()
     val hasBasmalah = surahId != 9 && surahId != 1
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var hasHandledInitialScroll by remember(surahId, targetAyah) { mutableStateOf(false) }
 
     LaunchedEffect(surahId) {
+        hasHandledInitialScroll = false
         viewModel.loadSurah(surahId)
     }
 
-    // Scroll to target ayah when ayat loaded and update lastRead - with pagination support
-    LaunchedEffect(ayat, targetAyah) {
-        if (ayat.isNotEmpty()) {
-            var idx = ayat.indexOfFirst { it.ayah == targetAyah }
-            if (idx == -1 && ayat.size < (surah?.ayahCount ?: 0)) {
-                // Target not yet loaded - pagination will load it
-                viewModel.ensureAyahLoaded(targetAyah)
-                // Will re-trigger when ayat updates
-                return@LaunchedEffect
-            }
-            if (idx != -1) {
-                val scrollIndex = idx + if (hasBasmalah) 1 else 0
+    // Scroll to target ayah exactly once — pagination must NOT reset position
+    LaunchedEffect(ayat, surah, hasHandledInitialScroll) {
+        val currentSurah = surah
+        if (hasHandledInitialScroll || ayat.isEmpty() || currentSurah == null) return@LaunchedEffect
+        val idx = ayat.indexOfFirst { it.ayah == targetAyah }
+        if (idx == -1 && ayat.size < currentSurah.ayahCount) {
+            // Target not yet loaded — load pages sequentially then re-trigger
+            viewModel.ensureAyahLoaded(targetAyah)
+            return@LaunchedEffect
+        }
+        if (idx != -1) {
+            val scrollIndex = idx + if (hasBasmalah) 1 else 0
+            // Smooth if nearby, instant if far (avoids long animation for distant ayat)
+            if (kotlin.math.abs(listState.firstVisibleItemIndex - scrollIndex) > 20) {
                 listState.scrollToItem(scrollIndex)
+            } else {
+                listState.animateScrollToItem(scrollIndex)
             }
-            if (targetAyah in 1..(surah?.ayahCount ?: 286)) {
-                viewModel.updateLastRead(surahId, targetAyah)
-                mainViewModel.updateLastRead(surahId, targetAyah)
-            }
+            hasHandledInitialScroll = true
+        } else {
+            // Target not found and no more pages
+            hasHandledInitialScroll = true
+        }
+        if (targetAyah in 1..currentSurah.ayahCount) {
+            viewModel.updateLastRead(surahId, targetAyah)
+            mainViewModel.updateLastRead(surahId, targetAyah)
         }
     }
 

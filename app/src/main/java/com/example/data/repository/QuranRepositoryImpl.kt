@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
-import java.io.File
 
 class QuranRepositoryImpl(
     private val context: Context,
@@ -471,7 +470,8 @@ class QuranRepositoryImpl(
                         }
                     }
 
-                    // Ayat occurrences
+                    // Ayat occurrences — first page only (30) with proper pagination support
+                    val occurrencesPageSize = 30
                     val occurrences = mutableListOf<AyahOccurrenceModel>()
                     val occSql = """
                         SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, w.text
@@ -482,9 +482,9 @@ class QuranRepositoryImpl(
                         JOIN words w ON w.id = wa.word_id
                         WHERE wm.root_id = ?
                         ORDER BY a.surah ASC, a.ayah ASC
-                        LIMIT 100
+                        LIMIT ? OFFSET ?
                     """.trimIndent()
-                    val occCursor = db.rawQuery(occSql, arrayOf(rootId.toString()))
+                    val occCursor = db.rawQuery(occSql, arrayOf(rootId.toString(), occurrencesPageSize.toString(), "0"))
                     occCursor.use {
                         while (it.moveToNext()) {
                             occurrences.add(
@@ -498,6 +498,17 @@ class QuranRepositoryImpl(
                             )
                         }
                     }
+                    // Total count for this root (not limited)
+                    var totalOccurrences = occurrences.size
+                    try {
+                        val countCursor = db.rawQuery(
+                            "SELECT COUNT(*) FROM word_morphology WHERE root_id = ?",
+                            arrayOf(rootId.toString())
+                        )
+                        countCursor.use {
+                            if (it.moveToNext()) totalOccurrences = it.getInt(0)
+                        }
+                    } catch (_: Exception) {}
 
                     val rootItem = RootItem(
                         id = rootId,
@@ -507,7 +518,7 @@ class QuranRepositoryImpl(
                         aiSummary = summaryAr,
                         masadirCount = masadir.size,
                         derivativesCount = derivatives.size,
-                        occurrencesCount = occurrences.size
+                        occurrencesCount = totalOccurrences
                     )
 
                     return@withContext RootDetail(
@@ -527,6 +538,48 @@ class QuranRepositoryImpl(
         }
 
         getSeedRootDetail(rootId)
+    }
+
+    override suspend fun getRootOccurrencesPaged(rootId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel> = withContext(Dispatchers.IO) {
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<AyahOccurrenceModel>()
+        try {
+            val sql = """
+                SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, w.text
+                FROM word_morphology wm
+                JOIN word_ayah wa ON wa.id = wm.word_ayah_id
+                JOIN ayat a ON a.id = wa.ayah_id
+                JOIN surahs s ON s.id = a.surah
+                JOIN words w ON w.id = wa.word_id
+                WHERE wm.root_id = ?
+                ORDER BY a.surah ASC, a.ayah ASC
+                LIMIT ? OFFSET ?
+            """.trimIndent()
+            val cursor = db.rawQuery(sql, arrayOf(rootId.toString(), limit.toString(), offset.toString()))
+            cursor.use {
+                while (it.moveToNext()) {
+                    list.add(
+                        AyahOccurrenceModel(
+                            surahId = it.getInt(0),
+                            surahNameAr = it.getString(1) ?: "",
+                            ayahNum = it.getInt(2),
+                            textUthmani = it.getString(3) ?: "",
+                            matchedWordText = it.getString(4) ?: ""
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+        return@withContext list
+    }
+
+    override suspend fun getRootOccurrencesCount(rootId: Int): Int = withContext(Dispatchers.IO) {
+        val db = getDb() ?: return@withContext 0
+        try {
+            val cursor = db.rawQuery("SELECT COUNT(*) FROM word_morphology WHERE root_id = ?", arrayOf(rootId.toString()))
+            cursor.use { if (it.moveToNext()) return@withContext it.getInt(0) }
+        } catch (_: Exception) {}
+        return@withContext 0
     }
 
     override suspend fun getRootByText(rootText: String): RootDetail? = withContext(Dispatchers.IO) {

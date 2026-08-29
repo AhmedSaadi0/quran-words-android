@@ -309,6 +309,21 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
+    // Paginated ayat occurrences for the current root
+    private val _occurrences = MutableStateFlow<List<com.example.domain.model.AyahOccurrenceModel>>(emptyList())
+    val occurrences: StateFlow<List<com.example.domain.model.AyahOccurrenceModel>> = _occurrences.asStateFlow()
+
+    private val _occurrencesHasMore = MutableStateFlow(true)
+    val occurrencesHasMore: StateFlow<Boolean> = _occurrencesHasMore.asStateFlow()
+
+    private val _isOccurrencesLoadingMore = MutableStateFlow(false)
+    val isOccurrencesLoadingMore: StateFlow<Boolean> = _isOccurrencesLoadingMore.asStateFlow()
+
+    private var currentRootIdForOcc: Int? = null
+    private var occOffset: Int = 0
+    private val occPageSize: Int = 30
+    private var occTotalCount: Int = 0
+
     init {
         loadRoots()
     }
@@ -324,8 +339,58 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
     fun loadRootDetail(rootId: Int) {
         viewModelScope.launch {
             _isLoading.value = true
-            _rootDetail.value = repository.getRootDetail(rootId)
+            currentRootIdForOcc = rootId
+            occOffset = 0
+            _occurrences.value = emptyList()
+            _occurrencesHasMore.value = true
+            occTotalCount = 0
+            val detail = repository.getRootDetail(rootId)
+            _rootDetail.value = detail
+            if (detail != null) {
+                _occurrences.value = detail.ayatOccurrences
+                occOffset = detail.ayatOccurrences.size
+                occTotalCount = detail.item.occurrencesCount
+                _occurrencesHasMore.value = occOffset < occTotalCount && detail.ayatOccurrences.size == occPageSize
+                // Also fetch accurate total if first page was smaller but total is larger
+                if (occTotalCount == 0 && detail.ayatOccurrences.isNotEmpty()) {
+                    occTotalCount = detail.item.occurrencesCount
+                }
+            }
             _isLoading.value = false
+        }
+    }
+
+    fun loadMoreOccurrencesIfNeeded(lastVisibleIndex: Int) {
+        if (_isOccurrencesLoadingMore.value || !_occurrencesHasMore.value) return
+        // lastVisibleIndex is index inside occurrences list (0-based)
+        if (lastVisibleIndex >= _occurrences.value.size - 4) {
+            loadMoreOccurrences()
+        }
+    }
+
+    fun loadMoreOccurrences() {
+        val rootId = currentRootIdForOcc ?: return
+        if (_isOccurrencesLoadingMore.value || !_occurrencesHasMore.value) return
+        viewModelScope.launch {
+            _isOccurrencesLoadingMore.value = true
+            kotlinx.coroutines.delay(80)
+            val next = repository.getRootOccurrencesPaged(rootId, occPageSize, occOffset)
+            if (next.isNotEmpty()) {
+                _occurrences.value = _occurrences.value + next
+                occOffset += next.size
+                _occurrencesHasMore.value = next.size == occPageSize && occOffset < occTotalCount
+            } else {
+                _occurrencesHasMore.value = false
+            }
+            _isOccurrencesLoadingMore.value = false
+        }
+    }
+
+    // Called from UI when ayat tab's LazyColumn nears bottom (with header offset already subtracted)
+    fun ensureOccurrencesLoadedForCount() {
+        // No-op if already has data; used if total count was unknown
+        if (_occurrences.value.isEmpty() && occTotalCount > 0) {
+            loadMoreOccurrences()
         }
     }
 

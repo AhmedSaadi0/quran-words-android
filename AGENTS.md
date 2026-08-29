@@ -56,7 +56,7 @@ Source: reverse DNS of the repository github.com/AhmedSaadi0/quran-words-android
 | **Quality** | ktlint (official), detekt, Android Lint, R8, Room schema export |
 | **Testing** | JUnit, Turbine, Mockk, Robolectric, Compose Test Rule, Roborazzi screenshot |
 
-> **Removals:** `firebase-ai`, `firebase-appcheck-*`, `accompanist-permissions`, `camera-*`, `coil`, `play-services-location` — remove from `libs.versions.toml` and `app/build.gradle.kts` unless a documented need appears.
+> **Removals:** `firebase-ai`, `firebase-appcheck-*`, `accompanist-permissions`, `camera-*`, `coil`, `play-services-location` — remove from `libs.versions.toml` and `app/build.gradle.kts` unless a documented need appears (see §15 for the `coil` exception).
 
 ---
 
@@ -283,7 +283,7 @@ sealed interface Result<out T> {
 ## 15) Performance & Security
 
 - Ayat are loaded via `Paging3` (20 per page), not manual `getAyatBySurahPaged` + `delay(300)`.
-- Images (if any) via `coil` with `rememberAsyncImagePainter` + `crossfade`.
+- Images: **currently none** — the app is text-only (Quran text + dictionary). No image library is needed today, so `coil` stays removed per §4. If remote images are ever introduced, add `coil` then via ADR and use `rememberAsyncImagePainter` + `crossfade`.
 - No secrets in code. `google-services.json` is in `.gitignore` — only `Crashlytics` is enabled.
 - `android:allowBackup="true"` with specific `dataExtractionRules` — never back up `quran_words.db`.
 
