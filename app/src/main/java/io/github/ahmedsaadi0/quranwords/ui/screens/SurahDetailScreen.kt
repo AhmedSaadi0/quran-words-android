@@ -29,10 +29,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -67,16 +68,20 @@ fun SurahDetailScreen(
     surahId: Int,
     targetAyah: Int = 1,
     mainViewModel: MainViewModel,
+    surahDetailViewModel: SurahDetailViewModel,
     onNavigateBack: () -> Unit,
-    onNavigateToRootDetail: (Int) -> Unit,
-    viewModel: SurahDetailViewModel = viewModel()
+    onNavigateToRootDetail: (Int) -> Unit
 ) {
-    val surah by viewModel.surah.collectAsState()
-    val ayat by viewModel.ayat.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
-    val selectedWord by viewModel.selectedWord.collectAsState()
-    val selectedWordAyah by viewModel.selectedWordAyah.collectAsState()
+    val surah by surahDetailViewModel.surah.collectAsState()
+    val ayat by surahDetailViewModel.ayat.collectAsState()
+    val isLoading by surahDetailViewModel.isLoading.collectAsState()
+    val isLoadingMore by surahDetailViewModel.isLoadingMore.collectAsState()
+    val selectedWord by surahDetailViewModel.selectedWord.collectAsState()
+    val selectedWordAyah by surahDetailViewModel.selectedWordAyah.collectAsState()
+    val aiSummary by surahDetailViewModel.aiSummary.collectAsState()
+    val aiModel by surahDetailViewModel.aiModel.collectAsState()
+    val aiGeneratedAt by surahDetailViewModel.aiGeneratedAt.collectAsState()
+    val isAiLoading by surahDetailViewModel.isAiLoading.collectAsState()
     val fontSize by mainViewModel.fontSize.collectAsState()
     val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsState()
     val bookmarkedAyat by mainViewModel.bookmarkedAyat.collectAsState()
@@ -88,24 +93,25 @@ fun SurahDetailScreen(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var hasHandledInitialScroll by remember(surahId, targetAyah) { mutableStateOf(false) }
 
+    // إضافة سلوك التمرير للهيدر (Collapsing Effect)
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     LaunchedEffect(surahId) {
         hasHandledInitialScroll = false
-        viewModel.loadSurah(surahId)
+        surahDetailViewModel.loadSurah(surahId)
     }
 
-    // Scroll to target ayah exactly once — pagination must NOT reset position
+    // ... (نفس منطق التمرير التلقائي والـ Pagination بدون تغيير)
     LaunchedEffect(ayat, surah, hasHandledInitialScroll) {
         val currentSurah = surah
         if (hasHandledInitialScroll || ayat.isEmpty() || currentSurah == null) return@LaunchedEffect
         val idx = ayat.indexOfFirst { it.ayah == targetAyah }
         if (idx == -1 && ayat.size < currentSurah.ayahCount) {
-            // Target not yet loaded — load pages sequentially then re-trigger
-            viewModel.ensureAyahLoaded(targetAyah)
+            surahDetailViewModel.ensureAyahLoaded(targetAyah)
             return@LaunchedEffect
         }
         if (idx != -1) {
             val scrollIndex = idx + if (hasBasmalah) 1 else 0
-            // Smooth if nearby, instant if far (avoids long animation for distant ayat)
             if (kotlin.math.abs(listState.firstVisibleItemIndex - scrollIndex) > 20) {
                 listState.scrollToItem(scrollIndex)
             } else {
@@ -113,16 +119,14 @@ fun SurahDetailScreen(
             }
             hasHandledInitialScroll = true
         } else {
-            // Target not found and no more pages
             hasHandledInitialScroll = true
         }
         if (targetAyah in 1..currentSurah.ayahCount) {
-            viewModel.updateLastRead(surahId, targetAyah)
+            surahDetailViewModel.updateLastRead(surahId, targetAyah)
             mainViewModel.updateLastRead(surahId, targetAyah)
         }
     }
 
-    // Track visible ayah for accurate continue-reading and trigger pagination
     LaunchedEffect(listState, ayat) {
         snapshotFlow { listState.firstVisibleItemIndex }
             .collectLatest { firstIdx ->
@@ -130,39 +134,40 @@ fun SurahDetailScreen(
                     val ayatIdx = firstIdx - if (hasBasmalah) 1 else 0
                     if (ayatIdx in ayat.indices) {
                         val visibleAyah = ayat[ayatIdx].ayah
-                        viewModel.updateLastRead(surahId, visibleAyah)
+                        surahDetailViewModel.updateLastRead(surahId, visibleAyah)
                         mainViewModel.updateLastRead(surahId, visibleAyah)
                     }
                 }
             }
     }
 
-    // Auto-pagination when near end (Telegram-like smooth loading)
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
             .collectLatest { lastIdx ->
                 val ayatLastIdx = lastIdx - if (hasBasmalah) 1 else 0
-                viewModel.loadMoreIfNeeded(ayatLastIdx)
+                surahDetailViewModel.loadMoreIfNeeded(ayatLastIdx)
             }
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = {
                     Column {
                         Text(
                             text = surah?.let { "سُورَةُ ${it.nameAr}" } ?: "جاري التحميل...",
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium
+                            fontWeight = FontWeight.ExtraBold,
                         )
-                        surah?.let {
-                            Text(
-                                text = "${it.revelationType} • ${it.ayahCount} آية",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                        if (scrollBehavior.state.collapsedFraction < 0.5f) {
+                            surah?.let {
+                                Text(
+                                    text = "${it.revelationType} • ${it.ayahCount} آية",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 },
@@ -191,6 +196,10 @@ fun SurahDetailScreen(
                     }
                     // Font Size Adjusters
                     Row(
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .clip(RoundedCornerShape(20.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         IconButton(
@@ -199,7 +208,7 @@ fun SurahDetailScreen(
                             },
                             modifier = Modifier.testTag("decrease_font_size")
                         ) {
-                            Text("A-", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text("A-", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         }
                         IconButton(
                             onClick = {
@@ -207,12 +216,15 @@ fun SurahDetailScreen(
                             },
                             modifier = Modifier.testTag("increase_font_size")
                         ) {
-                            Text("A+", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text("A+", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                scrollBehavior = scrollBehavior,
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground,
                 )
             )
         },
@@ -222,7 +234,6 @@ fun SurahDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .testTag("surah_detail_screen")
         ) {
             when {
                 isLoading && ayat.isEmpty() -> {
@@ -344,7 +355,7 @@ fun SurahDetailScreen(
                                         isBookmarked = isAyahBookmarked,
                                         onBookmarkClick = { mainViewModel.toggleAyahBookmark(surahId, ayah.ayah) },
                                         onWordClick = { word ->
-                                            viewModel.selectWord(word, ayah)
+                                            surahDetailViewModel.selectWord(word, ayah)
                                         }
                                     )
                                 }
@@ -376,18 +387,22 @@ fun SurahDetailScreen(
             }
         }
 
-        // Word Morphology Bottom Sheet - outside Box to avoid recomposing LazyColumn on open (instant open)
+        // Word Morphology Bottom Sheet - stateless, VM supplies AI data (UDF)
         selectedWord?.let { word ->
             MorphologyBottomSheet(
                 word = word,
                 ayah = selectedWordAyah,
                 sheetState = sheetState,
-                onDismiss = { viewModel.clearSelectedWord() },
+                onDismiss = { surahDetailViewModel.clearSelectedWord() },
                 onNavigateToRoot = { rootId, _ ->
                     if (rootId > 0) {
                         onNavigateToRootDetail(rootId)
                     }
-                }
+                },
+                aiSummary = aiSummary,
+                aiModel = aiModel,
+                aiGeneratedAt = aiGeneratedAt,
+                isAiLoading = isAiLoading
             )
         }
     }

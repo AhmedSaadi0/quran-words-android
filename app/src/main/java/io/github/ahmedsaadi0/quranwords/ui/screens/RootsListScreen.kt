@@ -49,11 +49,11 @@ import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
 fun RootsListScreen(
     onNavigateBack: () -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
-    viewModel: RootViewModel = viewModel()
+    rootViewModel: RootViewModel
 ) {
-    val roots by viewModel.roots.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val query by viewModel.query.collectAsState()
+    val roots by rootViewModel.roots.collectAsState()
+    val isLoading by rootViewModel.isLoading.collectAsState()
+    val query by rootViewModel.query.collectAsState()
 
     val filteredRoots = remember(roots, query) {
         val q = ArabicNormalizer.normalizeAr(query)
@@ -102,14 +102,14 @@ fun RootsListScreen(
             // Search box - M3 small shape 12dp for input chips
             OutlinedTextField(
                 value = query,
-                onValueChange = { viewModel.setQuery(it) },
+                onValueChange = { rootViewModel.setQuery(it) },
                 placeholder = { Text("ابحث عن جذر (مثال: كتب، علم، رحم)...") },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Search, contentDescription = null)
                 },
                 trailingIcon = {
                     if (query.isNotBlank()) {
-                        IconButton(onClick = { viewModel.setQuery("") }) {
+                        IconButton(onClick = { rootViewModel.setQuery("") }) {
                             Icon(imageVector = Icons.Default.Close, contentDescription = "مسح")
                         }
                     }

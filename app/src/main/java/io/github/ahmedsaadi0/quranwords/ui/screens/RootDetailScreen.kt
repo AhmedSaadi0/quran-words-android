@@ -89,13 +89,13 @@ fun RootDetailScreen(
     rootId: Int,
     onNavigateBack: () -> Unit,
     onNavigateToSurahDetail: (Int, Int) -> Unit,
-    viewModel: RootViewModel = viewModel()
+    rootViewModel: RootViewModel
 ) {
-    val rootDetail by viewModel.rootDetail.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val occurrences by viewModel.occurrences.collectAsState()
-    val occurrencesHasMore by viewModel.occurrencesHasMore.collectAsState()
-    val isOccurrencesLoadingMore by viewModel.isOccurrencesLoadingMore.collectAsState()
+    val rootDetail by rootViewModel.rootDetail.collectAsState()
+    val isLoading by rootViewModel.isLoading.collectAsState()
+    val occurrences by rootViewModel.occurrences.collectAsState()
+    val occurrencesHasMore by rootViewModel.occurrencesHasMore.collectAsState()
+    val isOccurrencesLoadingMore by rootViewModel.isOccurrencesLoadingMore.collectAsState()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showReportDialog by remember { mutableStateOf(false) }
@@ -107,7 +107,7 @@ fun RootDetailScreen(
     val ayatState = rememberLazyListState()
 
     LaunchedEffect(rootId) {
-        viewModel.loadRootDetail(rootId)
+        rootViewModel.loadRootDetail(rootId)
     }
 
     // Pagination for ayat occurrences — only active when Ayat tab is selected
@@ -118,7 +118,7 @@ fun RootDetailScreen(
                 // Header(1) + Report(1) + stickyHeader(not counted) + occurrences items
                 // occurrences start at index 2, so adjust: lastIdx - 2 = occurrence index
                 val occIdx = lastIdx - 2
-                viewModel.loadMoreOccurrencesIfNeeded(occIdx)
+                rootViewModel.loadMoreOccurrencesIfNeeded(occIdx)
             }
     }
 

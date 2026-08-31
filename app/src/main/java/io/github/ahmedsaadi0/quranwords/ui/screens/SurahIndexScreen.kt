@@ -32,13 +32,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -66,8 +67,8 @@ import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahViewModel
 fun SurahIndexScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSurahDetail: (Int) -> Unit,
-    surahViewModel: SurahViewModel = viewModel(),
-    mainViewModel: MainViewModel = viewModel()
+    mainViewModel: MainViewModel,
+    surahViewModel: SurahViewModel
 ) {
     val surahs by surahViewModel.surahs.collectAsState()
     val filterType by surahViewModel.filterType.collectAsState()
@@ -75,6 +76,8 @@ fun SurahIndexScreen(
     val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsState()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
     val filteredSurahs = remember(surahs, filterType, searchQuery) {
         val queryNorm = ArabicNormalizer.normalizeAr(searchQuery)
@@ -86,37 +89,82 @@ fun SurahIndexScreen(
             }
             val matchesQuery = if (queryNorm.isBlank()) true else {
                 ArabicNormalizer.normalizeAr(surah.nameAr).contains(queryNorm) ||
-                surah.nameEn.contains(searchQuery, ignoreCase = true) ||
-                surah.id.toString() == searchQuery.trim()
+                    surah.nameEn.contains(searchQuery, ignoreCase = true) ||
+                    surah.id.toString() == searchQuery.trim()
             }
             matchesFilter && matchesQuery
         }
     }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "فهرس القرآن الكريم",
-                        fontWeight = FontWeight.Bold
+            Column(modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                LargeTopAppBar(
+                    title = {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = "فهرس القرآن الكريم",
+                                fontWeight = FontWeight.Bold
+                            )
+                            // Collapsible detail — visible only when expanded (earns the collapse)
+                            if (scrollBehavior.state.collapsedFraction < 0.5f) {
+                                Text(
+                                    text = "114 سور • 86 مكية • 28 مدنية • 30 جزء",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = onNavigateBack,
+                            modifier = Modifier.testTag("back_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "رجوع"
+                            )
+                        }
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surface,
                     )
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.testTag("back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
                 )
-            )
+
+                // Pinned Tabs: remain visible when search collapses
+                TabRow(
+                    selectedTabIndex = selectedTabIndex,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    divider = {}
+                ) {
+                    Tab(
+                        selected = selectedTabIndex == 0,
+                        onClick = { selectedTabIndex = 0 },
+                        text = {
+                            Text(
+                                text = "السور (${QuranMetaConstants.STATS_SURAHS})",
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        modifier = Modifier.testTag("tab_surahs")
+                    )
+                    Tab(
+                        selected = selectedTabIndex == 1,
+                        onClick = { selectedTabIndex = 1 },
+                        text = {
+                            Text(
+                                text = "الأجزاء (30)",
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        modifier = Modifier.testTag("tab_juz")
+                    )
+                }
+            }
         },
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
@@ -127,101 +175,86 @@ fun SurahIndexScreen(
                 .padding(innerPadding)
                 .testTag("surah_index_screen")
         ) {
-            // Tabs: السور / الأجزاء
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                Tab(
-                    selected = selectedTabIndex == 0,
-                    onClick = { selectedTabIndex = 0 },
-                    text = {
-                        Text(
-                            text = "السور (${QuranMetaConstants.STATS_SURAHS})",
-                            fontWeight = FontWeight.Bold
-                        )
-                    },
-                    modifier = Modifier.testTag("tab_surahs")
-                )
-                Tab(
-                    selected = selectedTabIndex == 1,
-                    onClick = { selectedTabIndex = 1 },
-                    text = {
-                        Text(
-                            text = "الأجزاء (30)",
-                            fontWeight = FontWeight.Bold
-                        )
-                    },
-                    modifier = Modifier.testTag("tab_juz")
-                )
-            }
-
             if (selectedTabIndex == 0) {
-                // Search and Filters
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                // Search collapses on scroll — inside LazyColumn as first item
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { surahViewModel.setSearchQuery(it) },
-                        placeholder = { Text("ابحث باسم السورة أو رقمها...") },
-                        leadingIcon = {
-                            Icon(imageVector = Icons.Default.Search, contentDescription = null)
-                        },
-                        trailingIcon = {
-                            if (searchQuery.isNotBlank()) {
-                                IconButton(onClick = { surahViewModel.setSearchQuery("") }) {
-                                    Icon(imageVector = Icons.Default.Close, contentDescription = "مسح")
-                                }
+                    // Collapsible Search + Filters — scrolls away
+                    item(key = "surah_search_header") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .animateItem(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedTextField(
+                                value = searchQuery,
+                                onValueChange = { surahViewModel.setSearchQuery(it) },
+                                placeholder = { Text("ابحث باسم السورة أو رقمها...") },
+                                leadingIcon = {
+                                    Icon(imageVector = Icons.Default.Search, contentDescription = null)
+                                },
+                                trailingIcon = {
+                                    if (searchQuery.isNotBlank()) {
+                                        IconButton(onClick = { surahViewModel.setSearchQuery("") }) {
+                                            Icon(imageVector = Icons.Default.Close, contentDescription = "مسح")
+                                        }
+                                    }
+                                },
+                                singleLine = true,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("surah_search_input")
+                            )
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilterChip(
+                                    selected = filterType == "all",
+                                    onClick = { surahViewModel.setFilter("all") },
+                                    label = { Text("الكل (114)") },
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                FilterChip(
+                                    selected = filterType == "meccan",
+                                    onClick = { surahViewModel.setFilter("meccan") },
+                                    label = { Text("مكية (86)") },
+                                    shape = RoundedCornerShape(12.dp)
+                                )
+                                FilterChip(
+                                    selected = filterType == "medinan",
+                                    onClick = { surahViewModel.setFilter("medinan") },
+                                    label = { Text("مدنية (28)") },
+                                    shape = RoundedCornerShape(12.dp)
+                                )
                             }
-                        },
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("surah_search_input")
-                    )
-
-                    // Filter chips: الكل، مكية، مدنية - M3 small 12dp
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        FilterChip(
-                            selected = filterType == "all",
-                            onClick = { surahViewModel.setFilter("all") },
-                            label = { Text("الكل (114)") },
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        FilterChip(
-                            selected = filterType == "meccan",
-                            onClick = { surahViewModel.setFilter("meccan") },
-                            label = { Text("مكية (86)") },
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                        FilterChip(
-                            selected = filterType == "medinan",
-                            onClick = { surahViewModel.setFilter("medinan") },
-                            label = { Text("مدنية (28)") },
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                        }
                     }
-                }
 
-                // Surah list with filtering animation
-                Crossfade(
-                    targetState = filteredSurahs,
-                    animationSpec = tween(durationMillis = AppMotion.DurationMedium),
-                    label = "surahFilterCrossfade"
-                ) { animatedList ->
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(animatedList, key = { it.id }) { surah ->
+                    if (filteredSurahs.isEmpty()) {
+                        item(key = "surah_empty") {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 32.dp)
+                                    .animateItem(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (searchQuery.isBlank()) "لا توجد سور مطابقة للفلتر"
+                                    else "لا توجد نتائج لـ \"$searchQuery\"",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    } else {
+                        items(filteredSurahs, key = { it.id }) { surah ->
                             val isBookmarked = bookmarkedSurahs.contains(surah.id.toString())
                             SurahItemCard(
                                 surah = surah,
@@ -231,13 +264,13 @@ fun SurahIndexScreen(
                                 modifier = Modifier.animateItem()
                             )
                         }
-                        item {
-                            Spacer(modifier = Modifier.height(16.dp))
-                        }
+                    }
+                    item(key = "surah_bottom_spacer") {
+                        Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
             } else {
-                // Juz Tab with animateItem
+                // Juz Tab — no search, direct list
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),

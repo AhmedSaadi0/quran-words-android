@@ -10,12 +10,16 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "quran_words_prefs")
 
-class UserPreferencesRepository(private val context: Context) {
+@Singleton
+class UserPreferencesRepository @Inject constructor(@param:ApplicationContext private val context: Context) {
     companion object {
         private val KEY_FONT_SIZE = floatPreferencesKey("quran_font_size")
         private val KEY_DARK_MODE = intPreferencesKey("dark_mode_mode") // 0 = system, 1 = light, 2 = dark

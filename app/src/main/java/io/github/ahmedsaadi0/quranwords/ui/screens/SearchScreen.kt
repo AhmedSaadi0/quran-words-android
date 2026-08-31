@@ -62,11 +62,11 @@ fun SearchScreen(
     onNavigateBack: () -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
     onNavigateToSurahDetail: (Int, Int) -> Unit,
-    viewModel: SearchViewModel = viewModel()
+    searchViewModel: SearchViewModel
 ) {
-    val query by viewModel.query.collectAsState()
-    val results by viewModel.results.collectAsState()
-    val isSearching by viewModel.isSearching.collectAsState()
+    val query by searchViewModel.query.collectAsState()
+    val results by searchViewModel.results.collectAsState()
+    val isSearching by searchViewModel.isSearching.collectAsState()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
@@ -107,14 +107,14 @@ fun SearchScreen(
             // Search Input Field - M3 small shape 12dp for input, unified
             OutlinedTextField(
                 value = query,
-                onValueChange = { viewModel.onQueryChanged(it) },
-                placeholder = { Text("ابحث في الجذور، المصادر، المشتقات، أو الآيات...") },
+                onValueChange = { searchViewModel.onQueryChanged(it) },
+                placeholder = { Text("ابحث في الجذور، المصادر، المشتقات، ...") },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Search, contentDescription = null)
                 },
                 trailingIcon = {
                     if (query.isNotBlank()) {
-                        IconButton(onClick = { viewModel.onQueryChanged("") }) {
+                        IconButton(onClick = { searchViewModel.onQueryChanged("") }) {
                             Icon(imageVector = Icons.Default.Close, contentDescription = "مسح")
                         }
                     }

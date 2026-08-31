@@ -66,15 +66,15 @@ import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
 fun DatabaseSetupScreen(
     mainViewModel: MainViewModel,
     onNavigateBack: () -> Unit,
-    viewModel: DatabaseSetupViewModel = viewModel()
+    setupViewModel: DatabaseSetupViewModel
 ) {
-    val downloadState by viewModel.downloadState.collectAsState()
+    val downloadState by setupViewModel.downloadState.collectAsState()
     var showImportDialog by remember { mutableStateOf(false) }
     val importPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            viewModel.importDatabase(uri)
+            setupViewModel.importDatabase(uri)
         }
     }
 
@@ -184,7 +184,7 @@ fun DatabaseSetupScreen(
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Button(
-                                        onClick = { viewModel.startDownload() },
+                                        onClick = { setupViewModel.startDownload() },
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
@@ -290,7 +290,7 @@ fun DatabaseSetupScreen(
                                         textAlign = TextAlign.Center
                                     )
                                     Button(
-                                        onClick = { viewModel.startDownload() },
+                                        onClick = { setupViewModel.startDownload() },
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier

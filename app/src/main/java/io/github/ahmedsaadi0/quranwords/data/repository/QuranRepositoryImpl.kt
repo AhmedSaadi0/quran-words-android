@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
 import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
+import io.github.ahmedsaadi0.quranwords.di.IoDispatcher
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
@@ -17,15 +18,18 @@ import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import javax.inject.Inject
 
-class QuranRepositoryImpl(
+class QuranRepositoryImpl @Inject constructor(
     private val context: Context,
-    private val downloadManager: DatabaseDownloadManager = DatabaseDownloadManager(context)
+    private val downloadManager: DatabaseDownloadManager,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : QuranRepository {
 
     @Volatile
@@ -107,9 +111,9 @@ class QuranRepositoryImpl(
             Surah(it.id, it.nameAr, it.nameEn, it.ayahCount, it.revelationType, it.juzStart)
         }
         emit(fallback)
-    }.flowOn(Dispatchers.IO)
+    }.flowOn(ioDispatcher)
 
-    override suspend fun getSurahById(id: Int): Surah? = withContext(Dispatchers.IO) {
+    override suspend fun getSurahById(id: Int): Surah? = withContext(ioDispatcher) {
         val db = getDb()
         if (db != null) {
             try {
@@ -186,9 +190,9 @@ class QuranRepositoryImpl(
 
         // No DB - emit empty, UI will show download required (no preview to avoid stutter)
         emit(emptyList())
-    }.flowOn(Dispatchers.IO)
+    }.flowOn(ioDispatcher)
 
-    override suspend fun getAyatBySurahPaged(surahId: Int, limit: Int, offset: Int): List<Ayah> = withContext(Dispatchers.IO) {
+    override suspend fun getAyatBySurahPaged(surahId: Int, limit: Int, offset: Int): List<Ayah> = withContext(ioDispatcher) {
         val db = getDb() ?: return@withContext emptyList()
         val list = mutableListOf<Ayah>()
         try {
@@ -297,7 +301,7 @@ class QuranRepositoryImpl(
         return words
     }
 
-    override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? = withContext(Dispatchers.IO) {
+    override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? = withContext(ioDispatcher) {
         val db = getDb()
         if (db != null) {
             try {
@@ -328,7 +332,7 @@ class QuranRepositoryImpl(
         getSeedAyat(surahId).firstOrNull { it.ayah == ayahNum }
     }
 
-    override suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem> = withContext(Dispatchers.IO) {
+    override suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem> = withContext(ioDispatcher) {
         val db = getDb()
         if (db != null) {
             val list = mutableListOf<RootItem>()
@@ -376,7 +380,7 @@ class QuranRepositoryImpl(
         getSeedRoots().drop(offset).take(limit)
     }
 
-    override suspend fun getRootDetail(rootId: Int): RootDetail? = withContext(Dispatchers.IO) {
+    override suspend fun getRootDetail(rootId: Int): RootDetail? = withContext(ioDispatcher) {
         val db = getDb()
         if (db != null) {
             try {
@@ -540,7 +544,7 @@ class QuranRepositoryImpl(
         getSeedRootDetail(rootId)
     }
 
-    override suspend fun getRootOccurrencesPaged(rootId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel> = withContext(Dispatchers.IO) {
+    override suspend fun getRootOccurrencesPaged(rootId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel> = withContext(ioDispatcher) {
         val db = getDb() ?: return@withContext emptyList()
         val list = mutableListOf<AyahOccurrenceModel>()
         try {
@@ -573,7 +577,7 @@ class QuranRepositoryImpl(
         return@withContext list
     }
 
-    override suspend fun getRootOccurrencesCount(rootId: Int): Int = withContext(Dispatchers.IO) {
+    override suspend fun getRootOccurrencesCount(rootId: Int): Int = withContext(ioDispatcher) {
         val db = getDb() ?: return@withContext 0
         try {
             val cursor = db.rawQuery("SELECT COUNT(*) FROM word_morphology WHERE root_id = ?", arrayOf(rootId.toString()))
@@ -582,7 +586,7 @@ class QuranRepositoryImpl(
         return@withContext 0
     }
 
-    override suspend fun getRootByText(rootText: String): RootDetail? = withContext(Dispatchers.IO) {
+    override suspend fun getRootByText(rootText: String): RootDetail? = withContext(ioDispatcher) {
         val db = getDb()
         if (db != null) {
             try {
@@ -605,7 +609,7 @@ class QuranRepositoryImpl(
         }
     }
 
-    override suspend fun searchAll(query: String): SearchResult = withContext(Dispatchers.IO) {
+    override suspend fun searchAll(query: String): SearchResult = withContext(ioDispatcher) {
         val trimmed = query.trim()
         if (trimmed.isBlank()) return@withContext SearchResult()
 

@@ -125,7 +125,7 @@ fun MorphologyGuideScreen(
                 )
             }
 
-            items(QuranMetaConstants.FORMS_MAP.toList(), key = { it.first }) { (code, desc) ->
+            items(QuranMetaConstants.FORMS_MAP.toList(), key = { "form_${it.first}" }) { (code, desc) ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -182,7 +182,7 @@ fun MorphologyGuideScreen(
                 )
             }
 
-            items(QuranMetaConstants.MORPHOLOGY_TERMS, key = { it.code }) { term ->
+            items(QuranMetaConstants.MORPHOLOGY_TERMS, key = { "term_${it.code}_${it.nameAr}" }) { term ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()

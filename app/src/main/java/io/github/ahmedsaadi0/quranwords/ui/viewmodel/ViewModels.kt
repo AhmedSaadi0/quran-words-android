@@ -1,30 +1,32 @@
 package io.github.ahmedsaadi0.quranwords.ui.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
 import io.github.ahmedsaadi0.quranwords.data.remote.DownloadState
-import io.github.ahmedsaadi0.quranwords.data.repository.QuranRepositoryImpl
 import io.github.ahmedsaadi0.quranwords.data.repository.UserPreferencesRepository
-import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.RootDetail
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
 import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
+import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class MainViewModel(application: Application) : AndroidViewModel(application) {
-    val repository = QuranRepositoryImpl(application)
-    val preferences = UserPreferencesRepository(application)
-    val downloadManager = DatabaseDownloadManager(application)
+@HiltViewModel
+class MainViewModel @Inject constructor(
+    private val repository: QuranRepository,
+    private val preferences: UserPreferencesRepository,
+    val downloadManager: DatabaseDownloadManager
+) : ViewModel() {
 
     private val _isDbReady = MutableStateFlow(repository.isDatabaseReady())
     val isDbReady: StateFlow<Boolean> = _isDbReady.asStateFlow()
@@ -131,10 +133,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun isAyahBookmarked(surahId: Int, ayahNum: Int): Boolean = _bookmarkedAyat.value.contains("$surahId:$ayahNum")
 }
 
-class HomeViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
-    private val preferences = UserPreferencesRepository(application)
-
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    private val repository: QuranRepository,
+    private val preferences: UserPreferencesRepository
+) : ViewModel() {
     private val _featuredRoots = MutableStateFlow<List<RootItem>>(emptyList())
     val featuredRoots: StateFlow<List<RootItem>> = _featuredRoots.asStateFlow()
 
@@ -159,9 +162,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     }
 }
 
-class SurahViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
-
+@HiltViewModel
+class SurahViewModel @Inject constructor(
+    private val repository: QuranRepository
+) : ViewModel() {
     private val _surahs = MutableStateFlow<List<Surah>>(emptyList())
     val surahs: StateFlow<List<Surah>> = _surahs.asStateFlow()
 
@@ -188,10 +192,11 @@ class SurahViewModel(application: Application) : AndroidViewModel(application) {
     }
 }
 
-class SurahDetailViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
-    private val preferences = UserPreferencesRepository(application)
-
+@HiltViewModel
+class SurahDetailViewModel @Inject constructor(
+    private val repository: QuranRepository,
+    private val preferences: UserPreferencesRepository
+) : ViewModel() {
     private val _surah = MutableStateFlow<Surah?>(null)
     val surah: StateFlow<Surah?> = _surah.asStateFlow()
 
@@ -209,6 +214,18 @@ class SurahDetailViewModel(application: Application) : AndroidViewModel(applicat
 
     private val _isLoadingMore = MutableStateFlow(false)
     val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
+    private val _aiSummary = MutableStateFlow<String?>(null)
+    val aiSummary: StateFlow<String?> = _aiSummary.asStateFlow()
+
+    private val _aiModel = MutableStateFlow<String?>(null)
+    val aiModel: StateFlow<String?> = _aiModel.asStateFlow()
+
+    private val _aiGeneratedAt = MutableStateFlow<String?>(null)
+    val aiGeneratedAt: StateFlow<String?> = _aiGeneratedAt.asStateFlow()
+
+    private val _isAiLoading = MutableStateFlow(false)
+    val isAiLoading: StateFlow<Boolean> = _isAiLoading.asStateFlow()
 
     private var currentSurahId: Int = 1
     private var currentOffset: Int = 0
@@ -286,17 +303,44 @@ class SurahDetailViewModel(application: Application) : AndroidViewModel(applicat
     fun selectWord(word: WordToken, ayah: Ayah) {
         _selectedWord.value = word
         _selectedWordAyah.value = ayah
+        // Fetch AI summary via repository (UDF: ViewModel owns data, not Composable)
+        _aiSummary.value = null
+        _aiModel.value = null
+        _aiGeneratedAt.value = null
+        val rootId = word.rootId
+        if (rootId != null && rootId > 0) {
+            _isAiLoading.value = true
+            viewModelScope.launch {
+                try {
+                    val detail = repository.getRootDetail(rootId)
+                    _aiSummary.value = detail?.aiSummary
+                    _aiModel.value = detail?.aiModel
+                    _aiGeneratedAt.value = detail?.aiGeneratedAt
+                } catch (_: Exception) {
+                    // keep null, UI shows fallback
+                } finally {
+                    _isAiLoading.value = false
+                }
+            }
+        } else {
+            _isAiLoading.value = false
+        }
     }
 
     fun clearSelectedWord() {
         _selectedWord.value = null
         _selectedWordAyah.value = null
+        _aiSummary.value = null
+        _aiModel.value = null
+        _aiGeneratedAt.value = null
+        _isAiLoading.value = false
     }
 }
 
-class RootViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
-
+@HiltViewModel
+class RootViewModel @Inject constructor(
+    private val repository: QuranRepository
+) : ViewModel() {
     private val _roots = MutableStateFlow<List<RootItem>>(emptyList())
     val roots: StateFlow<List<RootItem>> = _roots.asStateFlow()
 
@@ -395,9 +439,10 @@ class RootViewModel(application: Application) : AndroidViewModel(application) {
     }
 }
 
-class SearchViewModel(application: Application) : AndroidViewModel(application) {
-    private val repository = QuranRepositoryImpl(application)
-
+@HiltViewModel
+class SearchViewModel @Inject constructor(
+    private val repository: QuranRepository
+) : ViewModel() {
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
@@ -421,8 +466,10 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     }
 }
 
-class DatabaseSetupViewModel(application: Application) : AndroidViewModel(application) {
-    private val downloadManager = DatabaseDownloadManager(application)
+@HiltViewModel
+class DatabaseSetupViewModel @Inject constructor(
+    private val downloadManager: DatabaseDownloadManager
+) : ViewModel() {
 
     private val _downloadState = MutableStateFlow<DownloadState>(
         if (downloadManager.isDatabaseReady()) DownloadState.Completed else DownloadState.Idle

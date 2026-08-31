@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.screens.BookmarksScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.DatabaseSetupScreen
@@ -34,7 +35,13 @@ import io.github.ahmedsaadi0.quranwords.ui.screens.RootsListScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SearchScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahDetailScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahIndexScreen
+import io.github.ahmedsaadi0.quranwords.ui.viewmodel.DatabaseSetupViewModel
+import io.github.ahmedsaadi0.quranwords.ui.viewmodel.HomeViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
+import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
+import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SearchViewModel
+import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahDetailViewModel
+import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahViewModel
 
 data class BottomNavItem(
     val route: String,
@@ -109,7 +116,8 @@ fun AppNavigation(
                     }
                 }
             }
-        }
+        },
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -129,6 +137,7 @@ fun AppNavigation(
             ) {
                 HomeScreen(
                     mainViewModel = mainViewModel,
+                    homeViewModel = hiltViewModel<HomeViewModel>(),
                     onNavigateToSurahIndex = { navController.navigate(Screen.SurahIndex.route) },
                     onNavigateToSurahDetail = { surahId, ayah ->
                         navController.navigate(Screen.SurahDetail.createRoute(surahId, ayah))
@@ -156,7 +165,8 @@ fun AppNavigation(
                     onNavigateToSurahDetail = { surahId ->
                         navController.navigate(Screen.SurahDetail.createRoute(surahId))
                     },
-                    mainViewModel = mainViewModel
+                    mainViewModel = mainViewModel,
+                    surahViewModel = hiltViewModel<SurahViewModel>()
                 )
             }
 
@@ -177,6 +187,7 @@ fun AppNavigation(
                     surahId = surahId,
                     targetAyah = targetAyah,
                     mainViewModel = mainViewModel,
+                    surahDetailViewModel = hiltViewModel<SurahDetailViewModel>(),
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToRootDetail = { rootId ->
                         navController.navigate(Screen.RootDetail.createRoute(rootId))
@@ -195,7 +206,8 @@ fun AppNavigation(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToRootDetail = { rootId ->
                         navController.navigate(Screen.RootDetail.createRoute(rootId))
-                    }
+                    },
+                    rootViewModel = hiltViewModel<RootViewModel>()
                 )
             }
 
@@ -213,7 +225,8 @@ fun AppNavigation(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId, ayahNum ->
                         navController.navigate(Screen.SurahDetail.createRoute(surahId, ayahNum))
-                    }
+                    },
+                    rootViewModel = hiltViewModel<RootViewModel>()
                 )
             }
 
@@ -231,7 +244,8 @@ fun AppNavigation(
                     },
                     onNavigateToSurahDetail = { surahId, ayahNum ->
                         navController.navigate(Screen.SurahDetail.createRoute(surahId, ayahNum))
-                    }
+                    },
+                    searchViewModel = hiltViewModel<SearchViewModel>()
                 )
             }
 
@@ -256,7 +270,8 @@ fun AppNavigation(
             ) {
                 DatabaseSetupScreen(
                     mainViewModel = mainViewModel,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    setupViewModel = hiltViewModel<DatabaseSetupViewModel>()
                 )
             }
 

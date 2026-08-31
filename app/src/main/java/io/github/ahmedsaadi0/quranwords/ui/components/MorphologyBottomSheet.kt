@@ -28,26 +28,17 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.ahmedsaadi0.quranwords.data.repository.QuranRepositoryImpl
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.theme.Emerald700
-import io.github.ahmedsaadi0.quranwords.ui.theme.QuranGold
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeSmall
 
@@ -59,7 +50,11 @@ fun MorphologyBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
     onNavigateToRoot: (rootId: Int, rootText: String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    aiSummary: String? = null,
+    aiModel: String? = null,
+    aiGeneratedAt: String? = null,
+    isAiLoading: Boolean = false
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -170,8 +165,14 @@ fun MorphologyBottomSheet(
                 }
             }
 
-            // AI Summary Card - replaces morphological analysis as requested
-            AiSummarySection(word = word)
+            // AI Summary Card - stateless, data supplied by ViewModel (Clean Arch §10.3)
+            AiSummarySection(
+                word = word,
+                aiSummary = aiSummary,
+                aiModel = aiModel,
+                aiDate = aiGeneratedAt,
+                isLoading = isAiLoading
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -179,32 +180,14 @@ fun MorphologyBottomSheet(
 }
 
 @Composable
-private fun AiSummarySection(word: WordToken) {
-    val context = LocalContext.current
-    val repository = remember(context) { QuranRepositoryImpl(context) }
-    var aiSummary by remember { mutableStateOf<String?>(null) }
-    var aiModel by remember { mutableStateOf<String?>(null) }
-    var aiDate by remember { mutableStateOf<String?>(null) }
-    var isLoading by remember(word.rootId) { mutableStateOf(word.rootId != null) }
-    var hasTried by remember(word.rootId) { mutableStateOf(word.rootId == null) }
-
-    LaunchedEffect(word.rootId) {
-        val rootId = word.rootId
-        if (rootId != null && rootId > 0) {
-            isLoading = true
-            hasTried = true
-            try {
-                val detail = repository.getRootDetail(rootId)
-                aiSummary = detail?.aiSummary
-                aiModel = detail?.aiModel
-                aiDate = detail?.aiGeneratedAt
-            } catch (_: Exception) {
-            }
-            isLoading = false
-        } else {
-            hasTried = true
-        }
-    }
+private fun AiSummarySection(
+    word: WordToken,
+    aiSummary: String?,
+    aiModel: String?,
+    aiDate: String?,
+    isLoading: Boolean
+) {
+    val hasTried = true
 
     Column(
         modifier = Modifier
