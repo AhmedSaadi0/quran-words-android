@@ -362,6 +362,7 @@ sealed interface Result<out T> {
 - `gradle.properties`: `org.gradle.caching=true`, `configuration-cache=true`, `nonTransitiveRClass=true`.
 - CI pipeline (GitHub Actions — Base §27): `Build → ktlintCheck + detekt + lintDebug → testDebugUnitTest → assemble`. Do not claim a check passes without running it (Base §27).
 - `Room` exports its schema to `app/schemas/`. Dependency checks via `detekt`/`lint` locally and in CI (Base §26).
+- **Agent build policy — manual verification only:** Agents must **never** run `./gradlew`, `gradle`, `assembleDebug`, `ktlintCheck`, `detekt`, `lintDebug`, or `test*` commands automatically. Instead list the exact command(s) for the user to run and wait for their output. This avoids heavy local builds and respects the user's environment.
 
 ---
 
@@ -398,7 +399,7 @@ sealed interface Result<out T> {
 2. **Discover** — identify business model, users, journeys, data strategy, offline model, security (already documented in §2-3; re-confirm if product changes).
 3. **Decide** — document architecture/DI/state/navigation choices with reasons (Decision Log §20).
 4. **Generate / Implement** — follow `Domain → Data → Presentation/VM → UI → Navigation → Tests` order (adjust when required).
-5. **Verify** — build succeeds, relevant tests pass, `ktlintCheck`/`detekt`/`lintDebug` pass, no new violations, loading/error/empty handled, RTL/a11y respected.
+5. **Verify** — **do not run builds yourself**; instead list the exact `ktlintCheck`/`detekt`/`lintDebug`/`assembleDebug`/`testDebugUnitTest` commands for the user to run, then wait for their output. Verify loading/error/empty handled, RTL/a11y respected, and never claim a check passes without user-provided output.
 6. **Report** — list Implemented/Changed/Tests/Checks/Limitations/Debt; never claim untested checks.
 7. **Iterate** — keep changes focused; avoid mixing unrelated features (Base §32).
 

@@ -1,12 +1,10 @@
 package io.github.ahmedsaadi0.quranwords.ui.screens
 
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.animateContentSize
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,19 +17,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import android.content.Intent
-import android.net.Uri
-import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -42,46 +40,43 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.foundation.lazy.rememberLazyListState
-import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
-import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
-import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
-import io.github.ahmedsaadi0.quranwords.domain.model.MasdarModel
-import io.github.ahmedsaadi0.quranwords.domain.model.RootMeaningModel
 import io.github.ahmedsaadi0.quranwords.ui.components.ReportIssueCard
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.theme.Emerald700
-import io.github.ahmedsaadi0.quranwords.ui.theme.QuranGold
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeLarge
-import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeSmall
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
 import io.github.ahmedsaadi0.quranwords.util.BuildIssueUrlOptions
 import io.github.ahmedsaadi0.quranwords.util.buildGithubIssueUrl
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -97,56 +92,78 @@ fun RootDetailScreen(
     val occurrencesHasMore by rootViewModel.occurrencesHasMore.collectAsState()
     val isOccurrencesLoadingMore by rootViewModel.isOccurrencesLoadingMore.collectAsState()
 
-    var selectedTabIndex by remember { mutableIntStateOf(0) }
     var showReportDialog by remember { mutableStateOf(false) }
 
-    // One LazyListState per tab — survives Crossfade switches, so scroll position is preserved
     val meaningsState = rememberLazyListState()
     val masadirState = rememberLazyListState()
     val derivativesState = rememberLazyListState()
     val ayatState = rememberLazyListState()
 
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+    val scope = rememberCoroutineScope()
+
+    // Shared Header Collapse State (Native CoordinatorLayout / AppBarLayout behavior)
+    var subtitleHeightPx by remember { mutableIntStateOf(0) }
+    var headerOffsetPx by remember { mutableFloatStateOf(0f) }
+
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                val delta = available.y
+                // Finger dragging up -> collapse header first
+                if (delta < 0f && subtitleHeightPx > 0) {
+                    val prevOffset = headerOffsetPx
+                    headerOffsetPx =
+                        (headerOffsetPx + delta).coerceIn(-subtitleHeightPx.toFloat(), 0f)
+                    val consumed = headerOffsetPx - prevOffset
+                    return Offset(0f, consumed)
+                }
+                return Offset.Zero
+            }
+
+            override fun onPostScroll(
+                consumed: Offset,
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                val delta = available.y
+                // Finger dragging down & list reached top -> expand header
+                if (delta > 0f && subtitleHeightPx > 0) {
+                    val prevOffset = headerOffsetPx
+                    headerOffsetPx =
+                        (headerOffsetPx + delta).coerceIn(-subtitleHeightPx.toFloat(), 0f)
+                    val consumed = headerOffsetPx - prevOffset
+                    return Offset(0f, consumed)
+                }
+                return Offset.Zero
+            }
+        }
+    }
+
     LaunchedEffect(rootId) {
         rootViewModel.loadRootDetail(rootId)
     }
 
-    // Pagination for ayat occurrences — only active when Ayat tab is selected
-    LaunchedEffect(ayatState, selectedTabIndex, occurrences, occurrencesHasMore, isOccurrencesLoadingMore) {
-        if (selectedTabIndex != 3) return@LaunchedEffect
-        snapshotFlow { ayatState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
-            .collectLatest { lastIdx ->
-                // Header(1) + Report(1) + stickyHeader(not counted) + occurrences items
-                // occurrences start at index 2, so adjust: lastIdx - 2 = occurrence index
-                val occIdx = lastIdx - 2
-                rootViewModel.loadMoreOccurrencesIfNeeded(occIdx)
-            }
+    LaunchedEffect(pagerState, ayatState) {
+        snapshotFlow {
+            val page = pagerState.currentPage
+            val lastIdx = ayatState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            page to lastIdx
+        }.collectLatest { (page, lastIdx) ->
+            if (page != 3) return@collectLatest
+            if (lastIdx == -1) return@collectLatest
+            rootViewModel.loadMoreOccurrencesIfNeeded(lastIdx)
+        }
     }
 
+    val collapseProgress = if (subtitleHeightPx > 0) {
+        (1f + (headerOffsetPx / subtitleHeightPx.toFloat())).coerceIn(0f, 1f)
+    } else {
+        1f
+    }
+    val isCollapsed = collapseProgress < 0.1f
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = rootDetail?.item?.let { "الجذر: [ ${it.root} ]" } ?: "تفاصيل الجذر",
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.testTag("back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع"
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
-            )
-        },
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
@@ -163,627 +180,449 @@ fun RootDetailScreen(
             val detail = rootDetail!!
             val item = detail.item
 
-            // Each tab has its own LazyListState — switching tabs via Crossfade now preserves scroll position
-            // Header + Report + TabRow are inside each list so they scroll together, but state is remembered per tab
-            Crossfade(
-                targetState = selectedTabIndex,
-                animationSpec = tween(
-                    durationMillis = AppMotion.DurationMedium,
-                    easing = AppMotion.EasingStandard
-                ),
-                label = "RootDetailTabCrossfade"
-            ) { animatedTabIndex ->
-                val currentState = when (animatedTabIndex) {
-                    0 -> meaningsState
-                    1 -> masadirState
-                    2 -> derivativesState
-                    else -> ayatState
-                }
-                LazyColumn(
-                    state = currentState,
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .nestedScroll(nestedScrollConnection)
+            ) {
+                // Fixed & Collapsing Top Section
+                Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .testTag("root_detail_screen_${animatedTabIndex}"),
-                    contentPadding = PaddingValues(bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .windowInsetsPadding(WindowInsets.statusBars)
                 ) {
-                    // Header Banner — same for every tab, scrolls with content; state per tab preserves position
-                    item {
-                        Card(
+                    // Pinned Top Bar Row (Always 64dp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            IconButton(
+                                onClick = onNavigateBack,
+                                modifier = Modifier.testTag("back_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "رجوع"
+                                )
+                            }
+                            Text(
+                                text = "الجذر: [ ${item.root} ]",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        IconButton(
+                            onClick = { showReportDialog = true },
+                            modifier = Modifier.testTag("report_help_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.HelpOutline, // أو Icons.Outlined.Flag / Icons.Outlined.Feedback
+                                contentDescription = "الإبلاغ عن معنى",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Collapsible Subtitle Container (Measured naturally, collapses pixel-by-pixel)
+                    val subtitleText = detail.aiSummary?.takeIf { it.isNotBlank() }
+                        ?: detail.item.glossAr?.takeIf { it.isNotBlank() }
+                    val hasSubtitle = !subtitleText.isNullOrBlank()
+                    val aiModel = detail.aiModel
+                    val aiGeneratedAt = detail.aiGeneratedAt
+                    val hasAiMeta = !aiModel.isNullOrBlank() || !aiGeneratedAt.isNullOrBlank()
+
+                    if (hasSubtitle || hasAiMeta) {
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
-                                .animateContentSize(
-                                    animationSpec = tween(
-                                        durationMillis = AppMotion.DurationMedium,
-                                        easing = AppMotion.EasingStandard
+                                .clipToBounds()
+                                .graphicsLayer {
+                                    alpha = collapseProgress
+                                }
+                                .layout { measurable, constraints ->
+                                    // Measure child without restricting height to 0
+                                    val placeable = measurable.measure(
+                                        constraints.copy(
+                                            minHeight = 0,
+                                            maxHeight = Constraints.Infinity
+                                        )
                                     )
-                                ),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                            ),
-                            border = CardDefaults.outlinedCardBorder(),
-                            shape = ShapeLarge
+                                    val naturalHeight = placeable.height
+                                    if (subtitleHeightPx != naturalHeight && naturalHeight > 0) {
+                                        subtitleHeightPx = naturalHeight
+                                    }
+                                    val currentHeight =
+                                        (naturalHeight + headerOffsetPx.roundToInt())
+                                            .coerceIn(0, naturalHeight)
+                                    layout(placeable.width, currentHeight) {
+                                        placeable.placeRelative(0, headerOffsetPx.roundToInt())
+                                    }
+                                }
                         ) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(18.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                                if (hasSubtitle) {
                                     Text(
-                                        text = item.root.toCharArray().joinToString("  "),
-                                        style = MaterialTheme.typography.displayMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-
-                                    Row(
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        if (occurrences.isNotEmpty() || detail.item.occurrencesCount > 0) {
-                                            val countToShow = if (occurrences.isNotEmpty()) occurrences.size else detail.item.occurrencesCount
-                                            val totalToShow = detail.item.occurrencesCount
-                                            Box(
-                                                modifier = Modifier
-                                                    .clip(RoundedCornerShape(8.dp))
-                                                    .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.65f))
-                                                    .padding(horizontal = 12.dp, vertical = 6.dp)
-                                            ) {
-                                                Text(
-                                                    text = if (totalToShow > countToShow) "$countToShow / $totalToShow موضع" else "$totalToShow موضع في التنزيل",
-                                                    style = MaterialTheme.typography.labelMedium,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.tertiary
-                                                )
-                                            }
-                                        }
-                                        IconButton(
-                                            onClick = { showReportDialog = true },
-                                            modifier = Modifier
-                                                .size(32.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .background(MaterialTheme.colorScheme.secondaryContainer)
-                                                .testTag("report_help_button")
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.HelpOutline,
-                                                contentDescription = "الإبلاغ عن معنى",
-                                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                                modifier = Modifier.size(18.dp)
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (!detail.aiSummary.isNullOrBlank()) {
-                                    Text(
-                                        text = detail.aiSummary,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                } else if (!item.glossAr.isNullOrBlank()) {
-                                    Text(
-                                        text = item.glossAr,
+                                        text = subtitleText ?: "",
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
-
-                                if (!detail.aiModel.isNullOrBlank() || !detail.aiGeneratedAt.isNullOrBlank()) {
-                                    Column(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                                    ) {
-                                        detail.aiModel?.let { model ->
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clip(RoundedCornerShape(6.dp))
-                                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                                            ) {
-                                                Text(
-                                                    text = "🤖 $model",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                        detail.aiGeneratedAt?.let { rawDate ->
-                                            val dateTimeFormatted = try {
-                                                val cleaned = rawDate.replace("T", " ")
-                                                if (cleaned.length >= 16) cleaned.substring(0, 16) else cleaned
-                                            } catch (_: Exception) {
-                                                rawDate
-                                            }
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .clip(RoundedCornerShape(6.dp))
-                                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                                            ) {
-                                                Text(
-                                                    text = "🕒 $dateTimeFormatted",
-                                                    style = MaterialTheme.typography.labelSmall,
-                                                    fontWeight = FontWeight.Medium,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
+                                if (hasAiMeta) {
+                                    val formattedDate = try {
+                                        val raw = aiGeneratedAt ?: ""
+                                        val cleaned = raw.replace("T", " ")
+                                        if (cleaned.length >= 16) cleaned.substring(
+                                            0,
+                                            16
+                                        ) else cleaned
+                                    } catch (_: Exception) {
+                                        aiGeneratedAt ?: ""
                                     }
-                                }
-                            }
-                        }
-                    }
-
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp, vertical = 4.dp)
-                                .animateItem()
-                        ) {
-                            ReportIssueCard(rootText = item.root, rootId = item.id)
-                        }
-                    }
-
-                    stickyHeader {
-                        TabRow(
-                            selectedTabIndex = selectedTabIndex,
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ) {
-                            Tab(
-                                selected = selectedTabIndex == 0,
-                                onClick = { selectedTabIndex = 0 },
-                                text = { Text("المعاجم (${detail.meanings.size})", fontWeight = FontWeight.Bold) }
-                            )
-                            Tab(
-                                selected = selectedTabIndex == 1,
-                                onClick = { selectedTabIndex = 1 },
-                                text = { Text("المصادر (${detail.masadir.size})", fontWeight = FontWeight.Bold) }
-                            )
-                            Tab(
-                                selected = selectedTabIndex == 2,
-                                onClick = { selectedTabIndex = 2 },
-                                text = { Text("المشتقات (${detail.derivatives.size})", fontWeight = FontWeight.Bold) }
-                            )
-                            Tab(
-                                selected = selectedTabIndex == 3,
-                                onClick = { selectedTabIndex = 3 },
-                                text = { Text("الآيات (${detail.item.occurrencesCount})", fontWeight = FontWeight.Bold) }
-                            )
-                        }
-                    }
-
-                    when (animatedTabIndex) {
-                        0 -> {
-                            if (detail.meanings.isEmpty()) {
-                                item {
-                                    EmptyTabNotice(text = "لا توجد معاني مدخلة لهذا الجذر حالياً")
-                                }
-                            } else {
-                                items(detail.meanings, key = { it.id }) { meaning ->
-                                    Box(
-                                        modifier = Modifier
-                                            .padding(horizontal = 16.dp, vertical = 5.dp)
-                                            .animateItem()
-                                    ) {
-                                        MeaningCard(meaning)
+                                    val metaLine = buildString {
+                                        if (!aiModel.isNullOrBlank()) append("🤖 $aiModel")
+                                        if (!aiModel.isNullOrBlank() && formattedDate.isNotBlank()) append(
+                                            "  •  "
+                                        )
+                                        if (formattedDate.isNotBlank()) append("🕒 $formattedDate")
                                     }
-                                }
-                            }
-                        }
-                        1 -> {
-                            if (detail.masadir.isEmpty()) {
-                                item {
-                                    EmptyTabNotice(text = "لا توجد مصادر مسجلة لهذا الجذر")
-                                }
-                            } else {
-                                items(detail.masadir, key = { it.id }) { masdar ->
-                                    Box(
-                                        modifier = Modifier
-                                            .padding(horizontal = 16.dp, vertical = 5.dp)
-                                            .animateItem()
-                                    ) {
-                                        MasdarCard(masdar)
-                                    }
-                                }
-                            }
-                        }
-                        2 -> {
-                            if (detail.derivatives.isEmpty()) {
-                                item {
-                                    EmptyTabNotice(text = "لا توجد مشتقات مسجلة لهذا الجذر")
-                                }
-                            } else {
-                                items(detail.derivatives, key = { it.id }) { derivative ->
-                                    Box(
-                                        modifier = Modifier
-                                            .padding(horizontal = 16.dp, vertical = 5.dp)
-                                            .animateItem()
-                                    ) {
-                                        DerivativeCard(derivative)
-                                    }
-                                }
-                            }
-                        }
-                        3 -> {
-                            if (occurrences.isEmpty() && !occurrencesHasMore && !isOccurrencesLoadingMore) {
-                                item {
-                                    EmptyTabNotice(text = "لا توجد مواضع مسجلة لهذا الجذر في هذه النسخة")
-                                }
-                            } else {
-                                itemsIndexed(
-                                    occurrences,
-                                    key = { index, occ -> "${occ.surahId}-${occ.ayahNum}-${occ.matchedWordText}-${occ.textUthmani.hashCode()}-$index" }
-                                ) { index, occ ->
-                                    Box(
-                                        modifier = Modifier
-                                            .padding(horizontal = 16.dp, vertical = 5.dp)
-                                            .animateItem()
-                                    ) {
-                                        AyahOccurrenceCard(
-                                            occ = occ,
-                                            onClick = { onNavigateToSurahDetail(occ.surahId, occ.ayahNum) }
+                                    if (metaLine.isNotBlank()) {
+                                        Text(
+                                            text = metaLine,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                     }
                                 }
-                                if (isOccurrencesLoadingMore) {
-                                    item {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(24.dp),
-                                                color = MaterialTheme.colorScheme.primary,
-                                                strokeWidth = 2.dp
-                                            )
-                                        }
-                                    }
-                                } else if (occurrencesHasMore && occurrences.isNotEmpty()) {
-                                    item {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = "اسحب للأسفل لتحميل المزيد • ${occurrences.size} / ${detail.item.occurrencesCount}",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                } else if (!occurrencesHasMore && occurrences.isNotEmpty()) {
-                                    item {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(16.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Text(
-                                                text = "تم عرض جميع الآيات • ${occurrences.size} موضع",
-                                                style = MaterialTheme.typography.labelSmall,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
 
-                    item {
-                        Spacer(modifier = Modifier.height(80.dp))
+                    // Pinned TabRow
+                    TabRow(
+                        selectedTabIndex = pagerState.currentPage,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        divider = {}
+                    ) {
+                        Tab(
+                            selected = pagerState.currentPage == 0,
+                            onClick = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(
+                                        0,
+                                        animationSpec = tween(
+                                            durationMillis = AppMotion.DurationMedium,
+                                            easing = AppMotion.EasingStandard
+                                        )
+                                    )
+                                }
+                            },
+                            text = {
+                                Text(
+                                    "المعاجم (${detail.meanings.size})",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        )
+                        Tab(
+                            selected = pagerState.currentPage == 1,
+                            onClick = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(
+                                        1,
+                                        animationSpec = tween(
+                                            durationMillis = AppMotion.DurationMedium,
+                                            easing = AppMotion.EasingStandard
+                                        )
+                                    )
+                                }
+                            },
+                            text = {
+                                Text(
+                                    "المصادر (${detail.masadir.size})",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        )
+                        Tab(
+                            selected = pagerState.currentPage == 2,
+                            onClick = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(
+                                        2,
+                                        animationSpec = tween(
+                                            durationMillis = AppMotion.DurationMedium,
+                                            easing = AppMotion.EasingStandard
+                                        )
+                                    )
+                                }
+                            },
+                            text = {
+                                Text(
+                                    "المشتقات (${detail.derivatives.size})",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        )
+                        Tab(
+                            selected = pagerState.currentPage == 3,
+                            onClick = {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(
+                                        3,
+                                        animationSpec = tween(
+                                            durationMillis = AppMotion.DurationMedium,
+                                            easing = AppMotion.EasingStandard
+                                        )
+                                    )
+                                }
+                            },
+                            text = {
+                                Text(
+                                    "الآيات (${detail.item.occurrencesCount})",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        )
                     }
                 }
-                // Report dialog — outside LazyColumn, inside Crossfade but after lists (shown once per switch, keep outside list)
-                if (showReportDialog) {
-                    val context = LocalContext.current
-                    AlertDialog(
-                        onDismissRequest = { showReportDialog = false },
-                        title = { Text("الإبلاغ عن معنى", fontWeight = FontWeight.Bold) },
-                        text = {
-                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Text(
-                                    text = "هل وجدت معنى غير صحيح أو ناقص للجذر [${item.root}]؟",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                ReportIssueCard(rootText = item.root, rootId = item.id)
-                            }
-                        },
-                        confirmButton = {
-                            TextButton(
-                                onClick = {
-                                    val url = buildGithubIssueUrl(BuildIssueUrlOptions(item.root, item.id, null))
-                                    context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                                    showReportDialog = false
+
+                // Pure content lists inside HorizontalPager
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    beyondViewportPageCount = 1
+                ) { page ->
+                    when (page) {
+                        0 -> {
+                            LazyColumn(
+                                state = meaningsState,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .testTag("root_detail_screen_0"),
+                                contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                if (detail.meanings.isEmpty()) {
+                                    item {
+                                        EmptyTabNotice(text = "لا توجد معاني مدخلة لهذا الجذر حالياً")
+                                    }
+                                } else {
+                                    items(detail.meanings, key = { it.id }) { meaning ->
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = 16.dp, vertical = 5.dp)
+                                                .animateItem()
+                                        ) {
+                                            MeaningCard(meaning)
+                                        }
+                                    }
                                 }
-                            ) { Text("فتح GitHub") }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { showReportDialog = false }) { Text("إلغاء") }
-                        },
-                        shape = ShapeLarge
-                    )
-                }
-            }
-        }
-    }
-}
+                                item { Spacer(modifier = Modifier.height(80.dp)) }
+                            }
+                        }
 
-@Composable
-fun EmptyTabNotice(text: String) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(32.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
+                        1 -> {
+                            LazyColumn(
+                                state = masadirState,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .testTag("root_detail_screen_1"),
+                                contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                if (detail.masadir.isEmpty()) {
+                                    item {
+                                        EmptyTabNotice(text = "لا توجد مصادر مسجلة لهذا الجذر")
+                                    }
+                                } else {
+                                    items(detail.masadir, key = { it.id }) { masdar ->
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = 16.dp, vertical = 5.dp)
+                                                .animateItem()
+                                        ) {
+                                            MasdarCard(masdar)
+                                        }
+                                    }
+                                }
+                                item { Spacer(modifier = Modifier.height(80.dp)) }
+                            }
+                        }
 
-@Composable
-fun MeaningCard(meaning: RootMeaningModel) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = ShapeSmall,
-        border = CardDefaults.outlinedCardBorder()
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = meaning.bookName,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Text(
-                text = meaning.definition,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
+                        2 -> {
+                            LazyColumn(
+                                state = derivativesState,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .testTag("root_detail_screen_2"),
+                                contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                if (detail.derivatives.isEmpty()) {
+                                    item {
+                                        EmptyTabNotice(text = "لا توجد مشتقات مسجلة لهذا الجذر")
+                                    }
+                                } else {
+                                    items(detail.derivatives, key = { it.id }) { derivative ->
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = 16.dp, vertical = 5.dp)
+                                                .animateItem()
+                                        ) {
+                                            DerivativeCard(derivative)
+                                        }
+                                    }
+                                }
+                                item { Spacer(modifier = Modifier.height(80.dp)) }
+                            }
+                        }
 
-@Composable
-fun MasdarCard(masdar: MasdarModel) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = ShapeSmall,
-        border = CardDefaults.outlinedCardBorder()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = masdar.masdarAr,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                masdar.pattern?.let {
-                    Text(
-                        text = "الوزن: $it",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            if (masdar.isAttested) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "وارد في التنزيل",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DerivativeCard(derivative: DerivativeModel) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = ShapeSmall,
-        border = CardDefaults.outlinedCardBorder()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    text = derivative.formAr,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "${derivative.derivativeType} • وزن: ${derivative.pattern}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            if (derivative.isQuranic) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.65f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "قرآني",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun AyahOccurrenceCard(
-    occ: AyahOccurrenceModel,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = ShapeSmall,
-        border = CardDefaults.outlinedCardBorder()
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "سورة ${occ.surahNameAr} • الآية ${occ.ayahNum}",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = occ.matchedWordText,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                        3 -> {
+                            LazyColumn(
+                                state = ayatState,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .testTag("root_detail_screen_3"),
+                                contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                if (occurrences.isEmpty() && !occurrencesHasMore && !isOccurrencesLoadingMore) {
+                                    item {
+                                        EmptyTabNotice(text = "لا توجد مواضع مسجلة لهذا الجذر في هذه النسخة")
+                                    }
+                                } else {
+                                    itemsIndexed(
+                                        occurrences,
+                                        key = { index, occ -> "${occ.surahId}-${occ.ayahNum}-${occ.matchedWordText}-${occ.textUthmani.hashCode()}-$index" }
+                                    ) { _, occ ->
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = 16.dp, vertical = 5.dp)
+                                                .animateItem()
+                                        ) {
+                                            AyahOccurrenceCard(
+                                                occ = occ,
+                                                onClick = {
+                                                    onNavigateToSurahDetail(
+                                                        occ.surahId,
+                                                        occ.ayahNum
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    }
+                                    if (isOccurrencesLoadingMore) {
+                                        item {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(24.dp),
+                                                    color = MaterialTheme.colorScheme.primary,
+                                                    strokeWidth = 2.dp
+                                                )
+                                            }
+                                        }
+                                    } else if (occurrencesHasMore && occurrences.isNotEmpty()) {
+                                        item {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = "اسحب للأسفل لتحميل المزيد • ${occurrences.size} / ${detail.item.occurrencesCount}",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    } else if (!occurrencesHasMore && occurrences.isNotEmpty()) {
+                                        item {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(16.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Text(
+                                                    text = "تم عرض جميع الآيات • ${occurrences.size} موضع",
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                item { Spacer(modifier = Modifier.height(80.dp)) }
+                            }
+                        }
+                    }
                 }
             }
 
-            val highlightStyle = SpanStyle(
-                background = MaterialTheme.colorScheme.tertiaryContainer,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                fontWeight = FontWeight.Bold
-            )
-            val annotatedText = remember(occ.textUthmani, occ.matchedWordText, highlightStyle) {
-                buildHighlightedAyahText(
-                    ayahText = occ.textUthmani,
-                    matchedWord = occ.matchedWordText,
-                    ayahNum = occ.ayahNum,
-                    highlightStyle = highlightStyle
+            if (showReportDialog) {
+                val context = LocalContext.current
+                AlertDialog(
+                    onDismissRequest = { showReportDialog = false },
+                    title = { Text("الإبلاغ عن معنى", fontWeight = FontWeight.Bold) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(
+                                text = "هل وجدت معنى غير صحيح أو ناقص للجذر [${item.root}]؟",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            ReportIssueCard(rootText = item.root, rootId = item.id)
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val url = buildGithubIssueUrl(
+                                    BuildIssueUrlOptions(
+                                        item.root,
+                                        item.id,
+                                        null
+                                    )
+                                )
+                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                showReportDialog = false
+                            }
+                        ) { Text("فتح GitHub") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showReportDialog = false }) { Text("إلغاء") }
+                    },
+                    shape = ShapeLarge
                 )
             }
-
-            Text(
-                text = annotatedText,
-                style = MaterialTheme.typography.bodyLarge,
-                lineHeight = 28.sp,
-                color = MaterialTheme.colorScheme.onSurface
-            )
         }
-    }
-}
-
-private fun buildHighlightedAyahText(
-    ayahText: String,
-    matchedWord: String,
-    ayahNum: Int,
-    highlightStyle: SpanStyle
-): androidx.compose.ui.text.AnnotatedString {
-    val suffix = " ﴿$ayahNum﴾"
-    if (matchedWord.isBlank()) {
-        return buildAnnotatedString { append(ayahText + suffix) }
-    }
-
-    // Try direct substring match first (exact with diacritics)
-    if (ayahText.contains(matchedWord)) {
-        return buildAnnotatedString {
-            var startIndex = 0
-            var foundIndex = ayahText.indexOf(matchedWord, startIndex)
-            while (foundIndex != -1) {
-                append(ayahText.substring(startIndex, foundIndex))
-                withStyle(highlightStyle) { append(ayahText.substring(foundIndex, foundIndex + matchedWord.length)) }
-                startIndex = foundIndex + matchedWord.length
-                foundIndex = ayahText.indexOf(matchedWord, startIndex)
-            }
-            append(ayahText.substring(startIndex))
-            append(suffix)
-        }
-    }
-
-    // Fallback: token-based match ignoring diacritics
-    val strippedTarget = ArabicNormalizer.stripDiacritics(matchedWord)
-    val normalizedTarget = ArabicNormalizer.normalizeAr(matchedWord)
-    return buildAnnotatedString {
-        // Split while keeping spaces - we rebuild with spaces
-        val tokens = ayahText.split(" ")
-        tokens.forEachIndexed { idx, token ->
-            val strippedToken = ArabicNormalizer.stripDiacritics(token)
-            val normalizedToken = ArabicNormalizer.normalizeAr(token)
-            val isMatch = token == matchedWord ||
-                strippedToken == strippedTarget ||
-                normalizedToken == normalizedTarget ||
-                strippedToken == normalizedTarget ||
-                normalizedToken == strippedTarget
-
-            if (isMatch) {
-                withStyle(highlightStyle) { append(token) }
-            } else {
-                append(token)
-            }
-            if (idx < tokens.size - 1) append(" ")
-        }
-        append(suffix)
     }
 }
