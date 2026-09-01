@@ -134,7 +134,7 @@ fun SurahDetailScreen(
     // Page header state
     val surahPages by surahDetailViewModel.surahPages.collectAsState()
 
-    // Shared Header Collapse State
+    // Shared Header Collapse State (Quick-Return / Enter Always)
     var collapsibleHeightPx by rememberSaveable { mutableIntStateOf(0) }
     var headerOffsetPx by rememberSaveable { mutableFloatStateOf(0f) }
 
@@ -143,27 +143,18 @@ fun SurahDetailScreen(
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (isSelectionMode) return Offset.Zero
                 val delta = available.y
-                if (delta < 0f && collapsibleHeightPx > 0) {
-                    val prevOffset = headerOffsetPx
-                    headerOffsetPx = (headerOffsetPx + delta).coerceIn(-collapsibleHeightPx.toFloat(), 0f)
-                    val consumed = headerOffsetPx - prevOffset
-                    return Offset(0f, consumed)
-                }
-                return Offset.Zero
-            }
-
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource
-            ): Offset {
-                if (isSelectionMode) return Offset.Zero
-                val delta = available.y
-                if (delta > 0f && collapsibleHeightPx > 0) {
-                    val prevOffset = headerOffsetPx
-                    headerOffsetPx = (headerOffsetPx + delta).coerceIn(-collapsibleHeightPx.toFloat(), 0f)
-                    val consumed = headerOffsetPx - prevOffset
-                    return Offset(0f, consumed)
+                if (collapsibleHeightPx > 0) {
+                    // Quick-Return (Enter Always):
+                    // ينطوي فوراً عند السحب لأسفل (delta < 0)
+                    // ويظهر فوراً وبسلاسة بمجرد السحب لأعلى (delta > 0) في أي مكان بالصفحة!
+                    if ((delta < 0f && headerOffsetPx > -collapsibleHeightPx) ||
+                        (delta > 0f && headerOffsetPx < 0f)
+                    ) {
+                        val prevOffset = headerOffsetPx
+                        headerOffsetPx = (headerOffsetPx + delta).coerceIn(-collapsibleHeightPx.toFloat(), 0f)
+                        val consumed = headerOffsetPx - prevOffset
+                        return Offset(0f, consumed)
+                    }
                 }
                 return Offset.Zero
             }

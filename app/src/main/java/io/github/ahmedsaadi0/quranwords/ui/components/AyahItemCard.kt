@@ -113,23 +113,23 @@ fun AyahItemCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // Ayah Top Bar
+            // Ayah Compact Top Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (isSelectionMode) {
                         Box(
                             modifier = Modifier
-                                .size(22.dp)
+                                .size(18.dp)
                                 .clip(CircleShape)
                                 .background(
                                     if (isSelected) MaterialTheme.colorScheme.primary
@@ -144,23 +144,23 @@ fun AyahItemCard(
                             contentAlignment = Alignment.Center
                         ) {
                             if (isSelected) {
-                                Text("✓", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                                Text("✓", fontSize = 10.sp, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
-                    // Ayah badge
+                    // Compact Ayah badge
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(RoundedCornerShape(6.dp))
                             .background(
                                 if (isSelected) MaterialTheme.colorScheme.primary
-                                else MaterialTheme.colorScheme.primaryContainer
+                                else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
                             )
-                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "الآية ${ayah.ayah}",
-                            style = MaterialTheme.typography.labelMedium,
+                            text = "آية ${ayah.ayah}",
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary
                             else MaterialTheme.colorScheme.primary
@@ -168,21 +168,21 @@ fun AyahItemCard(
                     }
                 }
 
-                // Action buttons
+                // Action buttons (Compact sizes)
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (onBookmarkClick != null) {
                         IconButton(
                             onClick = onBookmarkClick,
                             modifier = Modifier
-                                .size(36.dp)
+                                .size(28.dp)
                                 .testTag("bookmark_ayah_${ayah.ayah}")
                         ) {
                             Text(
                                 text = if (isBookmarked) "🔖" else "☆",
-                                fontSize = if (isBookmarked) 16.sp else 18.sp,
+                                fontSize = if (isBookmarked) 13.sp else 15.sp,
                                 color = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -195,10 +195,10 @@ fun AyahItemCard(
                             Toast.makeText(context, "تم نسخ الآية", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(28.dp)
                             .testTag("copy_ayah_${ayah.ayah}")
                     ) {
-                        Text("📋", fontSize = 16.sp)
+                        Text("📋", fontSize = 13.sp)
                     }
                 }
             }
@@ -209,7 +209,7 @@ fun AyahItemCard(
                     FlowRow(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Start,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         ayah.words.forEach { word ->
                             WordChip(
@@ -222,7 +222,7 @@ fun AyahItemCard(
                         // Verse End Symbol with Ayah Number
                         Box(
                             modifier = Modifier
-                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                                .padding(horizontal = 2.dp)
                                 .align(Alignment.CenterVertically),
                             contentAlignment = Alignment.Center
                         ) {
@@ -235,11 +235,10 @@ fun AyahItemCard(
                         }
                     }
                 } else {
-                    // Fallback plain text if words table was empty
                     Text(
                         text = "${ayah.textUthmani} ﴿${ayah.ayah}﴾",
                         fontSize = fontSize.sp,
-                        lineHeight = (fontSize * 1.8f).sp,
+                        lineHeight = (fontSize * 1.5f).sp,
                         textAlign = TextAlign.Right,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurface
@@ -261,7 +260,7 @@ fun WordChip(
     val haptic = LocalHapticFeedback.current
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(6.dp))
             .clickable(
                 interactionSource = interactionSource,
                 indication = ripple(
@@ -273,17 +272,18 @@ fun WordChip(
                     onClick()
                 }
             )
-            .padding(horizontal = 4.dp, vertical = 2.dp)
+            .padding(horizontal = 3.dp, vertical = 1.dp)
             .testTag("word_${word.wordId}"),
         contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = word.text,
                 fontSize = fontSize.sp,
-                lineHeight = (fontSize * 1.6f).sp,
+                lineHeight = (fontSize * 1.4f).sp,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -291,7 +291,8 @@ fun WordChip(
             if (!word.rootText.isNullOrBlank()) {
                 Box(
                     modifier = Modifier
-                        .size(4.dp)
+                        .padding(top = 1.dp)
+                        .size(3.5.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f))
                 )
