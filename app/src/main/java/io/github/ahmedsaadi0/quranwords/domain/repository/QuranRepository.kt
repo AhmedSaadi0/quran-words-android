@@ -21,5 +21,6 @@ interface QuranRepository {
     suspend fun getRootOccurrencesCount(rootId: Int): Int
     suspend fun getRootByText(rootText: String): RootDetail?
     suspend fun searchAll(query: String): SearchResult
+    suspend fun getPagesForSurah(surahId: Int): List<Int>
     fun isDatabaseReady(): Boolean
 }

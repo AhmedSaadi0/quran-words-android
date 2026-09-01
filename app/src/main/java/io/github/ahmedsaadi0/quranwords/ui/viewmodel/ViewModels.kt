@@ -1,5 +1,6 @@
 package io.github.ahmedsaadi0.quranwords.ui.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -192,6 +193,7 @@ class SurahViewModel @Inject constructor(
     }
 }
 
+
 @HiltViewModel
 class SurahDetailViewModel @Inject constructor(
     private val repository: QuranRepository,
@@ -234,17 +236,26 @@ class SurahDetailViewModel @Inject constructor(
     private val _isSelectionMode = MutableStateFlow(false)
     val isSelectionMode: StateFlow<Boolean> = _isSelectionMode.asStateFlow()
 
-    private var currentSurahId: Int = 1
+    private val _surahPages = MutableStateFlow<List<Int>>(emptyList())
+    val surahPages: StateFlow<List<Int>> = _surahPages.asStateFlow()
+
+    private var currentSurahId: Int = -1
     private var currentOffset: Int = 0
     private var hasMore: Boolean = true
     private val pageSize: Int = 20
 
     fun loadSurah(surahId: Int) {
+        // 🛡️ صمام الأمان: إذا كانت السورة محملة بالفعل وقائمة الآيات غير فارغة، احتفظ بها ولا تمسح الذاكرة
+        if (currentSurahId == surahId && _surah.value?.id == surahId && _ayat.value.isNotEmpty()) {
+            return
+        }
+
         currentSurahId = surahId
         currentOffset = 0
         hasMore = true
         _isLoading.value = true
         _ayat.value = emptyList()
+
         viewModelScope.launch {
             // Delay until enter animation finishes (250ms + buffer) to avoid jank
             kotlinx.coroutines.delay(300)
@@ -256,7 +267,14 @@ class SurahDetailViewModel @Inject constructor(
             hasMore = firstPage.size == pageSize && currentOffset < total
             _isLoading.value = false
         }
-        // Do not overwrite lastRead here; it will be updated via updateLastRead on scroll/enter
+
+        viewModelScope.launch {
+            try {
+                _surahPages.value = repository.getPagesForSurah(surahId)
+            } catch (_: Exception) {
+                _surahPages.value = emptyList()
+            }
+        }
     }
 
     fun loadMoreIfNeeded(lastVisibleIndex: Int) {
@@ -299,6 +317,30 @@ class SurahDetailViewModel @Inject constructor(
             val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
             hasMore = nextPage.size == pageSize && currentOffset < total
             // Small yield to not block UI
+            kotlinx.coroutines.delay(10)
+        }
+    }
+
+    suspend fun ensurePageLoaded(targetPage: Int) {
+        while (hasMore && _ayat.value.none { it.pageNumber == targetPage }) {
+            // debounce to avoid race
+            if (_isLoadingMore.value) {
+                kotlinx.coroutines.delay(80)
+                continue
+            }
+            _isLoadingMore.value = true
+            kotlinx.coroutines.delay(80)
+            val nextPage = repository.getAyatBySurahPaged(currentSurahId, pageSize, currentOffset)
+            if (nextPage.isEmpty()) {
+                hasMore = false
+                _isLoadingMore.value = false
+                break
+            }
+            _ayat.value = _ayat.value + nextPage
+            currentOffset += nextPage.size
+            val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
+            hasMore = nextPage.size == pageSize && currentOffset < total
+            _isLoadingMore.value = false
             kotlinx.coroutines.delay(10)
         }
     }
@@ -386,7 +428,8 @@ class SurahDetailViewModel @Inject constructor(
 
 @HiltViewModel
 class RootViewModel @Inject constructor(
-    private val repository: QuranRepository
+    private val repository: QuranRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val _roots = MutableStateFlow<List<RootItem>>(emptyList())
     val roots: StateFlow<List<RootItem>> = _roots.asStateFlow()
@@ -419,6 +462,10 @@ class RootViewModel @Inject constructor(
     val isCopyingAll: StateFlow<Boolean> = _isCopyingAll.asStateFlow()
 
     init {
+        // Restore pagination across process death if available
+        savedStateHandle.get<Int>("currentRootIdForOcc")?.let { currentRootIdForOcc = it }
+        savedStateHandle.get<Int>("occOffset")?.let { occOffset = it }
+        savedStateHandle.get<Int>("occTotalCount")?.let { occTotalCount = it }
         loadRoots()
     }
 
@@ -431,6 +478,18 @@ class RootViewModel @Inject constructor(
     }
 
     fun loadRootDetail(rootId: Int) {
+        // Guard: if same root already loaded and data exists, keep current pagination/scroll state
+        if (rootId == currentRootIdForOcc
+            && _rootDetail.value?.item?.id == rootId
+            && !_isLoading.value
+            && _occurrences.value.isNotEmpty()
+        ) return
+        // Capture saved pagination for process-death restoration before overwriting
+        val previousSavedRoot = savedStateHandle.get<Int>("currentRootIdForOcc")
+        val savedOffset = savedStateHandle.get<Int>("occOffset") ?: 0
+        val restoreTarget = if (previousSavedRoot == rootId && savedOffset > 0) savedOffset else 0
+        // Persist current root for process death
+        savedStateHandle["currentRootIdForOcc"] = rootId
         viewModelScope.launch {
             _isLoading.value = true
             currentRootIdForOcc = rootId
@@ -445,6 +504,22 @@ class RootViewModel @Inject constructor(
                 occOffset = detail.ayatOccurrences.size
                 occTotalCount = detail.item.occurrencesCount
                 _occurrencesHasMore.value = occOffset < occTotalCount
+                savedStateHandle["occOffset"] = occOffset
+                savedStateHandle["occTotalCount"] = occTotalCount
+                // Process-death restoration: fetch additional pages up to previously saved offset
+                if (restoreTarget > occOffset && restoreTarget <= occTotalCount) {
+                    while (occOffset < restoreTarget && _occurrencesHasMore.value) {
+                        val next = repository.getRootOccurrencesPaged(rootId, occPageSize, occOffset)
+                        if (next.isEmpty()) {
+                            _occurrencesHasMore.value = false
+                            break
+                        }
+                        _occurrences.value = _occurrences.value + next
+                        occOffset += next.size
+                        savedStateHandle["occOffset"] = occOffset
+                        _occurrencesHasMore.value = occOffset < occTotalCount
+                    }
+                }
             }
             _isLoading.value = false
         }
@@ -468,6 +543,7 @@ class RootViewModel @Inject constructor(
             if (next.isNotEmpty()) {
                 _occurrences.value = _occurrences.value + next
                 occOffset += next.size
+                savedStateHandle["occOffset"] = occOffset
                 _occurrencesHasMore.value = occOffset < occTotalCount
             } else {
                 _occurrencesHasMore.value = false

@@ -811,6 +811,26 @@ class QuranRepositoryImpl @Inject constructor(
         SearchResult(roots = seedRoots, ayat = seedAyat)
     }
 
+    override suspend fun getPagesForSurah(surahId: Int): List<Int> = withContext(ioDispatcher) {
+        val db = getDb() ?: return@withContext emptyList()
+        try {
+            val cursor = db.rawQuery(
+                "SELECT DISTINCT page_number FROM ayat WHERE surah = ? AND page_number IS NOT NULL ORDER BY page_number ASC",
+                arrayOf(surahId.toString())
+            )
+            cursor.use {
+                val list = mutableListOf<Int>()
+                while (it.moveToNext()) {
+                    val p = if (it.isNull(0)) null else it.getInt(0)
+                    if (p != null) list.add(p)
+                }
+                return@withContext list
+            }
+        } catch (_: Exception) {
+            return@withContext emptyList()
+        }
+    }
+
     // Seed Data Providers for offline preview / fallback
     private fun getSeedAyat(surahId: Int): List<Ayah> {
         return if (surahId == 1) {

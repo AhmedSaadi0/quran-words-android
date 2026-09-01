@@ -21,10 +21,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -54,6 +55,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -101,10 +103,10 @@ fun RootDetailScreen(
 
     var showReportDialog by remember { mutableStateOf(false) }
 
-    val meaningsState = rememberLazyListState()
-    val masadirState = rememberLazyListState()
-    val derivativesState = rememberLazyListState()
-    val ayatState = rememberLazyListState()
+    val meaningsState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val masadirState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val derivativesState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val ayatState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val scope = rememberCoroutineScope()
@@ -112,9 +114,9 @@ fun RootDetailScreen(
     val clipboardManager = LocalClipboardManager.current
     val context = LocalContext.current
 
-    // Shared Header Collapse State (Native CoordinatorLayout / AppBarLayout behavior)
-    var subtitleHeightPx by remember { mutableIntStateOf(0) }
-    var headerOffsetPx by remember { mutableFloatStateOf(0f) }
+    // Shared Header Collapse State (Native CoordinatorLayout / AppBarLayout behavior) — saveable across process death / back-nav
+    var subtitleHeightPx by rememberSaveable { mutableIntStateOf(0) }
+    var headerOffsetPx by rememberSaveable { mutableFloatStateOf(0f) }
 
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
