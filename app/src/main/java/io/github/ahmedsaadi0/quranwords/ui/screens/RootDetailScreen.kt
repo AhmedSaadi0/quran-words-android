@@ -1,5 +1,6 @@
 package io.github.ahmedsaadi0.quranwords.ui.screens
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.animation.core.tween
@@ -25,17 +26,21 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.OpenInNew
+import androidx.compose.material.icons.outlined.ReportProblem
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialogDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -53,24 +58,25 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
 import io.github.ahmedsaadi0.quranwords.ui.components.ReportIssueCard
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeLarge
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
 import io.github.ahmedsaadi0.quranwords.util.BuildIssueUrlOptions
 import io.github.ahmedsaadi0.quranwords.util.buildGithubIssueUrl
@@ -91,6 +97,7 @@ fun RootDetailScreen(
     val occurrences by rootViewModel.occurrences.collectAsState()
     val occurrencesHasMore by rootViewModel.occurrencesHasMore.collectAsState()
     val isOccurrencesLoadingMore by rootViewModel.isOccurrencesLoadingMore.collectAsState()
+    val isCopyingAll by rootViewModel.isCopyingAll.collectAsState()
 
     var showReportDialog by remember { mutableStateOf(false) }
 
@@ -101,6 +108,9 @@ fun RootDetailScreen(
 
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
     // Shared Header Collapse State (Native CoordinatorLayout / AppBarLayout behavior)
     var subtitleHeightPx by remember { mutableIntStateOf(0) }
@@ -152,7 +162,9 @@ fun RootDetailScreen(
         }.collectLatest { (page, lastIdx) ->
             if (page != 3) return@collectLatest
             if (lastIdx == -1) return@collectLatest
-            rootViewModel.loadMoreOccurrencesIfNeeded(lastIdx)
+            // LazyColumn has CopyAllOccurrencesBar as item 0 when data exists, so subtract 1
+            val adjustedIdx = if (lastIdx > 0) lastIdx - 1 else lastIdx
+            rootViewModel.loadMoreOccurrencesIfNeeded(adjustedIdx)
         }
     }
 
@@ -161,11 +173,11 @@ fun RootDetailScreen(
     } else {
         1f
     }
-    val isCollapsed = collapseProgress < 0.1f
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         if (isLoading || rootDetail == null) {
             Box(
@@ -229,7 +241,7 @@ fun RootDetailScreen(
                             modifier = Modifier.testTag("report_help_button")
                         ) {
                             Icon(
-                                imageVector = Icons.Default.HelpOutline, // أو Icons.Outlined.Flag / Icons.Outlined.Feedback
+                                imageVector = Icons.Outlined.ReportProblem,
                                 contentDescription = "الإبلاغ عن معنى",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -253,7 +265,6 @@ fun RootDetailScreen(
                                     alpha = collapseProgress
                                 }
                                 .layout { measurable, constraints ->
-                                    // Measure child without restricting height to 0
                                     val placeable = measurable.measure(
                                         constraints.copy(
                                             minHeight = 0,
@@ -289,18 +300,13 @@ fun RootDetailScreen(
                                     val formattedDate = try {
                                         val raw = aiGeneratedAt ?: ""
                                         val cleaned = raw.replace("T", " ")
-                                        if (cleaned.length >= 16) cleaned.substring(
-                                            0,
-                                            16
-                                        ) else cleaned
+                                        if (cleaned.length >= 16) cleaned.substring(0, 16) else cleaned
                                     } catch (_: Exception) {
                                         aiGeneratedAt ?: ""
                                     }
                                     val metaLine = buildString {
                                         if (!aiModel.isNullOrBlank()) append("🤖 $aiModel")
-                                        if (!aiModel.isNullOrBlank() && formattedDate.isNotBlank()) append(
-                                            "  •  "
-                                        )
+                                        if (!aiModel.isNullOrBlank() && formattedDate.isNotBlank()) append("  •  ")
                                         if (formattedDate.isNotBlank()) append("🕒 $formattedDate")
                                     }
                                     if (metaLine.isNotBlank()) {
@@ -513,9 +519,56 @@ fun RootDetailScreen(
                                         EmptyTabNotice(text = "لا توجد مواضع مسجلة لهذا الجذر في هذه النسخة")
                                     }
                                 } else {
+                                    // Copy all bar — first item, fetches ALL via single query (bypasses pagination)
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = 16.dp, vertical = 5.dp)
+                                                .animateItem()
+                                        ) {
+                                            CopyAllOccurrencesBar(
+                                                totalCount = detail.item.occurrencesCount,
+                                                occurrencesSize = occurrences.size,
+                                                isCopying = isCopyingAll,
+                                                onCopyClick = {
+                                                    scope.launch {
+                                                        val formatted = rootViewModel.getAllOccurrencesFormatted()
+                                                        if (formatted.isNotBlank()) {
+                                                            clipboardManager.setText(AnnotatedString(formatted))
+                                                            snackbarHostState.showSnackbar(
+                                                                "تم نسخ ${detail.item.occurrencesCount} آيات"
+                                                            )
+                                                        } else {
+                                                            snackbarHostState.showSnackbar("لا توجد آيات للنسخ")
+                                                        }
+                                                    }
+                                                },
+                                                onShareClick = {
+                                                    scope.launch {
+                                                        val formatted = rootViewModel.getAllOccurrencesFormatted()
+                                                        if (formatted.isNotBlank()) {
+                                                            try {
+                                                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                                                    type = "text/plain"
+                                                                    putExtra(Intent.EXTRA_TEXT, formatted)
+                                                                }
+                                                                context.startActivity(
+                                                                    Intent.createChooser(sendIntent, "مشاركة الآيات")
+                                                                )
+                                                            } catch (_: ActivityNotFoundException) {
+                                                                snackbarHostState.showSnackbar("لا يوجد تطبيق للمشاركة")
+                                                            }
+                                                        } else {
+                                                            snackbarHostState.showSnackbar("لا توجد آيات للمشاركة")
+                                                        }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
                                     itemsIndexed(
                                         occurrences,
-                                        key = { index, occ -> "${occ.surahId}-${occ.ayahNum}-${occ.matchedWordText}-${occ.textUthmani.hashCode()}-$index" }
+                                        key = { _, occ -> "${occ.surahId}-${occ.ayahNum}" }
                                     ) { _, occ ->
                                         Box(
                                             modifier = Modifier
@@ -588,41 +641,89 @@ fun RootDetailScreen(
             }
 
             if (showReportDialog) {
-                val context = LocalContext.current
-                AlertDialog(
-                    onDismissRequest = { showReportDialog = false },
-                    title = { Text("الإبلاغ عن معنى", fontWeight = FontWeight.Bold) },
-                    text = {
-                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            Text(
-                                text = "هل وجدت معنى غير صحيح أو ناقص للجذر [${item.root}]؟",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            ReportIssueCard(rootText = item.root, rootId = item.id)
-                        }
-                    },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                val url = buildGithubIssueUrl(
-                                    BuildIssueUrlOptions(
-                                        item.root,
-                                        item.id,
-                                        null
-                                    )
-                                )
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                                showReportDialog = false
-                            }
-                        ) { Text("فتح GitHub") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = { showReportDialog = false }) { Text("إلغاء") }
-                    },
-                    shape = ShapeLarge
+                ReportMeaningDialog(
+                    item = item,
+                    onDismissRequest = { showReportDialog = false }
                 )
             }
         }
     }
+}
+
+@Composable
+fun ReportMeaningDialog(
+    item: RootItem,
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        modifier = modifier,
+        icon = {
+            Icon(
+                imageVector = Icons.Outlined.ReportProblem,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        title = {
+            Text(
+                text = "الإبلاغ عن معنى",
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "هل وجدت معنى غير صحيح أو ناقص للجذر [${item.root}]؟",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                ReportIssueCard(rootText = item.root, rootId = item.id)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    val url = buildGithubIssueUrl(
+                        BuildIssueUrlOptions(
+                            item.root,
+                            item.id,
+                            null
+                        )
+                    )
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        context.startActivity(intent)
+                    } catch (_: ActivityNotFoundException) {
+                        // في حال عدم توفر متصفح
+                    }
+                    onDismissRequest()
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
+                    contentDescription = null,
+                    modifier = Modifier.size(ButtonDefaults.IconSize)
+                )
+                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
+                Text("فتح GitHub")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismissRequest) {
+                Text("إلغاء")
+            }
+        },
+        shape = MaterialTheme.shapes.extraLarge,
+        containerColor = AlertDialogDefaults.containerColor,
+        titleContentColor = AlertDialogDefaults.titleContentColor,
+        textContentColor = AlertDialogDefaults.textContentColor
+    )
 }

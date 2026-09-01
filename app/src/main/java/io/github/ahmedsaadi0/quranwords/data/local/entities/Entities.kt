@@ -19,7 +19,10 @@ data class SurahEntity(
     tableName = "ayat",
     indices = [
         Index(value = ["surah"]),
-        Index(value = ["surah", "ayah"], unique = true)
+        Index(value = ["surah", "ayah"], unique = true),
+        Index(value = ["juz"]),
+        Index(value = ["hizb"]),
+        Index(value = ["rub_el_hizb"])
     ]
 )
 data class AyahEntity(
@@ -29,7 +32,11 @@ data class AyahEntity(
     @ColumnInfo(name = "text_uthmani") val textUthmani: String?,
     @ColumnInfo(name = "text_uthmani_plain") val textUthmaniPlain: String?,
     @ColumnInfo(name = "text_imlaei") val textImlaei: String?,
-    @ColumnInfo(name = "word_count") val wordCount: Int?
+    @ColumnInfo(name = "word_count") val wordCount: Int?,
+    @ColumnInfo(name = "juz") val juz: Int? = null,
+    @ColumnInfo(name = "hizb") val hizb: Int? = null,
+    @ColumnInfo(name = "rub_el_hizb") val rubElHizb: Int? = null,
+    @ColumnInfo(name = "page_number") val pageNumber: Int? = null
 )
 
 @Entity(

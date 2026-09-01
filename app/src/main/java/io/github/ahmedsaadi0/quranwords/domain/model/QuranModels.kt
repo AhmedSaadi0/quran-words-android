@@ -17,7 +17,11 @@ data class Ayah(
     val textUthmaniPlain: String,
     val textImlaei: String,
     val wordCount: Int,
-    val words: List<WordToken> = emptyList()
+    val words: List<WordToken> = emptyList(),
+    val juz: Int? = null,
+    val hizb: Int? = null,
+    val rubElHizb: Int? = null,
+    val pageNumber: Int? = null
 )
 
 data class WordToken(

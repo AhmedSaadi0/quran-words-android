@@ -148,7 +148,7 @@ class QuranRepositoryImpl @Inject constructor(
             val ayatList = mutableListOf<Ayah>()
             try {
                 val cursor = db.rawQuery(
-                    "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count FROM ayat WHERE surah = ? ORDER BY ayah ASC",
+                    "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE surah = ? ORDER BY ayah ASC",
                     arrayOf(surahId.toString())
                 )
                 cursor.use { c ->
@@ -170,7 +170,11 @@ class QuranRepositoryImpl @Inject constructor(
                                 textUthmaniPlain = textUthPlain,
                                 textImlaei = textIml,
                                 wordCount = wCount,
-                                words = words
+                                words = words,
+                                juz = if (c.isNull(7)) null else c.getInt(7),
+                                hizb = if (c.isNull(8)) null else c.getInt(8),
+                                rubElHizb = if (c.isNull(9)) null else c.getInt(9),
+                                pageNumber = if (c.isNull(10)) null else c.getInt(10)
                             )
                         )
                     }
@@ -197,7 +201,7 @@ class QuranRepositoryImpl @Inject constructor(
         val list = mutableListOf<Ayah>()
         try {
             val cursor = db.rawQuery(
-                "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count FROM ayat WHERE surah = ? ORDER BY ayah ASC LIMIT ? OFFSET ?",
+                "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE surah = ? ORDER BY ayah ASC LIMIT ? OFFSET ?",
                 arrayOf(surahId.toString(), limit.toString(), offset.toString())
             )
             cursor.use { c ->
@@ -218,7 +222,11 @@ class QuranRepositoryImpl @Inject constructor(
                             textUthmaniPlain = textUthPlain,
                             textImlaei = textIml,
                             wordCount = wCount,
-                            words = words
+                            words = words,
+                            juz = if (c.isNull(7)) null else c.getInt(7),
+                            hizb = if (c.isNull(8)) null else c.getInt(8),
+                            rubElHizb = if (c.isNull(9)) null else c.getInt(9),
+                            pageNumber = if (c.isNull(10)) null else c.getInt(10)
                         )
                     )
                 }
@@ -306,7 +314,7 @@ class QuranRepositoryImpl @Inject constructor(
         if (db != null) {
             try {
                 val cursor = db.rawQuery(
-                    "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count FROM ayat WHERE surah = ? AND ayah = ? LIMIT 1",
+                    "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE surah = ? AND ayah = ? LIMIT 1",
                     arrayOf(surahId.toString(), ayahNum.toString())
                 )
                 cursor.use { c ->
@@ -321,7 +329,11 @@ class QuranRepositoryImpl @Inject constructor(
                             textUthmaniPlain = c.getString(4) ?: "",
                             textImlaei = c.getString(5) ?: "",
                             wordCount = c.getInt(6),
-                            words = words
+                            words = words,
+                            juz = if (c.isNull(7)) null else c.getInt(7),
+                            hizb = if (c.isNull(8)) null else c.getInt(8),
+                            rubElHizb = if (c.isNull(9)) null else c.getInt(9),
+                            pageNumber = if (c.isNull(10)) null else c.getInt(10)
                         )
                     }
                 }
@@ -346,7 +358,7 @@ class QuranRepositoryImpl @Inject constructor(
                         ra.summary_ar,
                         (SELECT COUNT(*) FROM masadir m WHERE m.root_id = r.id),
                         (SELECT COUNT(*) FROM derivatives d WHERE d.root_id = r.id),
-                        (SELECT COUNT(*) FROM word_morphology wm WHERE wm.root_id = r.id)
+                        (SELECT COUNT(DISTINCT wa.ayah_id) FROM word_morphology wm JOIN word_ayah wa ON wa.id = wm.word_ayah_id WHERE wm.root_id = r.id)
                     FROM roots r
                     LEFT JOIN root_glosses rg ON rg.root_id = r.id
                     LEFT JOIN root_ai_summary ra ON ra.root_id = r.id
@@ -478,13 +490,14 @@ class QuranRepositoryImpl @Inject constructor(
                     val occurrencesPageSize = 30
                     val occurrences = mutableListOf<AyahOccurrenceModel>()
                     val occSql = """
-                        SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, w.text
+                        SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, REPLACE(GROUP_CONCAT(DISTINCT w.text), ',', '، ')
                         FROM word_morphology wm
                         JOIN word_ayah wa ON wa.id = wm.word_ayah_id
                         JOIN ayat a ON a.id = wa.ayah_id
                         JOIN surahs s ON s.id = a.surah
                         JOIN words w ON w.id = wa.word_id
                         WHERE wm.root_id = ?
+                        GROUP BY a.id
                         ORDER BY a.surah ASC, a.ayah ASC
                         LIMIT ? OFFSET ?
                     """.trimIndent()
@@ -502,11 +515,11 @@ class QuranRepositoryImpl @Inject constructor(
                             )
                         }
                     }
-                    // Total count for this root (not limited)
+                    // Total count for this root (not limited) — distinct ayat count
                     var totalOccurrences = occurrences.size
                     try {
                         val countCursor = db.rawQuery(
-                            "SELECT COUNT(*) FROM word_morphology WHERE root_id = ?",
+                            "SELECT COUNT(DISTINCT wa.ayah_id) FROM word_morphology wm JOIN word_ayah wa ON wa.id = wm.word_ayah_id WHERE wm.root_id = ?",
                             arrayOf(rootId.toString())
                         )
                         countCursor.use {
@@ -549,13 +562,14 @@ class QuranRepositoryImpl @Inject constructor(
         val list = mutableListOf<AyahOccurrenceModel>()
         try {
             val sql = """
-                SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, w.text
+                SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, REPLACE(GROUP_CONCAT(DISTINCT w.text), ',', '، ')
                 FROM word_morphology wm
                 JOIN word_ayah wa ON wa.id = wm.word_ayah_id
                 JOIN ayat a ON a.id = wa.ayah_id
                 JOIN surahs s ON s.id = a.surah
                 JOIN words w ON w.id = wa.word_id
                 WHERE wm.root_id = ?
+                GROUP BY a.id
                 ORDER BY a.surah ASC, a.ayah ASC
                 LIMIT ? OFFSET ?
             """.trimIndent()
@@ -577,10 +591,46 @@ class QuranRepositoryImpl @Inject constructor(
         return@withContext list
     }
 
+    override suspend fun getAllRootOccurrences(rootId: Int): List<AyahOccurrenceModel> = withContext(ioDispatcher) {
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<AyahOccurrenceModel>()
+        try {
+            val sql = """
+                SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, REPLACE(GROUP_CONCAT(DISTINCT w.text), ',', '، ')
+                FROM word_morphology wm
+                JOIN word_ayah wa ON wa.id = wm.word_ayah_id
+                JOIN ayat a ON a.id = wa.ayah_id
+                JOIN surahs s ON s.id = a.surah
+                JOIN words w ON w.id = wa.word_id
+                WHERE wm.root_id = ?
+                GROUP BY a.id
+                ORDER BY a.surah ASC, a.ayah ASC
+            """.trimIndent()
+            val cursor = db.rawQuery(sql, arrayOf(rootId.toString()))
+            cursor.use {
+                while (it.moveToNext()) {
+                    list.add(
+                        AyahOccurrenceModel(
+                            surahId = it.getInt(0),
+                            surahNameAr = it.getString(1) ?: "",
+                            ayahNum = it.getInt(2),
+                            textUthmani = it.getString(3) ?: "",
+                            matchedWordText = it.getString(4) ?: ""
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+        return@withContext list
+    }
+
     override suspend fun getRootOccurrencesCount(rootId: Int): Int = withContext(ioDispatcher) {
         val db = getDb() ?: return@withContext 0
         try {
-            val cursor = db.rawQuery("SELECT COUNT(*) FROM word_morphology WHERE root_id = ?", arrayOf(rootId.toString()))
+            val cursor = db.rawQuery(
+                "SELECT COUNT(DISTINCT wa.ayah_id) FROM word_morphology wm JOIN word_ayah wa ON wa.id = wm.word_ayah_id WHERE wm.root_id = ?",
+                arrayOf(rootId.toString())
+            )
             cursor.use { if (it.moveToNext()) return@withContext it.getInt(0) }
         } catch (_: Exception) {}
         return@withContext 0
@@ -716,7 +766,7 @@ class QuranRepositoryImpl @Inject constructor(
 
                 // 5. Search Ayat
                 val aCursor = db.rawQuery(
-                    "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count FROM ayat WHERE text_uthmani_plain LIKE ? OR text_imlaei LIKE ? LIMIT 20",
+                    "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE text_uthmani_plain LIKE ? OR text_imlaei LIKE ? LIMIT 20",
                     arrayOf("%$normalized%", "%$trimmed%")
                 )
                 aCursor.use {
@@ -729,7 +779,11 @@ class QuranRepositoryImpl @Inject constructor(
                                 textUthmani = it.getString(3) ?: "",
                                 textUthmaniPlain = it.getString(4) ?: "",
                                 textImlaei = it.getString(5) ?: "",
-                                wordCount = it.getInt(6)
+                                wordCount = it.getInt(6),
+                                juz = if (it.isNull(7)) null else it.getInt(7),
+                                hizb = if (it.isNull(8)) null else it.getInt(8),
+                                rubElHizb = if (it.isNull(9)) null else it.getInt(9),
+                                pageNumber = if (it.isNull(10)) null else it.getInt(10)
                             )
                         )
                     }

@@ -33,7 +33,7 @@ class UserPreferencesRepository @Inject constructor(@param:ApplicationContext pr
     }
 
     val fontSize: Flow<Float> = context.dataStore.data.map { preferences ->
-        preferences[KEY_FONT_SIZE] ?: 24f
+        (preferences[KEY_FONT_SIZE] ?: 24f).coerceIn(1f, 48f)
     }
 
     val darkModeSetting: Flow<Int> = context.dataStore.data.map { preferences ->
@@ -70,7 +70,7 @@ class UserPreferencesRepository @Inject constructor(@param:ApplicationContext pr
     }
 
     suspend fun setFontSize(size: Float) {
-        context.dataStore.edit { it[KEY_FONT_SIZE] = size }
+        context.dataStore.edit { it[KEY_FONT_SIZE] = size.coerceIn(1f, 48f) }
     }
 
     suspend fun setDarkModeSetting(mode: Int) {

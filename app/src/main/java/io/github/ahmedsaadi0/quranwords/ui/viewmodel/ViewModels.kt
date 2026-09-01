@@ -87,7 +87,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun setFontSize(size: Float) {
-        viewModelScope.launch { preferences.setFontSize(size) }
+        viewModelScope.launch { preferences.setFontSize(size.coerceIn(1f, 48f)) }
     }
 
     fun toggleDarkMode() {
@@ -227,6 +227,13 @@ class SurahDetailViewModel @Inject constructor(
     private val _isAiLoading = MutableStateFlow(false)
     val isAiLoading: StateFlow<Boolean> = _isAiLoading.asStateFlow()
 
+    // Multi-ayah copy selection (Option A — contextual TopBar)
+    private val _selectedAyahs = MutableStateFlow<Set<Int>>(emptySet())
+    val selectedAyahs: StateFlow<Set<Int>> = _selectedAyahs.asStateFlow()
+
+    private val _isSelectionMode = MutableStateFlow(false)
+    val isSelectionMode: StateFlow<Boolean> = _isSelectionMode.asStateFlow()
+
     private var currentSurahId: Int = 1
     private var currentOffset: Int = 0
     private var hasMore: Boolean = true
@@ -335,6 +342,46 @@ class SurahDetailViewModel @Inject constructor(
         _aiGeneratedAt.value = null
         _isAiLoading.value = false
     }
+
+    // Copy selection
+    fun enterSelectionMode(initialAyah: Int) {
+        _isSelectionMode.value = true
+        _selectedAyahs.value = setOf(initialAyah)
+    }
+
+    fun toggleAyahSelection(ayahNum: Int) {
+        val current = _selectedAyahs.value.toMutableSet()
+        if (current.contains(ayahNum)) current.remove(ayahNum) else current.add(ayahNum)
+        _selectedAyahs.value = current
+        if (current.isEmpty()) {
+            _isSelectionMode.value = false
+        } else if (!_isSelectionMode.value) {
+            _isSelectionMode.value = true
+        }
+    }
+
+    fun selectAllAyahs() {
+        _selectedAyahs.value = _ayat.value.map { it.ayah }.toSet()
+        _isSelectionMode.value = _selectedAyahs.value.isNotEmpty()
+    }
+
+    fun clearSelection() {
+        _selectedAyahs.value = emptySet()
+        _isSelectionMode.value = false
+    }
+
+    fun getFormattedSelection(): String {
+        val surahVal = _surah.value
+        val selectedNums = _selectedAyahs.value
+        if (selectedNums.isEmpty()) return ""
+        val selectedList = _ayat.value.filter { it.ayah in selectedNums }.sortedBy { it.ayah }
+        if (selectedList.isEmpty()) return ""
+        return io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatMultiple(selectedList, surahVal)
+    }
+
+    fun getFormattedSingle(ayah: Ayah): String {
+        return io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatSingle(ayah, _surah.value)
+    }
 }
 
 @HiltViewModel
@@ -367,6 +414,9 @@ class RootViewModel @Inject constructor(
     private var occOffset: Int = 0
     private val occPageSize: Int = 30
     private var occTotalCount: Int = 0
+
+    private val _isCopyingAll = MutableStateFlow(false)
+    val isCopyingAll: StateFlow<Boolean> = _isCopyingAll.asStateFlow()
 
     init {
         loadRoots()
@@ -436,6 +486,25 @@ class RootViewModel @Inject constructor(
 
     fun setQuery(q: String) {
         _query.value = q
+    }
+
+    /**
+     * Fetches ALL occurrences for current root (single query, bypasses pagination)
+     * and returns formatted text for copy/share (Format B1).
+     * Exposes loading via [isCopyingAll].
+     */
+    suspend fun getAllOccurrencesFormatted(): String {
+        val rootId = currentRootIdForOcc ?: return ""
+        if (_isCopyingAll.value) return ""
+        _isCopyingAll.value = true
+        return try {
+            val all = repository.getAllRootOccurrences(rootId)
+            io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatOccurrences(all)
+        } catch (_: Exception) {
+            ""
+        } finally {
+            _isCopyingAll.value = false
+        }
     }
 }
 

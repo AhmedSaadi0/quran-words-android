@@ -1,14 +1,13 @@
 package io.github.ahmedsaadi0.quranwords.ui.components
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,12 +20,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -37,7 +32,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -50,14 +44,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
+import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.theme.Emerald700
-import io.github.ahmedsaadi0.quranwords.ui.theme.QuranGold
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun AyahItemCard(
     ayah: Ayah,
@@ -65,16 +59,43 @@ fun AyahItemCard(
     onWordClick: (WordToken) -> Unit,
     modifier: Modifier = Modifier,
     isBookmarked: Boolean = false,
-    onBookmarkClick: (() -> Unit)? = null
+    onBookmarkClick: (() -> Unit)? = null,
+    surah: Surah? = null,
+    isSelected: Boolean = false,
+    isSelectionMode: Boolean = false,
+    onToggleSelection: (() -> Unit)? = null,
+    onEnterSelectionMode: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
+    val haptic = LocalHapticFeedback.current
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clip(ShapeMedium)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
+            .border(
+                1.dp,
+                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                ShapeMedium
+            )
+            .combinedClickable(
+                onClick = {
+                    if (isSelectionMode && onToggleSelection != null) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleSelection()
+                    }
+                },
+                onLongClick = {
+                    if (!isSelectionMode && onEnterSelectionMode != null) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onEnterSelectionMode()
+                    } else if (isSelectionMode && onToggleSelection != null) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleSelection()
+                    }
+                }
+            )
             .animateContentSize(
                 animationSpec = tween(
                     durationMillis = AppMotion.DurationMedium,
@@ -84,9 +105,10 @@ fun AyahItemCard(
             .testTag("ayah_card_${ayah.ayah}"),
         shape = ShapeMedium,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            else MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 2.dp else 0.5.dp)
     ) {
         Column(
             modifier = Modifier
@@ -100,19 +122,50 @@ fun AyahItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Ayah badge
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "الآية ${ayah.ayah}",
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    if (isSelectionMode) {
+                        Box(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                                )
+                                .border(
+                                    1.dp,
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outlineVariant,
+                                    CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Text("✓", fontSize = 12.sp, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                    // Ayah badge
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.primaryContainer
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "الآية ${ayah.ayah}",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary
+                            else MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
                 // Action buttons
@@ -136,8 +189,10 @@ fun AyahItemCard(
                     }
                     IconButton(
                         onClick = {
-                            clipboardManager.setText(AnnotatedString(ayah.textUthmani))
-                            Toast.makeText(context, "تم نسخ الآية الكريمة", Toast.LENGTH_SHORT).show()
+                            val formatted = if (surah != null) QuranCopyFormatter.formatSingle(ayah, surah)
+                            else "${ayah.textUthmani} ﴿${ayah.ayah}﴾"
+                            clipboardManager.setText(AnnotatedString(formatted))
+                            Toast.makeText(context, "تم نسخ الآية", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
                             .size(36.dp)

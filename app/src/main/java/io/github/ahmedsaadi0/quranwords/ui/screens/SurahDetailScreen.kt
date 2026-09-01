@@ -23,8 +23,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,6 +34,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -41,26 +45,32 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.ahmedsaadi0.quranwords.ui.components.AyahItemCard
+import io.github.ahmedsaadi0.quranwords.ui.components.FontSizeControls
+import io.github.ahmedsaadi0.quranwords.ui.components.JuzHizbSeparator
 import io.github.ahmedsaadi0.quranwords.ui.components.MorphologyBottomSheet
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahDetailViewModel
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -92,6 +102,14 @@ fun SurahDetailScreen(
     val hasBasmalah = surahId != 9 && surahId != 1
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var hasHandledInitialScroll by remember(surahId, targetAyah) { mutableStateOf(false) }
+
+    // Selection mode (Option A)
+    val isSelectionMode by surahDetailViewModel.isSelectionMode.collectAsState()
+    val selectedAyahs by surahDetailViewModel.selectedAyahs.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
 
     // إضافة سلوك التمرير للهيدر (Collapsing Effect)
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -153,82 +171,130 @@ fun SurahDetailScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            LargeTopAppBar(
-                title = {
-                    Column {
+            if (isSelectionMode) {
+                // Contextual Selection Bar (Option A)
+                LargeTopAppBar(
+                    title = {
                         Text(
-                            text = surah?.let { "سُورَةُ ${it.nameAr}" } ?: "جاري التحميل...",
-                            fontWeight = FontWeight.ExtraBold,
+                            text = "تم تحديد ${selectedAyahs.size} آيات",
+                            fontWeight = FontWeight.Bold
                         )
-                        if (scrollBehavior.state.collapsedFraction < 0.5f) {
-                            surah?.let {
-                                Text(
-                                    text = "${it.revelationType} • ${it.ayahCount} آية",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = { surahDetailViewModel.clearSelection() },
+                            modifier = Modifier.testTag("dismiss_selection")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = "إلغاء"
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { surahDetailViewModel.selectAllAyahs() },
+                            modifier = Modifier.testTag("select_all_btn")
+                        ) {
+                            Text("✓", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        }
+                        IconButton(
+                            onClick = {
+                                val formatted = surahDetailViewModel.getFormattedSelection()
+                                if (formatted.isNotBlank()) {
+                                    clipboardManager.setText(AnnotatedString(formatted))
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("تم نسخ ${selectedAyahs.size} آيات")
+                                        surahDetailViewModel.clearSelection()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.testTag("copy_selected_btn")
+                        ) {
+                            Text("📋", fontSize = 18.sp)
+                        }
+                        IconButton(
+                            onClick = {
+                                val formatted = surahDetailViewModel.getFormattedSelection()
+                                if (formatted.isNotBlank()) {
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, formatted)
+                                    }
+                                    context.startActivity(Intent.createChooser(intent, "مشاركة الآيات"))
+                                }
+                            },
+                            modifier = Modifier.testTag("share_selected_btn")
+                        ) {
+                            Text("↗", fontSize = 18.sp)
+                        }
+                    },
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+            } else {
+                LargeTopAppBar(
+                    title = {
+                        Column {
+                            Text(
+                                text = surah?.let { "سُورَةُ ${it.nameAr}" } ?: "جاري التحميل...",
+                                fontWeight = FontWeight.ExtraBold,
+                            )
+                            if (scrollBehavior.state.collapsedFraction < 0.5f) {
+                                surah?.let {
+                                    Text(
+                                        text = "${it.revelationType} • ${it.ayahCount} آية",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        modifier = Modifier.testTag("back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع"
-                        )
-                    }
-                },
-                actions = {
-                    // Surah bookmark toggle
-                    IconButton(
-                        onClick = { mainViewModel.toggleSurahBookmark(surahId) },
-                        modifier = Modifier.testTag("bookmark_surah_$surahId")
-                    ) {
-                        Text(
-                            text = if (isSurahBookmarked) "🔖" else "☆",
-                            fontSize = 20.sp,
-                            color = if (isSurahBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    // Font Size Adjusters
-                    Row(
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                    },
+                    navigationIcon = {
                         IconButton(
-                            onClick = {
-                                if (fontSize > 18f) mainViewModel.setFontSize(fontSize - 2f)
-                            },
-                            modifier = Modifier.testTag("decrease_font_size")
+                            onClick = onNavigateBack,
+                            modifier = Modifier.testTag("back_button")
                         ) {
-                            Text("A-", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "رجوع"
+                            )
                         }
+                    },
+                    actions = {
+                        // Surah bookmark toggle
                         IconButton(
-                            onClick = {
-                                if (fontSize < 36f) mainViewModel.setFontSize(fontSize + 2f)
-                            },
-                            modifier = Modifier.testTag("increase_font_size")
+                            onClick = { mainViewModel.toggleSurahBookmark(surahId) },
+                            modifier = Modifier.testTag("bookmark_surah_$surahId")
                         ) {
-                            Text("A+", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(
+                                text = if (isSurahBookmarked) "🔖" else "☆",
+                                fontSize = 20.sp,
+                                color = if (isSurahBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                    }
-                },
-                scrollBehavior = scrollBehavior,
-                colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground,
+                        FontSizeControls(
+                            fontSize = fontSize,
+                            onFontSizeChange = { mainViewModel.setFontSize(it) },
+                            modifier = Modifier
+                                .padding(end = 8.dp)
+                                .size(width = 180.dp, height = 38.dp)
+                        )
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.largeTopAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onBackground,
+                    )
                 )
-            )
+            }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
         Box(
             modifier = Modifier
@@ -320,32 +386,55 @@ fun SurahDetailScreen(
                             }
                         }
 
-                        // Ayat List - paginated 20 per page, with Telegram-like staggered entrance (smooth, no stutter)
+                        // Ayat List - paginated 20 per page, with inline Juz/Hizb/Rub separators (DB-backed, 28dp)
                         itemsIndexed(ayat, key = { _, ayah -> ayah.ayah }) { index, ayah ->
                             val isAyahBookmarked = bookmarkedAyat.contains("$surahId:${ayah.ayah}")
-                            // Staggered entrance: each ayah fades + slides up with small delay (index % 20 to keep per-page stagger)
-                            AnimatedVisibility(
-                                visible = true,
-                                enter = fadeIn(
-                                    animationSpec = tween(
-                                        durationMillis = 280,
-                                        delayMillis = (index % 20) * 18,
+
+                            // Determine if this ayah starts a new Juz/Hizb/Rub boundary vs previous ayah
+                            // First ayah always shows its position context; subsequent ayahs compare to prev
+                            val prevAyah = ayat.getOrNull(index - 1)
+                            val isJuzStart = prevAyah?.juz != ayah.juz
+                            val isHizbStart = prevAyah?.hizb != ayah.hizb
+                            val isRubStart = prevAyah?.rubElHizb != ayah.rubElHizb
+                            val showSeparator = index == 0 || isJuzStart || isHizbStart || isRubStart
+
+                            androidx.compose.foundation.layout.Column(
+                                modifier = Modifier.animateItem(
+                                    placementSpec = tween(
+                                        durationMillis = AppMotion.DurationMedium,
                                         easing = AppMotion.EasingStandard
                                     )
-                                ) + slideInVertically(
-                                    initialOffsetY = { it / 5 },
-                                    animationSpec = tween(
-                                        durationMillis = 280,
-                                        delayMillis = (index % 20) * 15,
-                                        easing = AppMotion.EasingEmphasized
-                                    )
-                                )
+                                ),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Box(
-                                    modifier = Modifier.animateItem(
-                                        placementSpec = tween(
-                                            durationMillis = AppMotion.DurationMedium,
+                                if (showSeparator && ayah.juz != null) {
+                                    JuzHizbSeparator(
+                                        juz = ayah.juz,
+                                        hizb = ayah.hizb,
+                                        rubElHizb = ayah.rubElHizb,
+                                        isJuzStart = isJuzStart,
+                                        isHizbStart = isHizbStart,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 4.dp)
+                                    )
+                                }
+
+                                // Staggered entrance: each ayah fades + slides up with small delay (index % 20 to keep per-page stagger)
+                                AnimatedVisibility(
+                                    visible = true,
+                                    enter = fadeIn(
+                                        animationSpec = tween(
+                                            durationMillis = 280,
+                                            delayMillis = (index % 20) * 18,
                                             easing = AppMotion.EasingStandard
+                                        )
+                                    ) + slideInVertically(
+                                        initialOffsetY = { it / 5 },
+                                        animationSpec = tween(
+                                            durationMillis = 280,
+                                            delayMillis = (index % 20) * 15,
+                                            easing = AppMotion.EasingEmphasized
                                         )
                                     )
                                 ) {
@@ -355,8 +444,13 @@ fun SurahDetailScreen(
                                         isBookmarked = isAyahBookmarked,
                                         onBookmarkClick = { mainViewModel.toggleAyahBookmark(surahId, ayah.ayah) },
                                         onWordClick = { word ->
-                                            surahDetailViewModel.selectWord(word, ayah)
-                                        }
+                                            if (!isSelectionMode) surahDetailViewModel.selectWord(word, ayah)
+                                        },
+                                        surah = surah,
+                                        isSelected = selectedAyahs.contains(ayah.ayah),
+                                        isSelectionMode = isSelectionMode,
+                                        onToggleSelection = { surahDetailViewModel.toggleAyahSelection(ayah.ayah) },
+                                        onEnterSelectionMode = { surahDetailViewModel.enterSelectionMode(ayah.ayah) }
                                     )
                                 }
                             }
