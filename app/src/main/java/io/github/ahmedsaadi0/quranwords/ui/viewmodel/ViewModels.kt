@@ -461,6 +461,20 @@ class RootViewModel @Inject constructor(
     private val _isCopyingAll = MutableStateFlow(false)
     val isCopyingAll: StateFlow<Boolean> = _isCopyingAll.asStateFlow()
 
+    // Distinct Quran words for the current root (grouped by words.id, most frequent first)
+    private val _rootWords = MutableStateFlow<List<io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel>>(emptyList())
+    val rootWords: StateFlow<List<io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel>> = _rootWords.asStateFlow()
+
+    private val _isWordsLoading = MutableStateFlow(false)
+    val isWordsLoading: StateFlow<Boolean> = _isWordsLoading.asStateFlow()
+
+    // Multi-word selection (long-press in Words tab)
+    private val _selectedWordIds = MutableStateFlow<Set<Int>>(emptySet())
+    val selectedWordIds: StateFlow<Set<Int>> = _selectedWordIds.asStateFlow()
+
+    private val _isWordSelectionMode = MutableStateFlow(false)
+    val isWordSelectionMode: StateFlow<Boolean> = _isWordSelectionMode.asStateFlow()
+
     init {
         // Restore pagination across process death if available
         savedStateHandle.get<Int>("currentRootIdForOcc")?.let { currentRootIdForOcc = it }
@@ -490,6 +504,7 @@ class RootViewModel @Inject constructor(
         val restoreTarget = if (previousSavedRoot == rootId && savedOffset > 0) savedOffset else 0
         // Persist current root for process death
         savedStateHandle["currentRootIdForOcc"] = rootId
+        clearWordSelection()
         viewModelScope.launch {
             _isLoading.value = true
             currentRootIdForOcc = rootId
@@ -497,6 +512,7 @@ class RootViewModel @Inject constructor(
             _occurrences.value = emptyList()
             _occurrencesHasMore.value = true
             occTotalCount = 0
+            _rootWords.value = emptyList()
             val detail = repository.getRootDetail(rootId)
             _rootDetail.value = detail
             if (detail != null) {
@@ -522,7 +538,47 @@ class RootViewModel @Inject constructor(
                 }
             }
             _isLoading.value = false
+            loadRootWords(rootId)
         }
+    }
+
+    fun loadRootWords(rootId: Int) {
+        viewModelScope.launch {
+            _isWordsLoading.value = true
+            try {
+                _rootWords.value = repository.getRootWords(rootId)
+            } catch (_: Exception) {
+                _rootWords.value = emptyList()
+            } finally {
+                _isWordsLoading.value = false
+            }
+        }
+    }
+
+    fun enterWordSelectionMode(wordId: Int) {
+        _isWordSelectionMode.value = true
+        _selectedWordIds.value = setOf(wordId)
+    }
+
+    fun toggleWordSelection(wordId: Int) {
+        val current = _selectedWordIds.value.toMutableSet()
+        if (current.contains(wordId)) current.remove(wordId) else current.add(wordId)
+        _selectedWordIds.value = current
+        if (current.isEmpty()) {
+            _isWordSelectionMode.value = false
+        } else if (!_isWordSelectionMode.value) {
+            _isWordSelectionMode.value = true
+        }
+    }
+
+    fun selectAllWords() {
+        _selectedWordIds.value = _rootWords.value.map { it.wordId }.toSet()
+        _isWordSelectionMode.value = _selectedWordIds.value.isNotEmpty()
+    }
+
+    fun clearWordSelection() {
+        _selectedWordIds.value = emptySet()
+        _isWordSelectionMode.value = false
     }
 
     fun loadMoreOccurrencesIfNeeded(lastVisibleIndex: Int) {
@@ -575,6 +631,136 @@ class RootViewModel @Inject constructor(
         _isCopyingAll.value = true
         return try {
             val all = repository.getAllRootOccurrences(rootId)
+            io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatOccurrences(all)
+        } catch (_: Exception) {
+            ""
+        } finally {
+            _isCopyingAll.value = false
+        }
+    }
+
+    /**
+     * Fetches ALL ayat for the currently selected words (deduplicated, sorted)
+     * and returns formatted text for copy/share. Exposes loading via [isCopyingAll].
+     */
+    suspend fun getSelectedWordsOccurrencesFormatted(): String {
+        val rootId = currentRootIdForOcc ?: return ""
+        val wordIds = _selectedWordIds.value.toList()
+        if (wordIds.isEmpty() || _isCopyingAll.value) return ""
+        _isCopyingAll.value = true
+        return try {
+            val all = repository.getAllOccurrencesForWords(rootId, wordIds)
+            io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatOccurrences(all)
+        } catch (_: Exception) {
+            ""
+        } finally {
+            _isCopyingAll.value = false
+        }
+    }
+
+    suspend fun getSelectedWordsOccurrencesCount(): Int {
+        val rootId = currentRootIdForOcc ?: return 0
+        val wordIds = _selectedWordIds.value.toList()
+        if (wordIds.isEmpty()) return 0
+        return try {
+            repository.getAllOccurrencesForWords(rootId, wordIds).size
+        } catch (_: Exception) {
+            0
+        }
+    }
+}
+
+@HiltViewModel
+class WordAyatViewModel @Inject constructor(
+    private val repository: QuranRepository
+) : ViewModel() {
+    private val _wordText = MutableStateFlow("")
+    val wordText: StateFlow<String> = _wordText.asStateFlow()
+
+    private val _occurrences = MutableStateFlow<List<io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel>>(emptyList())
+    val occurrences: StateFlow<List<io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel>> = _occurrences.asStateFlow()
+
+    private val _hasMore = MutableStateFlow(true)
+    val hasMore: StateFlow<Boolean> = _hasMore.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
+    private val _isCopyingAll = MutableStateFlow(false)
+    val isCopyingAll: StateFlow<Boolean> = _isCopyingAll.asStateFlow()
+
+    private var currentRootId: Int? = null
+    private var currentWordId: Int? = null
+    private var offset: Int = 0
+    private val pageSize: Int = 30
+
+    fun loadWord(rootId: Int, wordId: Int) {
+        if (rootId == currentRootId && wordId == currentWordId && _occurrences.value.isNotEmpty()) return
+        currentRootId = rootId
+        currentWordId = wordId
+        offset = 0
+        _occurrences.value = emptyList()
+        _hasMore.value = true
+        _isLoading.value = true
+        _wordText.value = ""
+        viewModelScope.launch {
+            try {
+                val words = repository.getRootWords(rootId)
+                _wordText.value = words.firstOrNull { it.wordId == wordId }?.text ?: ""
+                val first = repository.getWordOccurrencesPaged(rootId, wordId, pageSize, 0)
+                _occurrences.value = first
+                offset = first.size
+                _hasMore.value = first.size == pageSize
+            } catch (_: Exception) {
+                _occurrences.value = emptyList()
+                _hasMore.value = false
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun loadMoreIfNeeded(lastVisibleIndex: Int) {
+        if (_isLoadingMore.value || !_hasMore.value) return
+        if (lastVisibleIndex >= _occurrences.value.size - 4) {
+            loadMore()
+        }
+    }
+
+    private fun loadMore() {
+        val rootId = currentRootId ?: return
+        val wordId = currentWordId ?: return
+        if (_isLoadingMore.value || !_hasMore.value) return
+        viewModelScope.launch {
+            _isLoadingMore.value = true
+            kotlinx.coroutines.delay(80)
+            try {
+                val next = repository.getWordOccurrencesPaged(rootId, wordId, pageSize, offset)
+                if (next.isNotEmpty()) {
+                    _occurrences.value = _occurrences.value + next
+                    offset += next.size
+                    _hasMore.value = next.size == pageSize
+                } else {
+                    _hasMore.value = false
+                }
+            } catch (_: Exception) {
+                _hasMore.value = false
+            } finally {
+                _isLoadingMore.value = false
+            }
+        }
+    }
+
+    suspend fun getAllFormatted(): String {
+        val rootId = currentRootId ?: return ""
+        val wordId = currentWordId ?: return ""
+        if (_isCopyingAll.value) return ""
+        _isCopyingAll.value = true
+        return try {
+            val all = repository.getAllWordOccurrences(rootId, wordId)
             io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatOccurrences(all)
         } catch (_: Exception) {
             ""

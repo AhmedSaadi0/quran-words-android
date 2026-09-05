@@ -36,7 +36,7 @@ import io.github.ahmedsaadi0.quranwords.data.local.entities.WordEntity
         RootGlossEntity::class,
         RootAiSummaryEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class QuranDatabase : RoomDatabase() {

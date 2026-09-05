@@ -4,6 +4,7 @@ import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.RootDetail
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
+import io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel
 import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,10 @@ interface QuranRepository {
     suspend fun getRootOccurrencesPaged(rootId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel>
     suspend fun getAllRootOccurrences(rootId: Int): List<AyahOccurrenceModel>
     suspend fun getRootOccurrencesCount(rootId: Int): Int
+    suspend fun getRootWords(rootId: Int): List<RootWordModel>
+    suspend fun getWordOccurrencesPaged(rootId: Int, wordId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel>
+    suspend fun getAllWordOccurrences(rootId: Int, wordId: Int): List<AyahOccurrenceModel>
+    suspend fun getAllOccurrencesForWords(rootId: Int, wordIds: List<Int>): List<AyahOccurrenceModel>
     suspend fun getRootByText(rootText: String): RootDetail?
     suspend fun searchAll(query: String): SearchResult
     suspend fun getPagesForSurah(surahId: Int): List<Int>

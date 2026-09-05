@@ -106,6 +106,12 @@ data class AyahOccurrenceModel(
     val matchedWordText: String
 )
 
+data class RootWordModel(
+    val wordId: Int,
+    val text: String,
+    val occurrencesCount: Int
+)
+
 data class SearchResult(
     val roots: List<RootItem> = emptyList(),
     val masadir: List<MasdarModel> = emptyList(),

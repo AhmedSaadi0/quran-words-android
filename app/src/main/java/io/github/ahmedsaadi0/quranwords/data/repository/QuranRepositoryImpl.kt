@@ -14,6 +14,7 @@ import io.github.ahmedsaadi0.quranwords.domain.model.MasdarModel
 import io.github.ahmedsaadi0.quranwords.domain.model.RootDetail
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
 import io.github.ahmedsaadi0.quranwords.domain.model.RootMeaningModel
+import io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel
 import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
@@ -634,6 +635,141 @@ class QuranRepositoryImpl @Inject constructor(
             cursor.use { if (it.moveToNext()) return@withContext it.getInt(0) }
         } catch (_: Exception) {}
         return@withContext 0
+    }
+
+    override suspend fun getRootWords(rootId: Int): List<RootWordModel> = withContext(ioDispatcher) {
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<RootWordModel>()
+        try {
+            val sql = """
+                SELECT w.id, w.text, COUNT(DISTINCT wa.ayah_id)
+                FROM word_morphology wm
+                JOIN word_ayah wa ON wa.id = wm.word_ayah_id
+                JOIN words w ON w.id = wa.word_id
+                WHERE wm.root_id = ?
+                GROUP BY w.id
+                ORDER BY 3 DESC, w.text ASC
+            """.trimIndent()
+            val cursor = db.rawQuery(sql, arrayOf(rootId.toString()))
+            cursor.use {
+                while (it.moveToNext()) {
+                    list.add(
+                        RootWordModel(
+                            wordId = it.getInt(0),
+                            text = it.getString(1) ?: "",
+                            occurrencesCount = it.getInt(2)
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+        return@withContext list
+    }
+
+    override suspend fun getWordOccurrencesPaged(rootId: Int, wordId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel> = withContext(ioDispatcher) {
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<AyahOccurrenceModel>()
+        try {
+            val sql = """
+                SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, w.text
+                FROM word_morphology wm
+                JOIN word_ayah wa ON wa.id = wm.word_ayah_id
+                JOIN ayat a ON a.id = wa.ayah_id
+                JOIN surahs s ON s.id = a.surah
+                JOIN words w ON w.id = wa.word_id
+                WHERE wm.root_id = ? AND wa.word_id = ?
+                GROUP BY a.id
+                ORDER BY a.surah ASC, a.ayah ASC
+                LIMIT ? OFFSET ?
+            """.trimIndent()
+            val cursor = db.rawQuery(
+                sql,
+                arrayOf(rootId.toString(), wordId.toString(), limit.toString(), offset.toString())
+            )
+            cursor.use {
+                while (it.moveToNext()) {
+                    list.add(
+                        AyahOccurrenceModel(
+                            surahId = it.getInt(0),
+                            surahNameAr = it.getString(1) ?: "",
+                            ayahNum = it.getInt(2),
+                            textUthmani = it.getString(3) ?: "",
+                            matchedWordText = it.getString(4) ?: ""
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+        return@withContext list
+    }
+
+    override suspend fun getAllWordOccurrences(rootId: Int, wordId: Int): List<AyahOccurrenceModel> = withContext(ioDispatcher) {
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<AyahOccurrenceModel>()
+        try {
+            val sql = """
+                SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, w.text
+                FROM word_morphology wm
+                JOIN word_ayah wa ON wa.id = wm.word_ayah_id
+                JOIN ayat a ON a.id = wa.ayah_id
+                JOIN surahs s ON s.id = a.surah
+                JOIN words w ON w.id = wa.word_id
+                WHERE wm.root_id = ? AND wa.word_id = ?
+                GROUP BY a.id
+                ORDER BY a.surah ASC, a.ayah ASC
+            """.trimIndent()
+            val cursor = db.rawQuery(sql, arrayOf(rootId.toString(), wordId.toString()))
+            cursor.use {
+                while (it.moveToNext()) {
+                    list.add(
+                        AyahOccurrenceModel(
+                            surahId = it.getInt(0),
+                            surahNameAr = it.getString(1) ?: "",
+                            ayahNum = it.getInt(2),
+                            textUthmani = it.getString(3) ?: "",
+                            matchedWordText = it.getString(4) ?: ""
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+        return@withContext list
+    }
+
+    override suspend fun getAllOccurrencesForWords(rootId: Int, wordIds: List<Int>): List<AyahOccurrenceModel> = withContext(ioDispatcher) {
+        if (wordIds.isEmpty()) return@withContext emptyList()
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<AyahOccurrenceModel>()
+        try {
+            val placeholders = wordIds.joinToString(",") { "?" }
+            val sql = """
+                SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, REPLACE(GROUP_CONCAT(DISTINCT w.text), ',', '، ')
+                FROM word_morphology wm
+                JOIN word_ayah wa ON wa.id = wm.word_ayah_id
+                JOIN ayat a ON a.id = wa.ayah_id
+                JOIN surahs s ON s.id = a.surah
+                JOIN words w ON w.id = wa.word_id
+                WHERE wm.root_id = ? AND wa.word_id IN ($placeholders)
+                GROUP BY a.id
+                ORDER BY a.surah ASC, a.ayah ASC
+            """.trimIndent()
+            val args = arrayOf(rootId.toString()) + wordIds.map { it.toString() }.toTypedArray()
+            val cursor = db.rawQuery(sql, args)
+            cursor.use {
+                while (it.moveToNext()) {
+                    list.add(
+                        AyahOccurrenceModel(
+                            surahId = it.getInt(0),
+                            surahNameAr = it.getString(1) ?: "",
+                            ayahNum = it.getInt(2),
+                            textUthmani = it.getString(3) ?: "",
+                            matchedWordText = it.getString(4) ?: ""
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {}
+        return@withContext list
     }
 
     override suspend fun getRootByText(rootText: String): RootDetail? = withContext(ioDispatcher) {

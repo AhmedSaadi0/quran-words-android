@@ -10,6 +10,9 @@ sealed class Screen(val route: String) {
     object RootDetail : Screen("root_detail/{rootId}") {
         fun createRoute(rootId: Int) = "root_detail/$rootId"
     }
+    object WordAyat : Screen("word_ayat/{rootId}/{wordId}") {
+        fun createRoute(rootId: Int, wordId: Int) = "word_ayat/$rootId/$wordId"
+    }
     object Search : Screen("search")
     object Guide : Screen("guide")
     object DatabaseSetup : Screen("setup")

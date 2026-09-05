@@ -92,6 +92,7 @@ fun RootDetailScreen(
     rootId: Int,
     onNavigateBack: () -> Unit,
     onNavigateToSurahDetail: (Int, Int) -> Unit,
+    onNavigateToWordAyat: (Int, Int) -> Unit = { _, _ -> },
     rootViewModel: RootViewModel
 ) {
     val rootDetail by rootViewModel.rootDetail.collectAsState()
@@ -100,6 +101,10 @@ fun RootDetailScreen(
     val occurrencesHasMore by rootViewModel.occurrencesHasMore.collectAsState()
     val isOccurrencesLoadingMore by rootViewModel.isOccurrencesLoadingMore.collectAsState()
     val isCopyingAll by rootViewModel.isCopyingAll.collectAsState()
+    val rootWords by rootViewModel.rootWords.collectAsState()
+    val isWordsLoading by rootViewModel.isWordsLoading.collectAsState()
+    val selectedWordIds by rootViewModel.selectedWordIds.collectAsState()
+    val isWordSelectionMode by rootViewModel.isWordSelectionMode.collectAsState()
 
     var showReportDialog by remember { mutableStateOf(false) }
 
@@ -107,8 +112,9 @@ fun RootDetailScreen(
     val masadirState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val derivativesState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val ayatState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val wordsState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
-    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 4 })
+    val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val clipboardManager = LocalClipboardManager.current
@@ -162,7 +168,7 @@ fun RootDetailScreen(
             val lastIdx = ayatState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
             page to lastIdx
         }.collectLatest { (page, lastIdx) ->
-            if (page != 3) return@collectLatest
+            if (page != 4) return@collectLatest
             if (lastIdx == -1) return@collectLatest
             // LazyColumn has CopyAllOccurrencesBar as item 0 when data exists, so subtract 1
             val adjustedIdx = if (lastIdx > 0) lastIdx - 1 else lastIdx
@@ -325,92 +331,43 @@ fun RootDetailScreen(
                         }
                     }
 
-                    // Pinned TabRow
+                    // Pinned TabRow (scrollable to fit 5 tabs)
                     TabRow(
                         selectedTabIndex = pagerState.currentPage,
                         containerColor = MaterialTheme.colorScheme.surface,
                         divider = {}
                     ) {
-                        Tab(
-                            selected = pagerState.currentPage == 0,
-                            onClick = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(
-                                        0,
-                                        animationSpec = tween(
-                                            durationMillis = AppMotion.DurationMedium,
-                                            easing = AppMotion.EasingStandard
+                        val tabTitles = listOf(
+                            "المعاجم (${detail.meanings.size})",
+                            "المصادر (${detail.masadir.size})",
+                            "المشتقات (${detail.derivatives.size})",
+                            "الكلمات (${rootWords.size})",
+                            "الآيات (${detail.item.occurrencesCount})"
+                        )
+                        tabTitles.forEachIndexed { index, title ->
+                            Tab(
+                                selected = pagerState.currentPage == index,
+                                onClick = {
+                                    scope.launch {
+                                        pagerState.animateScrollToPage(
+                                            index,
+                                            animationSpec = tween(
+                                                durationMillis = AppMotion.DurationMedium,
+                                                easing = AppMotion.EasingStandard
+                                            )
                                         )
+                                    }
+                                },
+                                text = {
+                                    Text(
+                                        title,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
                                     )
                                 }
-                            },
-                            text = {
-                                Text(
-                                    "المعاجم (${detail.meanings.size})",
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        )
-                        Tab(
-                            selected = pagerState.currentPage == 1,
-                            onClick = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(
-                                        1,
-                                        animationSpec = tween(
-                                            durationMillis = AppMotion.DurationMedium,
-                                            easing = AppMotion.EasingStandard
-                                        )
-                                    )
-                                }
-                            },
-                            text = {
-                                Text(
-                                    "المصادر (${detail.masadir.size})",
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        )
-                        Tab(
-                            selected = pagerState.currentPage == 2,
-                            onClick = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(
-                                        2,
-                                        animationSpec = tween(
-                                            durationMillis = AppMotion.DurationMedium,
-                                            easing = AppMotion.EasingStandard
-                                        )
-                                    )
-                                }
-                            },
-                            text = {
-                                Text(
-                                    "المشتقات (${detail.derivatives.size})",
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        )
-                        Tab(
-                            selected = pagerState.currentPage == 3,
-                            onClick = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(
-                                        3,
-                                        animationSpec = tween(
-                                            durationMillis = AppMotion.DurationMedium,
-                                            easing = AppMotion.EasingStandard
-                                        )
-                                    )
-                                }
-                            },
-                            text = {
-                                Text(
-                                    "الآيات (${detail.item.occurrencesCount})",
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        )
+                            )
+                        }
                     }
                 }
 
@@ -509,10 +466,137 @@ fun RootDetailScreen(
 
                         3 -> {
                             LazyColumn(
-                                state = ayatState,
+                                state = wordsState,
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .testTag("root_detail_screen_3"),
+                                contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
+                                verticalArrangement = Arrangement.spacedBy(0.dp)
+                            ) {
+                                when {
+                                    isWordsLoading && rootWords.isEmpty() -> {
+                                        item {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(32.dp),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    color = MaterialTheme.colorScheme.primary
+                                                )
+                                            }
+                                        }
+                                    }
+                                    rootWords.isEmpty() -> {
+                                        item {
+                                            EmptyTabNotice(text = "لا توجد كلمات مسجلة لهذا الجذر")
+                                        }
+                                    }
+                                    else -> {
+                                        if (isWordSelectionMode) {
+                                            item {
+                                                Box(
+                                                    modifier = Modifier
+                                                        .padding(horizontal = 16.dp, vertical = 5.dp)
+                                                        .animateItem()
+                                                ) {
+                                                    SelectedWordsBar(
+                                                        selectedCount = selectedWordIds.size,
+                                                        isCopying = isCopyingAll,
+                                                        onCopyClick = {
+                                                            scope.launch {
+                                                                val formatted =
+                                                                    rootViewModel.getSelectedWordsOccurrencesFormatted()
+                                                                if (formatted.isNotBlank()) {
+                                                                    clipboardManager.setText(
+                                                                        AnnotatedString(formatted)
+                                                                    )
+                                                                    snackbarHostState.showSnackbar(
+                                                                        "تم نسخ آيات الكلمات المحددة"
+                                                                    )
+                                                                } else {
+                                                                    snackbarHostState.showSnackbar("لا توجد آيات للنسخ")
+                                                                }
+                                                            }
+                                                        },
+                                                        onShareClick = {
+                                                            scope.launch {
+                                                                val formatted =
+                                                                    rootViewModel.getSelectedWordsOccurrencesFormatted()
+                                                                if (formatted.isNotBlank()) {
+                                                                    try {
+                                                                        val sendIntent =
+                                                                            Intent(Intent.ACTION_SEND).apply {
+                                                                                type = "text/plain"
+                                                                                putExtra(
+                                                                                    Intent.EXTRA_TEXT,
+                                                                                    formatted
+                                                                                )
+                                                                            }
+                                                                        context.startActivity(
+                                                                            Intent.createChooser(
+                                                                                sendIntent,
+                                                                                "مشاركة الآيات"
+                                                                            )
+                                                                        )
+                                                                    } catch (_: ActivityNotFoundException) {
+                                                                        snackbarHostState.showSnackbar("لا يوجد تطبيق للمشاركة")
+                                                                    }
+                                                                } else {
+                                                                    snackbarHostState.showSnackbar("لا توجد آيات للمشاركة")
+                                                                }
+                                                            }
+                                                        },
+                                                        onSelectAllClick = {
+                                                            rootViewModel.selectAllWords()
+                                                        },
+                                                        onClearClick = {
+                                                            rootViewModel.clearWordSelection()
+                                                        }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        items(rootWords, key = { it.wordId }) { word ->
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(horizontal = 16.dp, vertical = 5.dp)
+                                                    .animateItem()
+                                            ) {
+                                                WordCard(
+                                                    word = word,
+                                                    isSelected = selectedWordIds.contains(word.wordId),
+                                                    isSelectionMode = isWordSelectionMode,
+                                                    onClick = {
+                                                        if (isWordSelectionMode) {
+                                                            rootViewModel.toggleWordSelection(word.wordId)
+                                                        } else {
+                                                            onNavigateToWordAyat(rootId, word.wordId)
+                                                        }
+                                                    },
+                                                    onLongClick = {
+                                                        if (isWordSelectionMode) {
+                                                            rootViewModel.toggleWordSelection(word.wordId)
+                                                        } else {
+                                                            rootViewModel.enterWordSelectionMode(word.wordId)
+                                                        }
+                                                    }
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                item { Spacer(modifier = Modifier.height(80.dp)) }
+                            }
+                        }
+
+                        4 -> {
+                            LazyColumn(
+                                state = ayatState,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .testTag("root_detail_screen_4"),
                                 contentPadding = PaddingValues(top = 12.dp, bottom = 24.dp),
                                 verticalArrangement = Arrangement.spacedBy(0.dp)
                             ) {

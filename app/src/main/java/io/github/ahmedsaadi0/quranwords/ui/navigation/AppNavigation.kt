@@ -35,6 +35,7 @@ import io.github.ahmedsaadi0.quranwords.ui.screens.RootsListScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SearchScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahDetailScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahIndexScreen
+import io.github.ahmedsaadi0.quranwords.ui.screens.WordAyatScreen
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.DatabaseSetupViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.HomeViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
@@ -42,6 +43,7 @@ import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SearchViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahDetailViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahViewModel
+import io.github.ahmedsaadi0.quranwords.ui.viewmodel.WordAyatViewModel
 
 data class BottomNavItem(
     val route: String,
@@ -226,7 +228,34 @@ fun AppNavigation(
                     onNavigateToSurahDetail = { surahId, ayahNum ->
                         navController.navigate(Screen.SurahDetail.createRoute(surahId, ayahNum))
                     },
+                    onNavigateToWordAyat = { rId, wId ->
+                        navController.navigate(Screen.WordAyat.createRoute(rId, wId))
+                    },
                     rootViewModel = hiltViewModel<RootViewModel>()
+                )
+            }
+
+            composable(
+                route = Screen.WordAyat.route,
+                arguments = listOf(
+                    navArgument("rootId") { type = NavType.IntType },
+                    navArgument("wordId") { type = NavType.IntType }
+                ),
+                enterTransition = { AppMotion.navEnterTransition() },
+                exitTransition = { AppMotion.navExitTransition() },
+                popEnterTransition = { AppMotion.navPopEnterTransition() },
+                popExitTransition = { AppMotion.navPopExitTransition() }
+            ) { backStackEntry ->
+                val rootId = backStackEntry.arguments?.getInt("rootId") ?: 1
+                val wordId = backStackEntry.arguments?.getInt("wordId") ?: 0
+                WordAyatScreen(
+                    rootId = rootId,
+                    wordId = wordId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToSurahDetail = { surahId, ayahNum ->
+                        navController.navigate(Screen.SurahDetail.createRoute(surahId, ayahNum))
+                    },
+                    viewModel = hiltViewModel<WordAyatViewModel>()
                 )
             }
 
