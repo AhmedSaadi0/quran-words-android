@@ -692,6 +692,9 @@ class WordAyatViewModel @Inject constructor(
     private val _isCopyingAll = MutableStateFlow(false)
     val isCopyingAll: StateFlow<Boolean> = _isCopyingAll.asStateFlow()
 
+    private val _totalCount = MutableStateFlow(0)
+    val totalCount: StateFlow<Int> = _totalCount.asStateFlow()
+
     private var currentRootId: Int? = null
     private var currentWordId: Int? = null
     private var offset: Int = 0
@@ -706,14 +709,24 @@ class WordAyatViewModel @Inject constructor(
         _hasMore.value = true
         _isLoading.value = true
         _wordText.value = ""
+        _totalCount.value = 0
         viewModelScope.launch {
             try {
                 val words = repository.getRootWords(rootId)
-                _wordText.value = words.firstOrNull { it.wordId == wordId }?.text ?: ""
+                val matched = words.firstOrNull { it.wordId == wordId }
+                _wordText.value = matched?.text ?: ""
+                _totalCount.value = matched?.occurrencesCount ?: 0
                 val first = repository.getWordOccurrencesPaged(rootId, wordId, pageSize, 0)
                 _occurrences.value = first
                 offset = first.size
-                _hasMore.value = first.size == pageSize
+                if (_totalCount.value < first.size) {
+                    _totalCount.value = first.size
+                }
+                _hasMore.value = if (_totalCount.value > 0) {
+                    offset < _totalCount.value
+                } else {
+                    first.size == pageSize
+                }
             } catch (_: Exception) {
                 _occurrences.value = emptyList()
                 _hasMore.value = false
@@ -742,7 +755,14 @@ class WordAyatViewModel @Inject constructor(
                 if (next.isNotEmpty()) {
                     _occurrences.value = _occurrences.value + next
                     offset += next.size
-                    _hasMore.value = next.size == pageSize
+                    if (_totalCount.value < _occurrences.value.size) {
+                        _totalCount.value = _occurrences.value.size
+                    }
+                    _hasMore.value = if (_totalCount.value > 0) {
+                        offset < _totalCount.value
+                    } else {
+                        next.size == pageSize
+                    }
                 } else {
                     _hasMore.value = false
                 }

@@ -61,6 +61,7 @@ fun WordAyatScreen(
     val wordText by viewModel.wordText.collectAsState()
     val occurrences by viewModel.occurrences.collectAsState()
     val hasMore by viewModel.hasMore.collectAsState()
+    val totalCount by viewModel.totalCount.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val isLoadingMore by viewModel.isLoadingMore.collectAsState()
     val isCopyingAll by viewModel.isCopyingAll.collectAsState()
@@ -122,7 +123,7 @@ fun WordAyatScreen(
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
-            occurrences.isEmpty() && !hasMore -> {
+            occurrences.isEmpty() && !hasMore && !isLoading && totalCount == 0 -> {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -150,7 +151,7 @@ fun WordAyatScreen(
                                 .animateItem()
                         ) {
                             CopyAllOccurrencesBar(
-                                totalCount = if (hasMore) 0 else occurrences.size,
+                                totalCount = totalCount,
                                 occurrencesSize = occurrences.size,
                                 isCopying = isCopyingAll,
                                 onCopyClick = {
@@ -158,7 +159,7 @@ fun WordAyatScreen(
                                         val formatted = viewModel.getAllFormatted()
                                         if (formatted.isNotBlank()) {
                                             clipboardManager.setText(AnnotatedString(formatted))
-                                            snackbarHostState.showSnackbar("تم نسخ آيات الكلمة")
+                                            snackbarHostState.showSnackbar("تم نسخ $totalCount آيات")
                                         } else {
                                             snackbarHostState.showSnackbar("لا توجد آيات للنسخ")
                                         }
@@ -226,7 +227,7 @@ fun WordAyatScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "تم عرض جميع الآيات • ${occurrences.size} موضع",
+                                    text = "تم عرض جميع الآيات • ${if (totalCount > 0) totalCount else occurrences.size} موضع",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
