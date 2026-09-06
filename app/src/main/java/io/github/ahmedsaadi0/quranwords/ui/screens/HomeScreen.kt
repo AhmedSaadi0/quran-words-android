@@ -35,6 +35,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,14 +49,17 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
+import io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState
+import io.github.ahmedsaadi0.quranwords.ui.components.DbUpdateBanner
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
 import io.github.ahmedsaadi0.quranwords.ui.components.StatCard
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeLarge
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeSmall
+import io.github.ahmedsaadi0.quranwords.ui.viewmodel.DbUpdateViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.HomeViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
 
@@ -71,7 +75,8 @@ fun HomeScreen(
     onNavigateToGuide: () -> Unit,
     onNavigateToSetup: () -> Unit,
     onNavigateToBookmarks: () -> Unit = {},
-    homeViewModel: HomeViewModel
+    homeViewModel: HomeViewModel,
+    dbUpdateViewModel: DbUpdateViewModel = hiltViewModel()
 ) {
     val isDbReady by mainViewModel.isDbReady.collectAsState()
     val featuredRoots by homeViewModel.featuredRoots.collectAsState()
@@ -80,6 +85,11 @@ fun HomeScreen(
     val dynamicEnabled by mainViewModel.dynamicColorEnabled.collectAsState()
     val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsState()
     val bookmarkedAyat by mainViewModel.bookmarkedAyat.collectAsState()
+    val dbUpdateState by dbUpdateViewModel.state.collectAsState()
+
+    LaunchedEffect(isDbReady) {
+        if (isDbReady) dbUpdateViewModel.checkOnce()
+    }
 
     val lastSurahMeta = QuranMetaConstants.SURAHS.firstOrNull { it.id == lastReadSurah } ?: QuranMetaConstants.SURAHS[0]
     val darkModeSetting by mainViewModel.darkModeSetting.collectAsState()
@@ -276,6 +286,24 @@ fun HomeScreen(
                             }
                         }
                     }
+                }
+            }
+
+            if (isDbReady && dbUpdateState is DbUpdateState.UpdateAvailable) {
+                val info = (dbUpdateState as DbUpdateState.UpdateAvailable).info
+                item {
+                    DbUpdateBanner(
+                        info = info,
+                        installedName = "",
+                        onUpdateClick = onNavigateToSetup,
+                        onDismissClick = { dbUpdateViewModel.dismiss(info) },
+                        modifier = Modifier.animateItem(
+                            placementSpec = tween(
+                                durationMillis = AppMotion.DurationMedium,
+                                easing = AppMotion.EasingStandard
+                            )
+                        )
+                    )
                 }
             }
 

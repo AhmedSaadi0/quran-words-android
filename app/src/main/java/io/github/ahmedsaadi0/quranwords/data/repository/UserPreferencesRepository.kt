@@ -7,11 +7,13 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,6 +32,11 @@ class UserPreferencesRepository @Inject constructor(@param:ApplicationContext pr
         private val KEY_DISMISSED_SETUP = booleanPreferencesKey("dismissed_setup")
         private val KEY_BOOKMARKED_SURAHS = stringSetPreferencesKey("bookmarked_surahs")
         private val KEY_BOOKMARKED_AYAT = stringSetPreferencesKey("bookmarked_ayat") // format "surahId:ayahNum"
+        private val KEY_DB_VERSION_CODE = intPreferencesKey("db_version_code")
+        private val KEY_DB_VERSION_NAME = stringPreferencesKey("db_version_name")
+        private val KEY_DB_INSTALLED_AT = longPreferencesKey("db_installed_at")
+        private val KEY_DISMISSED_DB_VERSION = intPreferencesKey("dismissed_db_version_code")
+        private val KEY_LAST_DB_CHECK_AT = longPreferencesKey("last_db_check_at")
     }
 
     val fontSize: Flow<Float> = context.dataStore.data.map { preferences ->
@@ -67,6 +74,34 @@ class UserPreferencesRepository @Inject constructor(@param:ApplicationContext pr
 
     val bookmarkedAyat: Flow<Set<String>> = context.dataStore.data.map { preferences ->
         preferences[KEY_BOOKMARKED_AYAT] ?: emptySet()
+    }
+
+    val dbVersionCode: Flow<Int> = context.dataStore.data.map { it[KEY_DB_VERSION_CODE] ?: 0 }
+
+    val dbVersionName: Flow<String> = context.dataStore.data.map { it[KEY_DB_VERSION_NAME] ?: "" }
+
+    val dismissedDbVersionCode: Flow<Int> = context.dataStore.data.map { it[KEY_DISMISSED_DB_VERSION] ?: 0 }
+
+    val lastDbCheckAt: Flow<Long> = context.dataStore.data.map { it[KEY_LAST_DB_CHECK_AT] ?: 0L }
+
+    suspend fun setInstalledDbVersion(code: Int, name: String) {
+        context.dataStore.edit {
+            it[KEY_DB_VERSION_CODE] = code
+            it[KEY_DB_VERSION_NAME] = name
+            it[KEY_DB_INSTALLED_AT] = System.currentTimeMillis()
+        }
+    }
+
+    suspend fun getInstalledDbVersionCode(): Int {
+        return context.dataStore.data.map { it[KEY_DB_VERSION_CODE] ?: 0 }.first()
+    }
+
+    suspend fun setDismissedDbVersion(code: Int) {
+        context.dataStore.edit { it[KEY_DISMISSED_DB_VERSION] = code }
+    }
+
+    suspend fun setLastDbCheckAt(timestamp: Long = System.currentTimeMillis()) {
+        context.dataStore.edit { it[KEY_LAST_DB_CHECK_AT] = timestamp }
     }
 
     suspend fun setFontSize(size: Float) {

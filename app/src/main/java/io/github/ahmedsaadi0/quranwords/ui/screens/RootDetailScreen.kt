@@ -2,7 +2,6 @@ package io.github.ahmedsaadi0.quranwords.ui.screens
 
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.net.Uri
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -29,11 +28,7 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.ReportProblem
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialogDefaults
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -43,9 +38,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -72,16 +67,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
-import io.github.ahmedsaadi0.quranwords.ui.components.ReportIssueCard
+import io.github.ahmedsaadi0.quranwords.ui.components.ReportMeaningDialog
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
-import io.github.ahmedsaadi0.quranwords.util.BuildIssueUrlOptions
-import io.github.ahmedsaadi0.quranwords.util.buildGithubIssueUrl
+import io.github.ahmedsaadi0.quranwords.util.ReportAyahSample
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -331,22 +323,24 @@ fun RootDetailScreen(
                         }
                     }
 
-                    // Pinned TabRow (scrollable to fit 5 tabs)
-                    TabRow(
+                    // Pinned tabs: scrollable row + count badges (5 tabs don't fit a fixed row)
+                    ScrollableTabRow(
                         selectedTabIndex = pagerState.currentPage,
                         containerColor = MaterialTheme.colorScheme.surface,
+                        edgePadding = 16.dp,
                         divider = {}
                     ) {
-                        val tabTitles = listOf(
-                            "المعاجم (${detail.meanings.size})",
-                            "المصادر (${detail.masadir.size})",
-                            "المشتقات (${detail.derivatives.size})",
-                            "الكلمات (${rootWords.size})",
-                            "الآيات (${detail.item.occurrencesCount})"
+                        val tabs = listOf(
+                            "معاجم" to detail.meanings.size,
+                            "مصادر" to detail.masadir.size,
+                            "مشتقات" to detail.derivatives.size,
+                            "كلمات" to rootWords.size,
+                            "آيات" to detail.item.occurrencesCount
                         )
-                        tabTitles.forEachIndexed { index, title ->
+                        tabs.forEachIndexed { index, (title, count) ->
+                            val selected = pagerState.currentPage == index
                             Tab(
-                                selected = pagerState.currentPage == index,
+                                selected = selected,
                                 onClick = {
                                     scope.launch {
                                         pagerState.animateScrollToPage(
@@ -358,13 +352,30 @@ fun RootDetailScreen(
                                         )
                                     }
                                 },
+                                modifier = Modifier.testTag("root_tab_$index"),
                                 text = {
-                                    Text(
-                                        title,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Text(
+                                            title,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1
+                                        )
+                                        Badge(
+                                            containerColor = if (selected) MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.surfaceVariant,
+                                            contentColor = if (selected) MaterialTheme.colorScheme.onPrimary
+                                            else MaterialTheme.colorScheme.onSurfaceVariant
+                                        ) {
+                                            Text(
+                                                text = count.toString(),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
                                 }
                             )
                         }
@@ -727,89 +738,19 @@ fun RootDetailScreen(
             }
 
             if (showReportDialog) {
+                val reportSamples = remember(occurrences) {
+                    occurrences.take(2).map {
+                        ReportAyahSample(it.surahNameAr, it.ayahNum, it.textUthmani)
+                    }
+                }
                 ReportMeaningDialog(
-                    item = item,
+                    rootText = item.root,
+                    rootId = item.id,
+                    aiSummary = detail.aiSummary ?: "",
+                    samples = reportSamples,
                     onDismissRequest = { showReportDialog = false }
                 )
             }
         }
     }
-}
-
-@Composable
-fun ReportMeaningDialog(
-    item: RootItem,
-    onDismissRequest: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val context = LocalContext.current
-
-    AlertDialog(
-        onDismissRequest = onDismissRequest,
-        modifier = modifier,
-        icon = {
-            Icon(
-                imageVector = Icons.Outlined.ReportProblem,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        title = {
-            Text(
-                text = "الإبلاغ عن معنى",
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center
-            )
-        },
-        text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "هل وجدت معنى غير صحيح أو ناقص للجذر [${item.root}]؟",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                ReportIssueCard(rootText = item.root, rootId = item.id)
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val url = buildGithubIssueUrl(
-                        BuildIssueUrlOptions(
-                            item.root,
-                            item.id,
-                            null
-                        )
-                    )
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        context.startActivity(intent)
-                    } catch (_: ActivityNotFoundException) {
-                        // في حال عدم توفر متصفح
-                    }
-                    onDismissRequest()
-                }
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
-                    contentDescription = null,
-                    modifier = Modifier.size(ButtonDefaults.IconSize)
-                )
-                Spacer(Modifier.size(ButtonDefaults.IconSpacing))
-                Text("فتح GitHub")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismissRequest) {
-                Text("إلغاء")
-            }
-        },
-        shape = MaterialTheme.shapes.extraLarge,
-        containerColor = AlertDialogDefaults.containerColor,
-        titleContentColor = AlertDialogDefaults.titleContentColor,
-        textContentColor = AlertDialogDefaults.textContentColor
-    )
 }

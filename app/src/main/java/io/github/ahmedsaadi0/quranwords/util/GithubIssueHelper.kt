@@ -6,8 +6,8 @@ import java.net.URLEncoder
  * Mirrors frontend/src/lib/github.ts buildGithubIssueUrl exactly
  */
 private const val GITHUB_REPO = "AhmedSaadi0/quran-words"
-private const val GITHUB_ISSUE_LABEL = "تقرير-معنى"
-private const val GITHUB_NEW_ISSUE_BASE = "https://github.com/$GITHUB_REPO/issues/new"
+internal const val GITHUB_ISSUE_LABEL = "تقرير-معنى"
+internal const val GITHUB_NEW_ISSUE_BASE = "https://github.com/$GITHUB_REPO/issues/new"
 
 data class BuildIssueUrlOptions(
     val rootText: String,

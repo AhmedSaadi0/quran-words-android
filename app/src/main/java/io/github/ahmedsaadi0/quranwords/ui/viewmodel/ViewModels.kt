@@ -819,18 +819,74 @@ class SearchViewModel @Inject constructor(
 
 @HiltViewModel
 class DatabaseSetupViewModel @Inject constructor(
-    private val downloadManager: DatabaseDownloadManager
+    private val downloadManager: DatabaseDownloadManager,
+    private val dbUpdateRepository: io.github.ahmedsaadi0.quranwords.domain.repository.DbUpdateRepository
 ) : ViewModel() {
 
     private val _downloadState = MutableStateFlow<DownloadState>(
-        if (downloadManager.isDatabaseReady()) DownloadState.Completed else DownloadState.Idle
+        if (downloadManager.isDatabaseReady()) DownloadState.Completed() else DownloadState.Idle
     )
     val downloadState: StateFlow<DownloadState> = _downloadState.asStateFlow()
 
+    private val _latestRelease =
+        MutableStateFlow<io.github.ahmedsaadi0.quranwords.domain.model.DbReleaseInfo?>(null)
+    val latestRelease: StateFlow<io.github.ahmedsaadi0.quranwords.domain.model.DbReleaseInfo?> =
+        _latestRelease.asStateFlow()
+
+    private val _installedVersion =
+        MutableStateFlow(io.github.ahmedsaadi0.quranwords.domain.model.DbInstalledVersion())
+    val installedVersion: StateFlow<io.github.ahmedsaadi0.quranwords.domain.model.DbInstalledVersion> =
+        _installedVersion.asStateFlow()
+
+    private val _isCheckingUpdate = MutableStateFlow(false)
+    val isCheckingUpdate: StateFlow<Boolean> = _isCheckingUpdate.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _installedVersion.value = dbUpdateRepository.getInstalledVersion()
+        }
+    }
+
+    fun checkForUpdate() {
+        if (_isCheckingUpdate.value) return
+        viewModelScope.launch {
+            _isCheckingUpdate.value = true
+            try {
+                _installedVersion.value = dbUpdateRepository.getInstalledVersion()
+                when (val r = dbUpdateRepository.getLatestRelease()) {
+                    is io.github.ahmedsaadi0.quranwords.domain.repository.DbCheckResult.Success ->
+                        _latestRelease.value = r.data
+                    is io.github.ahmedsaadi0.quranwords.domain.repository.DbCheckResult.Error -> Unit
+                }
+            } finally {
+                _isCheckingUpdate.value = false
+            }
+        }
+    }
+
     fun startDownload() {
         viewModelScope.launch {
-            downloadManager.downloadDatabase().collectLatest { state ->
+            val info = resolveReleaseForDownload() ?: return@launch
+            downloadManager.downloadRelease(info).collectLatest { state ->
                 _downloadState.value = state
+                if (state is DownloadState.Completed && state.versionCode > 0) {
+                    dbUpdateRepository.setInstalledVersion(state.versionCode, state.versionName)
+                    _installedVersion.value = dbUpdateRepository.getInstalledVersion()
+                }
+            }
+        }
+    }
+
+    private suspend fun resolveReleaseForDownload(): io.github.ahmedsaadi0.quranwords.domain.model.DbReleaseInfo? {
+        _latestRelease.value?.let { return it }
+        return when (val r = dbUpdateRepository.getLatestRelease()) {
+            is io.github.ahmedsaadi0.quranwords.domain.repository.DbCheckResult.Success -> {
+                _latestRelease.value = r.data
+                r.data
+            }
+            is io.github.ahmedsaadi0.quranwords.domain.repository.DbCheckResult.Error -> {
+                _downloadState.value = DownloadState.Error("تعذر جلب معلومات الإصدار: ${r.message}")
+                null
             }
         }
     }
@@ -839,9 +895,52 @@ class DatabaseSetupViewModel @Inject constructor(
         viewModelScope.launch {
             downloadManager.importDatabase(uri).collectLatest { state ->
                 _downloadState.value = state
+                if (state is DownloadState.Completed) {
+                    _installedVersion.value = dbUpdateRepository.getInstalledVersion()
+                }
             }
         }
     }
 
     fun isReady(): Boolean = downloadManager.isDatabaseReady()
+}
+
+@HiltViewModel
+class DbUpdateViewModel @Inject constructor(
+    private val checkUpdate: io.github.ahmedsaadi0.quranwords.domain.usecase.CheckDbUpdateUseCase,
+    private val dbUpdateRepository: io.github.ahmedsaadi0.quranwords.domain.repository.DbUpdateRepository
+) : ViewModel() {
+    private val _state =
+        MutableStateFlow<io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState>(
+            io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState.Unknown
+        )
+    val state: StateFlow<io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState> =
+        _state.asStateFlow()
+
+    private val _isChecking = MutableStateFlow(false)
+    val isChecking: StateFlow<Boolean> = _isChecking.asStateFlow()
+
+    fun checkOnce() {
+        if (_isChecking.value) return
+        viewModelScope.launch {
+            _isChecking.value = true
+            try {
+                when (val r = checkUpdate()) {
+                    is io.github.ahmedsaadi0.quranwords.domain.repository.DbCheckResult.Success ->
+                        _state.value = r.data
+                    is io.github.ahmedsaadi0.quranwords.domain.repository.DbCheckResult.Error ->
+                        _state.value = io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState.Unknown
+                }
+            } finally {
+                _isChecking.value = false
+            }
+        }
+    }
+
+    fun dismiss(info: io.github.ahmedsaadi0.quranwords.domain.model.DbReleaseInfo) {
+        viewModelScope.launch {
+            dbUpdateRepository.setDismissedVersionCode(info.versionCode)
+            _state.value = io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState.UpToDate
+        }
+    }
 }

@@ -7,11 +7,17 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
+import io.github.ahmedsaadi0.quranwords.data.remote.ManifestRemoteDataSource
+import io.github.ahmedsaadi0.quranwords.data.repository.DbUpdateRepositoryImpl
 import io.github.ahmedsaadi0.quranwords.data.repository.QuranRepositoryImpl
 import io.github.ahmedsaadi0.quranwords.data.repository.UserPreferencesRepository
+import io.github.ahmedsaadi0.quranwords.domain.repository.DbUpdateRepository
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
+import io.github.ahmedsaadi0.quranwords.domain.usecase.CheckDbUpdateUseCase
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -33,8 +39,49 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideDatabaseDownloadManager(@ApplicationContext context: Context): DatabaseDownloadManager {
-        return DatabaseDownloadManager(context)
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDatabaseDownloadManager(
+        @ApplicationContext context: Context,
+        client: OkHttpClient
+    ): DatabaseDownloadManager {
+        return DatabaseDownloadManager(context, client)
+    }
+
+    @Provides
+    @Singleton
+    fun provideManifestRemoteDataSource(
+        client: OkHttpClient,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher
+    ): ManifestRemoteDataSource {
+        return ManifestRemoteDataSource(client, ioDispatcher)
+    }
+
+    @Provides
+    @Singleton
+    fun provideDbUpdateRepository(
+        manifestSource: ManifestRemoteDataSource,
+        preferences: UserPreferencesRepository,
+        downloadManager: DatabaseDownloadManager
+    ): DbUpdateRepository {
+        return DbUpdateRepositoryImpl(manifestSource, preferences, downloadManager)
+    }
+
+    @Provides
+    @Singleton
+    fun provideCheckDbUpdateUseCase(
+        repository: DbUpdateRepository
+    ): CheckDbUpdateUseCase {
+        return CheckDbUpdateUseCase(repository)
     }
 
     @Provides
