@@ -70,7 +70,7 @@ fun RootsListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "معجم الجذور القرآنية (1642 جذر)",
+                        text = "معجم الجذور القرآنية (${roots.size} جذر)",
                         fontWeight = FontWeight.Bold
                     )
                 },

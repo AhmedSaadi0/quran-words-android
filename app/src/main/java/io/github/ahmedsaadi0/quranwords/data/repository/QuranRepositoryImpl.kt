@@ -36,22 +36,38 @@ class QuranRepositoryImpl @Inject constructor(
     @Volatile
     private var sqliteDb: SQLiteDatabase? = null
 
+    @Volatile
+    private var lastDbModified: Long = -1L
+
+    @Volatile
+    private var lastDbLength: Long = -1L
+
     private fun getDb(): SQLiteDatabase? {
         val file = downloadManager.getDatabaseFile()
         if (!file.exists() || file.length() < 10_000_000L) {
             return null
         }
-        if (sqliteDb?.isOpen == true) {
+        val modified = file.lastModified()
+        val length = file.length()
+        if (sqliteDb?.isOpen == true && modified == lastDbModified && length == lastDbLength) {
             return sqliteDb
         }
         return synchronized(this) {
-            if (sqliteDb?.isOpen == true) return sqliteDb
+            if (sqliteDb?.isOpen == true && modified == lastDbModified && length == lastDbLength) return sqliteDb
+            // Database file was replaced (download/import) — drop the stale handle first.
+            try {
+                sqliteDb?.close()
+            } catch (_: Exception) {
+            }
+            sqliteDb = null
             try {
                 sqliteDb = SQLiteDatabase.openDatabase(
                     file.absolutePath,
                     null,
                     SQLiteDatabase.OPEN_READONLY or SQLiteDatabase.NO_LOCALIZED_COLLATORS
                 )
+                lastDbModified = modified
+                lastDbLength = length
                 sqliteDb
             } catch (e: Exception) {
                 null
@@ -59,7 +75,7 @@ class QuranRepositoryImpl @Inject constructor(
         }
     }
 
-    fun closeDb() {
+    override fun closeDb() {
         synchronized(this) {
             try {
                 sqliteDb?.close()
@@ -357,9 +373,9 @@ class QuranRepositoryImpl @Inject constructor(
                         rg.gloss_ar, 
                         rg.gloss_en, 
                         ra.summary_ar,
-                        (SELECT COUNT(*) FROM masadir m WHERE m.root_id = r.id),
-                        (SELECT COUNT(*) FROM derivatives d WHERE d.root_id = r.id),
-                        (SELECT COUNT(DISTINCT wa.ayah_id) FROM word_morphology wm JOIN word_ayah wa ON wa.id = wm.word_ayah_id WHERE wm.root_id = r.id)
+                        r.masadir_count,
+                        r.derivatives_count,
+                        r.occurrences_count
                     FROM roots r
                     LEFT JOIN root_glosses rg ON rg.root_id = r.id
                     LEFT JOIN root_ai_summary ra ON ra.root_id = r.id
@@ -391,6 +407,53 @@ class QuranRepositoryImpl @Inject constructor(
         }
 
         getSeedRoots().drop(offset).take(limit)
+    }
+
+    override suspend fun getAllRoots(): List<RootItem> = withContext(ioDispatcher) {
+        val db = getDb()
+        if (db != null) {
+            val list = mutableListOf<RootItem>()
+            try {
+                val sql = """
+                    SELECT
+                        r.id,
+                        r.root,
+                        rg.gloss_ar,
+                        rg.gloss_en,
+                        ra.summary_ar,
+                        r.masadir_count,
+                        r.derivatives_count,
+                        r.occurrences_count
+                    FROM roots r
+                    LEFT JOIN root_glosses rg ON rg.root_id = r.id
+                    LEFT JOIN root_ai_summary ra ON ra.root_id = r.id
+                    ORDER BY r.id ASC
+                """.trimIndent()
+
+                val cursor = db.rawQuery(sql, null)
+                cursor.use { c ->
+                    while (c.moveToNext()) {
+                        list.add(
+                            RootItem(
+                                id = c.getInt(0),
+                                root = c.getString(1) ?: "",
+                                glossAr = c.getString(2),
+                                glossEn = c.getString(3),
+                                aiSummary = c.getString(4),
+                                masadirCount = c.getInt(5),
+                                derivativesCount = c.getInt(6),
+                                occurrencesCount = c.getInt(7)
+                            )
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                // fallback
+            }
+            if (list.isNotEmpty()) return@withContext list
+        }
+
+        getSeedRoots()
     }
 
     override suspend fun getRootDetail(rootId: Int): RootDetail? = withContext(ioDispatcher) {
@@ -798,35 +861,39 @@ class QuranRepositoryImpl @Inject constructor(
     override suspend fun searchAll(query: String): SearchResult = withContext(ioDispatcher) {
         val trimmed = query.trim()
         if (trimmed.isBlank()) return@withContext SearchResult()
+        val pageSize = io.github.ahmedsaadi0.quranwords.core.util.DatabaseConstants.SEARCH_PAGE_SIZE
+        SearchResult(
+            roots = searchRootsPaged(trimmed, pageSize, 0),
+            masadir = searchMasadirPaged(trimmed, pageSize, 0),
+            derivatives = searchDerivativesPaged(trimmed, pageSize, 0),
+            ayat = searchAyatPaged(trimmed, pageSize, 0)
+        )
+    }
 
+    override suspend fun searchRootsPaged(query: String, limit: Int, offset: Int): List<RootItem> = withContext(ioDispatcher) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return@withContext emptyList()
         val normalized = ArabicNormalizer.normalizeAr(trimmed)
         val db = getDb()
-
         if (db != null) {
-            val matchingRoots = mutableListOf<RootItem>()
-            val matchingMasadir = mutableListOf<MasdarModel>()
-            val matchingDerivatives = mutableListOf<DerivativeModel>()
-            val matchingWords = mutableListOf<WordToken>()
-            val matchingAyat = mutableListOf<Ayah>()
-
+            val list = mutableListOf<RootItem>()
             try {
-                // 1. Search Roots
-                val rCursor = db.rawQuery(
+                val cursor = db.rawQuery(
                     """
                     SELECT r.id, r.root, rg.gloss_ar, rg.gloss_en, ra.summary_ar,
-                    (SELECT COUNT(*) FROM masadir m WHERE m.root_id = r.id),
-                    (SELECT COUNT(*) FROM derivatives d WHERE d.root_id = r.id)
+                    r.masadir_count,
+                    r.derivatives_count
                     FROM roots r
                     LEFT JOIN root_glosses rg ON rg.root_id = r.id
                     LEFT JOIN root_ai_summary ra ON ra.root_id = r.id
                     WHERE r.root LIKE ? OR r.root LIKE ?
-                    LIMIT 20
+                    LIMIT ? OFFSET ?
                     """.trimIndent(),
-                    arrayOf("%$trimmed%", "%$normalized%")
+                    arrayOf("%$trimmed%", "%$normalized%", limit.toString(), offset.toString())
                 )
-                rCursor.use {
+                cursor.use {
                     while (it.moveToNext()) {
-                        matchingRoots.add(
+                        list.add(
                             RootItem(
                                 id = it.getInt(0),
                                 root = it.getString(1) ?: "",
@@ -839,75 +906,93 @@ class QuranRepositoryImpl @Inject constructor(
                         )
                     }
                 }
+                return@withContext list
+            } catch (e: Exception) {
+                // fallback below
+            }
+        }
+        getSeedRoots().filter {
+            it.root.contains(trimmed) || it.root.contains(normalized)
+        }.drop(offset).take(limit)
+    }
 
-                // 2. Search Masadir
-                val mCursor = db.rawQuery(
-                    "SELECT id, form, masdar_ar, pattern, is_attested, source FROM masadir WHERE masdar_plain LIKE ? OR masdar_ar LIKE ? LIMIT 20",
-                    arrayOf("%$normalized%", "%$trimmed%")
-                )
-                mCursor.use {
-                    while (it.moveToNext()) {
-                        matchingMasadir.add(
-                            MasdarModel(
-                                id = it.getInt(0),
-                                form = it.getString(1),
-                                masdarAr = it.getString(2) ?: "",
-                                pattern = it.getString(3),
-                                isAttested = it.getInt(4) == 1,
-                                source = it.getString(5)
-                            )
+    override suspend fun searchMasadirPaged(query: String, limit: Int, offset: Int): List<MasdarModel> = withContext(ioDispatcher) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return@withContext emptyList()
+        val normalized = ArabicNormalizer.normalizeAr(trimmed)
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<MasdarModel>()
+        try {
+            val cursor = db.rawQuery(
+                "SELECT id, form, masdar_ar, pattern, is_attested, source FROM masadir WHERE masdar_plain LIKE ? OR masdar_ar LIKE ? LIMIT ? OFFSET ?",
+                arrayOf("%$normalized%", "%$trimmed%", limit.toString(), offset.toString())
+            )
+            cursor.use {
+                while (it.moveToNext()) {
+                    list.add(
+                        MasdarModel(
+                            id = it.getInt(0),
+                            form = it.getString(1),
+                            masdarAr = it.getString(2) ?: "",
+                            pattern = it.getString(3),
+                            isAttested = it.getInt(4) == 1,
+                            source = it.getString(5)
                         )
-                    }
+                    )
                 }
+            }
+        } catch (e: Exception) {
+            // return partial list
+        }
+        return@withContext list
+    }
 
-                // 3. Search Derivatives
-                val dCursor = db.rawQuery(
-                    "SELECT id, form_ar, pattern, derivative_type, is_quranic, source FROM derivatives WHERE form_plain LIKE ? OR form_ar LIKE ? LIMIT 20",
-                    arrayOf("%$normalized%", "%$trimmed%")
-                )
-                dCursor.use {
-                    while (it.moveToNext()) {
-                        matchingDerivatives.add(
-                            DerivativeModel(
-                                id = it.getInt(0),
-                                formAr = it.getString(1) ?: "",
-                                pattern = it.getString(2) ?: "",
-                                derivativeType = it.getString(3) ?: "",
-                                isQuranic = it.getInt(4) == 1,
-                                source = it.getString(5)
-                            )
+    override suspend fun searchDerivativesPaged(query: String, limit: Int, offset: Int): List<DerivativeModel> = withContext(ioDispatcher) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return@withContext emptyList()
+        val normalized = ArabicNormalizer.normalizeAr(trimmed)
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<DerivativeModel>()
+        try {
+            val cursor = db.rawQuery(
+                "SELECT id, form_ar, pattern, derivative_type, is_quranic, source FROM derivatives WHERE form_plain LIKE ? OR form_ar LIKE ? LIMIT ? OFFSET ?",
+                arrayOf("%$normalized%", "%$trimmed%", limit.toString(), offset.toString())
+            )
+            cursor.use {
+                while (it.moveToNext()) {
+                    list.add(
+                        DerivativeModel(
+                            id = it.getInt(0),
+                            formAr = it.getString(1) ?: "",
+                            pattern = it.getString(2) ?: "",
+                            derivativeType = it.getString(3) ?: "",
+                            isQuranic = it.getInt(4) == 1,
+                            source = it.getString(5)
                         )
-                    }
+                    )
                 }
+            }
+        } catch (e: Exception) {
+            // return partial list
+        }
+        return@withContext list
+    }
 
-                // 4. Search Words
-                val wCursor = db.rawQuery(
-                    "SELECT id, text, text_clean, translation FROM words WHERE text_plain LIKE ? OR text_clean LIKE ? LIMIT 20",
-                    arrayOf("%$normalized%", "%$trimmed%")
+    override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah> = withContext(ioDispatcher) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return@withContext emptyList()
+        val normalized = ArabicNormalizer.normalizeAr(trimmed)
+        val db = getDb()
+        if (db != null) {
+            val list = mutableListOf<Ayah>()
+            try {
+                val cursor = db.rawQuery(
+                    "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE text_uthmani_plain LIKE ? OR text_imlaei LIKE ? LIMIT ? OFFSET ?",
+                    arrayOf("%$normalized%", "%$trimmed%", limit.toString(), offset.toString())
                 )
-                wCursor.use {
+                cursor.use {
                     while (it.moveToNext()) {
-                        matchingWords.add(
-                            WordToken(
-                                wordId = it.getInt(0),
-                                wordAyahId = 0,
-                                position = 0,
-                                text = it.getString(1) ?: "",
-                                textClean = it.getString(2) ?: "",
-                                translation = it.getString(3) ?: ""
-                            )
-                        )
-                    }
-                }
-
-                // 5. Search Ayat
-                val aCursor = db.rawQuery(
-                    "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE text_uthmani_plain LIKE ? OR text_imlaei LIKE ? LIMIT 20",
-                    arrayOf("%$normalized%", "%$trimmed%")
-                )
-                aCursor.use {
-                    while (it.moveToNext()) {
-                        matchingAyat.add(
+                        list.add(
                             Ayah(
                                 id = it.getInt(0),
                                 surah = it.getInt(1),
@@ -924,27 +1009,14 @@ class QuranRepositoryImpl @Inject constructor(
                         )
                     }
                 }
-
-                return@withContext SearchResult(
-                    roots = matchingRoots,
-                    masadir = matchingMasadir,
-                    derivatives = matchingDerivatives,
-                    words = matchingWords,
-                    ayat = matchingAyat
-                )
+                return@withContext list
             } catch (e: Exception) {
-                // fallback
+                // fallback below
             }
         }
-
-        // Fallback search
-        val seedRoots = getSeedRoots().filter {
-            it.root.contains(trimmed) || it.root.contains(normalized)
-        }
-        val seedAyat = getSeedAyat(1).filter {
+        getSeedAyat(1).filter {
             it.textUthmaniPlain.contains(normalized) || it.textImlaei.contains(trimmed)
-        }
-        SearchResult(roots = seedRoots, ayat = seedAyat)
+        }.drop(offset).take(limit)
     }
 
     override suspend fun getPagesForSurah(surahId: Int): List<Int> = withContext(ioDispatcher) {

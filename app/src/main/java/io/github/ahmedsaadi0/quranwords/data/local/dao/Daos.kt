@@ -37,9 +37,6 @@ interface AyahDao {
     @Query("SELECT * FROM ayat WHERE surah = :surahId AND ayah = :ayahNum LIMIT 1")
     suspend fun getAyah(surahId: Int, ayahNum: Int): AyahEntity?
 
-    @Query("SELECT * FROM ayat WHERE text_uthmani_plain LIKE '%' || :query || '%' OR text_imlaei LIKE '%' || :query || '%' LIMIT 100")
-    fun searchAyat(query: String): Flow<List<AyahEntity>>
-
     @Query("SELECT COUNT(*) FROM ayat")
     suspend fun getCount(): Int
 
@@ -67,9 +64,6 @@ interface WordDao {
     @Query("SELECT * FROM words WHERE id = :wordId LIMIT 1")
     suspend fun getWordById(wordId: Int): WordEntity?
 
-    @Query("SELECT * FROM words WHERE text_plain LIKE '%' || :query || '%' OR text_clean LIKE '%' || :query || '%' LIMIT 50")
-    fun searchWords(query: String): Flow<List<WordEntity>>
-
     @Query("SELECT * FROM word_morphology WHERE word_ayah_id = :wordAyahId LIMIT 1")
     suspend fun getMorphologyForWordAyah(wordAyahId: Int): MorphologyEntity?
 
@@ -91,9 +85,6 @@ interface RootDao {
     @Query("SELECT * FROM roots WHERE root = :rootText LIMIT 1")
     suspend fun getRootByText(rootText: String): RootEntity?
 
-    @Query("SELECT * FROM roots WHERE root LIKE '%' || :query || '%' LIMIT 50")
-    fun searchRoots(query: String): Flow<List<RootEntity>>
-
     @Query("SELECT * FROM root_glosses WHERE root_id = :rootId LIMIT 1")
     suspend fun getRootGloss(rootId: Int): RootGlossEntity?
 
@@ -112,9 +103,6 @@ interface MasdarDao {
     @Query("SELECT * FROM masadir WHERE root_id = :rootId ORDER BY id ASC")
     fun getMasadirByRootId(rootId: Int): Flow<List<MasdarEntity>>
 
-    @Query("SELECT * FROM masadir WHERE masdar_plain LIKE '%' || :query || '%' OR masdar_ar LIKE '%' || :query || '%' LIMIT 50")
-    fun searchMasadir(query: String): Flow<List<MasdarEntity>>
-
     @Query("SELECT COUNT(*) FROM masadir")
     suspend fun getCount(): Int
 }
@@ -123,9 +111,6 @@ interface MasdarDao {
 interface DerivativeDao {
     @Query("SELECT * FROM derivatives WHERE root_id = :rootId ORDER BY id ASC")
     fun getDerivativesByRootId(rootId: Int): Flow<List<DerivativeEntity>>
-
-    @Query("SELECT * FROM derivatives WHERE form_plain LIKE '%' || :query || '%' OR form_ar LIKE '%' || :query || '%' LIMIT 50")
-    fun searchDerivatives(query: String): Flow<List<DerivativeEntity>>
 
     @Query("SELECT COUNT(*) FROM derivatives")
     suspend fun getCount(): Int

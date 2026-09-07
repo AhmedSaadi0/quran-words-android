@@ -52,6 +52,7 @@ private class FakeQuranRepository(
     override suspend fun getAyatBySurahPaged(surahId: Int, limit: Int, offset: Int): List<Ayah> = emptyList()
     override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? = null
     override suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem> = emptyList()
+    override suspend fun getAllRoots(): List<RootItem> = emptyList()
     override suspend fun getRootDetail(rootId: Int): RootDetail? = RootDetail(
         item = RootItem(rootId, "كتب", occurrencesCount = 5)
     )
@@ -60,8 +61,13 @@ private class FakeQuranRepository(
     override suspend fun getRootOccurrencesCount(rootId: Int): Int = 0
     override suspend fun getRootByText(rootText: String): RootDetail? = null
     override suspend fun searchAll(query: String): SearchResult = SearchResult()
+    override suspend fun searchRootsPaged(query: String, limit: Int, offset: Int): List<RootItem> = emptyList()
+    override suspend fun searchMasadirPaged(query: String, limit: Int, offset: Int): List<io.github.ahmedsaadi0.quranwords.domain.model.MasdarModel> = emptyList()
+    override suspend fun searchDerivativesPaged(query: String, limit: Int, offset: Int): List<io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel> = emptyList()
+    override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah> = emptyList()
     override suspend fun getPagesForSurah(surahId: Int): List<Int> = emptyList()
     override fun isDatabaseReady(): Boolean = true
+    override fun closeDb() = Unit
 
     override suspend fun getRootWords(rootId: Int): List<RootWordModel> = words
 

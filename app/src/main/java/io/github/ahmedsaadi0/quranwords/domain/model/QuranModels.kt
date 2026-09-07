@@ -116,6 +116,5 @@ data class SearchResult(
     val roots: List<RootItem> = emptyList(),
     val masadir: List<MasdarModel> = emptyList(),
     val derivatives: List<DerivativeModel> = emptyList(),
-    val words: List<WordToken> = emptyList(),
     val ayat: List<Ayah> = emptyList()
 )

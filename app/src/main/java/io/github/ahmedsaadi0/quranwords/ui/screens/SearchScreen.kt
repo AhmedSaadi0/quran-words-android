@@ -17,8 +17,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -39,11 +42,13 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +60,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SearchViewModel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -67,8 +74,23 @@ fun SearchScreen(
     val query by searchViewModel.query.collectAsState()
     val results by searchViewModel.results.collectAsState()
     val isSearching by searchViewModel.isSearching.collectAsState()
+    val isLoadingMore by searchViewModel.isLoadingMore.collectAsState()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
+    val listState: LazyListState = rememberLazyListState()
+
+    LaunchedEffect(listState, selectedTabIndex) {
+        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
+            .distinctUntilChanged()
+            .collectLatest { lastIdx ->
+                if (lastIdx == -1) return@collectLatest
+                searchViewModel.loadMoreIfNeeded(selectedTabIndex, lastIdx)
+            }
+    }
+
+    LaunchedEffect(selectedTabIndex, query) {
+        listState.scrollToItem(0)
+    }
 
     Scaffold(
         topBar = {
@@ -180,7 +202,10 @@ fun SearchScreen(
                     label = "searchQueryCrossfade"
                 ) { _ ->
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .testTag("search_results_list"),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -305,6 +330,23 @@ fun SearchScreen(
                                             }
                                         }
                                     }
+                                }
+                            }
+                        }
+
+                        if (isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        strokeWidth = 2.dp
+                                    )
                                 }
                             }
                         }

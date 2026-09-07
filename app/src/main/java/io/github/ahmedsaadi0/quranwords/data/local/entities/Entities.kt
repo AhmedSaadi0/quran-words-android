@@ -79,7 +79,10 @@ data class WordAyahEntity(
 )
 data class RootEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val root: String
+    val root: String,
+    @ColumnInfo(name = "occurrences_count") val occurrencesCount: Int = 0,
+    @ColumnInfo(name = "masadir_count") val masadirCount: Int = 0,
+    @ColumnInfo(name = "derivatives_count") val derivativesCount: Int = 0
 )
 
 @Entity(tableName = "word_morphology")

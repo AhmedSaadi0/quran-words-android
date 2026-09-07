@@ -486,8 +486,13 @@ class RootViewModel @Inject constructor(
     fun loadRoots() {
         viewModelScope.launch {
             _isLoading.value = true
-            _roots.value = repository.getRootsPaged(50, 0)
-            _isLoading.value = false
+            try {
+                _roots.value = repository.getAllRoots()
+            } catch (_: Exception) {
+                _roots.value = emptyList()
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
@@ -794,6 +799,8 @@ class WordAyatViewModel @Inject constructor(
 class SearchViewModel @Inject constructor(
     private val repository: QuranRepository
 ) : ViewModel() {
+    private val pageSize: Int = io.github.ahmedsaadi0.quranwords.core.util.DatabaseConstants.SEARCH_PAGE_SIZE
+
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
@@ -803,16 +810,188 @@ class SearchViewModel @Inject constructor(
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
 
+    private val _isLoadingMore = MutableStateFlow(false)
+    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
+
+    private val _rootsHasMore = MutableStateFlow(false)
+    val rootsHasMore: StateFlow<Boolean> = _rootsHasMore.asStateFlow()
+
+    private val _masadirHasMore = MutableStateFlow(false)
+    val masadirHasMore: StateFlow<Boolean> = _masadirHasMore.asStateFlow()
+
+    private val _derivativesHasMore = MutableStateFlow(false)
+    val derivativesHasMore: StateFlow<Boolean> = _derivativesHasMore.asStateFlow()
+
+    private val _ayatHasMore = MutableStateFlow(false)
+    val ayatHasMore: StateFlow<Boolean> = _ayatHasMore.asStateFlow()
+
+    private var rootsOffset: Int = 0
+    private var masadirOffset: Int = 0
+    private var derivativesOffset: Int = 0
+    private var ayatOffset: Int = 0
+
+    private var searchJob: kotlinx.coroutines.Job? = null
+
     fun onQueryChanged(newQuery: String) {
         _query.value = newQuery
+        searchJob?.cancel()
         if (newQuery.isBlank()) {
+            resetPagination()
             _results.value = SearchResult()
+            _isSearching.value = false
             return
         }
-        viewModelScope.launch {
+        searchJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(300)
             _isSearching.value = true
-            _results.value = repository.searchAll(newQuery)
-            _isSearching.value = false
+            resetPagination()
+            try {
+                val firstPage = repository.searchAll(newQuery)
+                _results.value = firstPage
+                rootsOffset = firstPage.roots.size
+                masadirOffset = firstPage.masadir.size
+                derivativesOffset = firstPage.derivatives.size
+                ayatOffset = firstPage.ayat.size
+                _rootsHasMore.value = firstPage.roots.size == pageSize
+                _masadirHasMore.value = firstPage.masadir.size == pageSize
+                _derivativesHasMore.value = firstPage.derivatives.size == pageSize
+                _ayatHasMore.value = firstPage.ayat.size == pageSize
+            } catch (_: Exception) {
+                resetPagination()
+                _results.value = SearchResult()
+            } finally {
+                _isSearching.value = false
+            }
+        }
+    }
+
+    private fun resetPagination() {
+        rootsOffset = 0
+        masadirOffset = 0
+        derivativesOffset = 0
+        ayatOffset = 0
+        _rootsHasMore.value = false
+        _masadirHasMore.value = false
+        _derivativesHasMore.value = false
+        _ayatHasMore.value = false
+        _isLoadingMore.value = false
+    }
+
+    fun loadMoreIfNeeded(tab: Int, lastVisibleIndex: Int) {
+        if (_isSearching.value || _isLoadingMore.value) return
+        val size = when (tab) {
+            0 -> _results.value.roots.size
+            1 -> _results.value.masadir.size
+            2 -> _results.value.derivatives.size
+            3 -> _results.value.ayat.size
+            else -> return
+        }
+        val hasMore = when (tab) {
+            0 -> _rootsHasMore.value
+            1 -> _masadirHasMore.value
+            2 -> _derivativesHasMore.value
+            3 -> _ayatHasMore.value
+            else -> false
+        }
+        if (!hasMore) return
+        if (lastVisibleIndex < size - 5) return
+        when (tab) {
+            0 -> loadMoreRoots()
+            1 -> loadMoreMasadir()
+            2 -> loadMoreDerivatives()
+            3 -> loadMoreAyat()
+        }
+    }
+
+    private fun loadMoreRoots() {
+        val q = _query.value
+        if (q.isBlank() || _isLoadingMore.value || !_rootsHasMore.value) return
+        viewModelScope.launch {
+            _isLoadingMore.value = true
+            kotlinx.coroutines.delay(80)
+            try {
+                val next = repository.searchRootsPaged(q, pageSize, rootsOffset)
+                if (next.isNotEmpty()) {
+                    _results.value = _results.value.copy(roots = _results.value.roots + next)
+                    rootsOffset += next.size
+                    _rootsHasMore.value = next.size == pageSize
+                } else {
+                    _rootsHasMore.value = false
+                }
+            } catch (_: Exception) {
+                _rootsHasMore.value = false
+            } finally {
+                _isLoadingMore.value = false
+            }
+        }
+    }
+
+    private fun loadMoreMasadir() {
+        val q = _query.value
+        if (q.isBlank() || _isLoadingMore.value || !_masadirHasMore.value) return
+        viewModelScope.launch {
+            _isLoadingMore.value = true
+            kotlinx.coroutines.delay(80)
+            try {
+                val next = repository.searchMasadirPaged(q, pageSize, masadirOffset)
+                if (next.isNotEmpty()) {
+                    _results.value = _results.value.copy(masadir = _results.value.masadir + next)
+                    masadirOffset += next.size
+                    _masadirHasMore.value = next.size == pageSize
+                } else {
+                    _masadirHasMore.value = false
+                }
+            } catch (_: Exception) {
+                _masadirHasMore.value = false
+            } finally {
+                _isLoadingMore.value = false
+            }
+        }
+    }
+
+    private fun loadMoreDerivatives() {
+        val q = _query.value
+        if (q.isBlank() || _isLoadingMore.value || !_derivativesHasMore.value) return
+        viewModelScope.launch {
+            _isLoadingMore.value = true
+            kotlinx.coroutines.delay(80)
+            try {
+                val next = repository.searchDerivativesPaged(q, pageSize, derivativesOffset)
+                if (next.isNotEmpty()) {
+                    _results.value = _results.value.copy(derivatives = _results.value.derivatives + next)
+                    derivativesOffset += next.size
+                    _derivativesHasMore.value = next.size == pageSize
+                } else {
+                    _derivativesHasMore.value = false
+                }
+            } catch (_: Exception) {
+                _derivativesHasMore.value = false
+            } finally {
+                _isLoadingMore.value = false
+            }
+        }
+    }
+
+    private fun loadMoreAyat() {
+        val q = _query.value
+        if (q.isBlank() || _isLoadingMore.value || !_ayatHasMore.value) return
+        viewModelScope.launch {
+            _isLoadingMore.value = true
+            kotlinx.coroutines.delay(80)
+            try {
+                val next = repository.searchAyatPaged(q, pageSize, ayatOffset)
+                if (next.isNotEmpty()) {
+                    _results.value = _results.value.copy(ayat = _results.value.ayat + next)
+                    ayatOffset += next.size
+                    _ayatHasMore.value = next.size == pageSize
+                } else {
+                    _ayatHasMore.value = false
+                }
+            } catch (_: Exception) {
+                _ayatHasMore.value = false
+            } finally {
+                _isLoadingMore.value = false
+            }
         }
     }
 }
@@ -820,7 +999,8 @@ class SearchViewModel @Inject constructor(
 @HiltViewModel
 class DatabaseSetupViewModel @Inject constructor(
     private val downloadManager: DatabaseDownloadManager,
-    private val dbUpdateRepository: io.github.ahmedsaadi0.quranwords.domain.repository.DbUpdateRepository
+    private val dbUpdateRepository: io.github.ahmedsaadi0.quranwords.domain.repository.DbUpdateRepository,
+    private val quranRepository: QuranRepository
 ) : ViewModel() {
 
     private val _downloadState = MutableStateFlow<DownloadState>(
@@ -870,6 +1050,7 @@ class DatabaseSetupViewModel @Inject constructor(
             downloadManager.downloadRelease(info).collectLatest { state ->
                 _downloadState.value = state
                 if (state is DownloadState.Completed && state.versionCode > 0) {
+                    quranRepository.closeDb()
                     dbUpdateRepository.setInstalledVersion(state.versionCode, state.versionName)
                     _installedVersion.value = dbUpdateRepository.getInstalledVersion()
                 }
@@ -896,6 +1077,7 @@ class DatabaseSetupViewModel @Inject constructor(
             downloadManager.importDatabase(uri).collectLatest { state ->
                 _downloadState.value = state
                 if (state is DownloadState.Completed) {
+                    quranRepository.closeDb()
                     _installedVersion.value = dbUpdateRepository.getInstalledVersion()
                 }
             }

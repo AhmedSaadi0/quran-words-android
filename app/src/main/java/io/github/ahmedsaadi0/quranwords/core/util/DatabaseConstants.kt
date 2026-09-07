@@ -12,4 +12,6 @@ object DatabaseConstants {
     const val ZIP_ENTRY_NAME = "quran_words.db"
 
     const val SQLITE_HEADER = "SQLite format 3\u0000"
+
+    const val SEARCH_PAGE_SIZE = 20
 }
