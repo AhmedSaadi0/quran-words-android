@@ -1,0 +1,53 @@
+<resources>
+    <!-- Home bookmarks summary counts -->
+    <plurals name="home_bookmarks_surahs">
+        <item quantity="one">%1$d surah</item>
+        <item quantity="other">%1$d surahs</item>
+    </plurals>
+    <plurals name="home_bookmarks_ayahs">
+        <item quantity="one">%1$d ayah</item>
+        <item quantity="other">%1$d ayahs</item>
+    </plurals>
+
+    <!-- RootItemCard badges (rendered inside Home featured list; data itself stays Arabic) -->
+    <plurals name="root_occurrences">
+        <item quantity="one">%1$d occurrence</item>
+        <item quantity="other">%1$d occurrences</item>
+    </plurals>
+    <plurals name="root_masadir_count">
+        <item quantity="one">%1$d masdar</item>
+        <item quantity="other">%1$d masadirs</item>
+    </plurals>
+    <plurals name="root_derivatives_count">
+        <item quantity="one">%1$d derivative</item>
+        <item quantity="other">%1$d derivatives</item>
+    </plurals>
+
+    <!-- Surah header meta: ayah count -->
+    <plurals name="ayah_count">
+        <item quantity="one">%1$d Ayah</item>
+        <item quantity="other">%1$d Ayahs</item>
+    </plurals>
+
+    <!-- Roots list title count -->
+    <plurals name="roots_count">
+        <item quantity="one">%1$d root</item>
+        <item quantity="other">%1$d roots</item>
+    </plurals>
+
+    <!-- Selection / copy feedback -->
+    <plurals name="selected_ayat_count">
+        <item quantity="one">%1$d ayah selected</item>
+        <item quantity="other">%1$d ayat selected</item>
+    </plurals>
+    <plurals name="copied_ayat_count">
+        <item quantity="one">%1$d ayah copied</item>
+        <item quantity="other">%1$d ayat copied</item>
+    </plurals>
+
+    <!-- Selected words count -->
+    <plurals name="selected_words_count">
+        <item quantity="one">%1$d word selected</item>
+        <item quantity="other">%1$d words selected</item>
+    </plurals>
+</resources>

@@ -1,0 +1,84 @@
+<resources>
+    <plurals name="home_bookmarks_surahs">
+        <item quantity="zero">لا سور</item>
+        <item quantity="one">سورة واحدة</item>
+        <item quantity="two">سورتان</item>
+        <item quantity="few">%1$d سور</item>
+        <item quantity="many">%1$d سورة</item>
+        <item quantity="other">%1$d سورة</item>
+    </plurals>
+    <plurals name="home_bookmarks_ayahs">
+        <item quantity="zero">لا آيات</item>
+        <item quantity="one">آية واحدة</item>
+        <item quantity="two">آيتان</item>
+        <item quantity="few">%1$d آيات</item>
+        <item quantity="many">%1$d آية</item>
+        <item quantity="other">%1$d آية</item>
+    </plurals>
+
+    <plurals name="root_occurrences">
+        <item quantity="one">موضع واحد</item>
+        <item quantity="two">موضعان</item>
+        <item quantity="few">%1$d مواضع</item>
+        <item quantity="many">%1$d موضعًا</item>
+        <item quantity="other">%1$d موضع</item>
+    </plurals>
+    <plurals name="root_masadir_count">
+        <item quantity="one">مصدر واحد</item>
+        <item quantity="two">مصدران</item>
+        <item quantity="few">%1$d مصادر</item>
+        <item quantity="many">%1$d مصدرًا</item>
+        <item quantity="other">%1$d مصدر</item>
+    </plurals>
+    <plurals name="root_derivatives_count">
+        <item quantity="one">مشتق واحد</item>
+        <item quantity="two">مشتقان</item>
+        <item quantity="few">%1$d مشتقات</item>
+        <item quantity="many">%1$d مشتقًا</item>
+        <item quantity="other">%1$d مشتق</item>
+    </plurals>
+
+    <plurals name="ayah_count">
+        <item quantity="zero">لا آيات</item>
+        <item quantity="one">آية واحدة</item>
+        <item quantity="two">آيتان</item>
+        <item quantity="few">%1$d آيات</item>
+        <item quantity="many">%1$d آية</item>
+        <item quantity="other">%1$d آية</item>
+    </plurals>
+
+    <plurals name="roots_count">
+        <item quantity="zero">لا جذور</item>
+        <item quantity="one">جذر واحد</item>
+        <item quantity="two">جذران</item>
+        <item quantity="few">%1$d جذور</item>
+        <item quantity="many">%1$d جذرًا</item>
+        <item quantity="other">%1$d جذر</item>
+    </plurals>
+
+    <plurals name="selected_ayat_count">
+        <item quantity="zero">لم يتم تحديد آيات</item>
+        <item quantity="one">تم تحديد آية واحدة</item>
+        <item quantity="two">تم تحديد آيتين</item>
+        <item quantity="few">تم تحديد %1$d آيات</item>
+        <item quantity="many">تم تحديد %1$d آية</item>
+        <item quantity="other">تم تحديد %1$d آية</item>
+    </plurals>
+    <plurals name="copied_ayat_count">
+        <item quantity="zero">لا توجد آيات للنسخ</item>
+        <item quantity="one">تم نسخ آية واحدة</item>
+        <item quantity="two">تم نسخ آيتين</item>
+        <item quantity="few">تم نسخ %1$d آيات</item>
+        <item quantity="many">تم نسخ %1$d آية</item>
+        <item quantity="other">تم نسخ %1$d آية</item>
+    </plurals>
+
+    <plurals name="selected_words_count">
+        <item quantity="zero">لم يتم تحديد كلمات</item>
+        <item quantity="one">تم تحديد كلمة واحدة</item>
+        <item quantity="two">تم تحديد كلمتين</item>
+        <item quantity="few">تم تحديد %1$d كلمات</item>
+        <item quantity="many">تم تحديد %1$d كلمة</item>
+        <item quantity="other">تم تحديد %1$d كلمة</item>
+    </plurals>
+</resources>

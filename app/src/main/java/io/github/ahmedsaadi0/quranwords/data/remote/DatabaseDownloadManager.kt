@@ -18,6 +18,25 @@ import java.util.zip.ZipInputStream
 
 enum class DownloadPhase { DOWNLOAD, EXTRACT }
 
+/**
+ * Localizable download failure reason. The UI maps each code to a string
+ * resource; [DownloadState.Error.detail] carries the raw technical message
+ * for logs only and is never displayed.
+ */
+enum class DownloadError {
+    NETWORK,
+    NOT_ZIP,
+    CHECKSUM_MISMATCH,
+    EXTRACT_FAILED,
+    INVALID_DB,
+    INCOMPLETE_FILE,
+    INSTALL_FAILED,
+    BAD_PICK,
+    IMPORT_FAILED,
+    MANIFEST_FAILED,
+    UNKNOWN
+}
+
 sealed interface DownloadState {
     object Idle : DownloadState
     data class Progress(
@@ -29,7 +48,7 @@ sealed interface DownloadState {
     ) : DownloadState
     data class Extracting(val percentage: Int) : DownloadState
     data class Completed(val versionCode: Int = 0, val versionName: String = "") : DownloadState
-    data class Error(val message: String) : DownloadState
+    data class Error(val error: DownloadError, val detail: String? = null) : DownloadState
 }
 
 class DatabaseDownloadManager(
@@ -68,13 +87,13 @@ class DatabaseDownloadManager(
             }
         } catch (e: Exception) {
             zipTmp.takeIf { it.exists() }?.delete()
-            emit(DownloadState.Error(e.message ?: "فشل تنزيل التحديث"))
+            emit(DownloadState.Error(DownloadError.NETWORK, e.message))
             return@flow
         }
 
         if (!DbFileValidator.isZip(zipTmp)) {
             zipTmp.takeIf { it.exists() }?.delete()
-            emit(DownloadState.Error("ملف التحديث ليس مضغوطًا بشكل صحيح"))
+            emit(DownloadState.Error(DownloadError.NOT_ZIP))
             return@flow
         }
 
@@ -82,7 +101,7 @@ class DatabaseDownloadManager(
             val actual = DbFileValidator.sha256Hex(zipTmp)
             if (actual != null && !actual.equals(info.sha256, ignoreCase = true)) {
                 zipTmp.takeIf { it.exists() }?.delete()
-                emit(DownloadState.Error("فشل التحقق من سلامة الملف (بصمة غير متطابقة)"))
+                emit(DownloadState.Error(DownloadError.CHECKSUM_MISMATCH))
                 return@flow
             }
         }
@@ -104,7 +123,7 @@ class DatabaseDownloadManager(
         } catch (e: Exception) {
             zipTmp.takeIf { it.exists() }?.delete()
             dbTmp.takeIf { it.exists() }?.delete()
-            emit(DownloadState.Error(e.message ?: "تعذر فك ضغط قاعدة البيانات"))
+            emit(DownloadState.Error(DownloadError.EXTRACT_FAILED, e.message))
             return@flow
         } finally {
             zipTmp.takeIf { it.exists() }?.delete()
@@ -112,19 +131,19 @@ class DatabaseDownloadManager(
 
         if (!DbFileValidator.hasSqliteHeader(dbTmp)) {
             dbTmp.takeIf { it.exists() }?.delete()
-            emit(DownloadState.Error("الملف المستخرج ليس قاعدة بيانات صالحة"))
+            emit(DownloadState.Error(DownloadError.INVALID_DB))
             return@flow
         }
         if (!DbFileValidator.isValidDbSize(dbTmp.length(), info.uncompressedSize)) {
             dbTmp.takeIf { it.exists() }?.delete()
-            emit(DownloadState.Error("الملف المستخرج غير مكتمل"))
+            emit(DownloadState.Error(DownloadError.INCOMPLETE_FILE))
             return@flow
         }
 
         if (installDbFile(dbTmp, targetFile)) {
             emit(DownloadState.Completed(info.versionCode, info.versionName))
         } else {
-            emit(DownloadState.Error("تعذر تثبيت قاعدة البيانات في المسار المخصص"))
+            emit(DownloadState.Error(DownloadError.INSTALL_FAILED))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -152,7 +171,7 @@ class DatabaseDownloadManager(
             } catch (_: Exception) {
             }
             val sourceInput = resolver.openInputStream(sourceUri)
-                ?: throw IllegalStateException("تعذر فتح الملف المختار")
+                ?: throw IllegalStateException("Cannot open selected file")
             sourceInput.use { input ->
                 FileOutputStream(stagingTmp).use { output ->
                     copyWithProgress(input, output, totalBytes) { percent, done, total, speed ->
@@ -179,18 +198,18 @@ class DatabaseDownloadManager(
                 candidate.length() <= DatabaseConstants.DB_MIN_READY_SIZE
             ) {
                 candidate.takeIf { it.exists() }?.delete()
-                emit(DownloadState.Error("الملف المختار غير مكتمل أو ليس قاعدة البيانات الصحيحة"))
+                emit(DownloadState.Error(DownloadError.BAD_PICK))
                 return@flow
             }
             if (installDbFile(candidate, targetFile)) {
                 emit(DownloadState.Completed())
             } else {
-                emit(DownloadState.Error("تعذر تثبيت قاعدة البيانات في المسار المخصص"))
+                emit(DownloadState.Error(DownloadError.INSTALL_FAILED))
             }
         } catch (e: Exception) {
             stagingTmp.takeIf { it.exists() }?.delete()
             dbTmp.takeIf { it.exists() }?.delete()
-            emit(DownloadState.Error(e.localizedMessage ?: "حدث خطأ أثناء استيراد البيانات"))
+            emit(DownloadState.Error(DownloadError.IMPORT_FAILED, e.localizedMessage))
         }
     }.flowOn(Dispatchers.IO)
 
@@ -200,14 +219,14 @@ class DatabaseDownloadManager(
         totalEstimate: Long,
         onProgress: suspend (percent: Int, done: Long, total: Long, speedKbps: Long) -> Unit
     ) {
-        require(url.startsWith("https://")) { "رابط غير آمن" }
+        require(url.startsWith("https://")) { "Insecure URL" }
         val request = Request.Builder()
             .url(url)
             .header("User-Agent", "QuranWordsApp/1.0")
             .build()
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IllegalStateException("فشل الاتصال بالخادم: كود ${response.code}")
-            val body = response.body ?: throw IllegalStateException("استجابة الخادم فارغة")
+            if (!response.isSuccessful) throw IllegalStateException("Server error: code ${response.code}")
+            val body = response.body ?: throw IllegalStateException("Empty server response")
             val totalBytes = if (body.contentLength() > 0) body.contentLength() else totalEstimate
             var downloaded = 0L
             val buffer = ByteArray(64 * 1024)
@@ -237,7 +256,7 @@ class DatabaseDownloadManager(
                     }
                 }
             }
-            if (dest.length() <= 0) throw IllegalStateException("الملف المحمّل فارغ")
+            if (dest.length() <= 0) throw IllegalStateException("Downloaded file is empty")
         }
     }
 
@@ -283,7 +302,7 @@ class DatabaseDownloadManager(
                 while (entry != null) {
                     val name = entry.name ?: ""
                     if (!entry.isDirectory && isSafeZipEntry(name)) {
-                        if (found) throw IllegalStateException("ملف مضغوط يحوي أكثر من قاعدة")
+                        if (found) throw IllegalStateException("Zip holds more than one database")
                         found = true
                         val totalEntry = entry.size.takeIf { it > 0 } ?: -1L
                         var written = 0L
@@ -306,7 +325,7 @@ class DatabaseDownloadManager(
                     zis.closeEntry()
                     entry = zis.nextEntry
                 }
-                if (!found) throw IllegalStateException("لم يتم العثور على قاعدة البيانات داخل الملف المضغوط")
+                if (!found) throw IllegalStateException("Database not found inside the zip")
             }
         }
     }

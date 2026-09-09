@@ -51,10 +51,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.core.util.isMeccan
 import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.ui.components.SurahItemCard
@@ -83,8 +86,8 @@ fun SurahIndexScreen(
         val queryNorm = ArabicNormalizer.normalizeAr(searchQuery)
         surahs.filter { surah ->
             val matchesFilter = when (filterType) {
-                "meccan" -> surah.revelationType.contains("مكية")
-                "medinan" -> surah.revelationType.contains("مدنية")
+                "meccan" -> surah.isMeccan
+                "medinan" -> !surah.isMeccan
                 else -> true
             }
             val matchesQuery = if (queryNorm.isBlank()) true else {
@@ -104,13 +107,13 @@ fun SurahIndexScreen(
                     title = {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
-                                text = "فهرس القرآن الكريم",
+                                text = stringResource(R.string.surah_index_title),
                                 fontWeight = FontWeight.Bold
                             )
                             // Collapsible detail — visible only when expanded (earns the collapse)
                             if (scrollBehavior.state.collapsedFraction < 0.5f) {
                                 Text(
-                                    text = "114 سور • 86 مكية • 28 مدنية • 30 جزء",
+                                    text = stringResource(R.string.surah_index_subtitle, 114, 86, 28, 30),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -124,7 +127,7 @@ fun SurahIndexScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "رجوع"
+                                contentDescription = stringResource(R.string.cd_back)
                             )
                         }
                     },
@@ -146,7 +149,7 @@ fun SurahIndexScreen(
                         onClick = { selectedTabIndex = 0 },
                         text = {
                             Text(
-                                text = "السور (${QuranMetaConstants.STATS_SURAHS})",
+                                text = stringResource(R.string.surah_index_tab_surahs, QuranMetaConstants.STATS_SURAHS),
                                 fontWeight = FontWeight.Bold
                             )
                         },
@@ -157,7 +160,7 @@ fun SurahIndexScreen(
                         onClick = { selectedTabIndex = 1 },
                         text = {
                             Text(
-                                text = "الأجزاء (30)",
+                                text = stringResource(R.string.surah_index_tab_juz, 30),
                                 fontWeight = FontWeight.Bold
                             )
                         },
@@ -193,14 +196,14 @@ fun SurahIndexScreen(
                             OutlinedTextField(
                                 value = searchQuery,
                                 onValueChange = { surahViewModel.setSearchQuery(it) },
-                                placeholder = { Text("ابحث باسم السورة أو رقمها...") },
+                                placeholder = { Text(stringResource(R.string.surah_index_search_hint)) },
                                 leadingIcon = {
                                     Icon(imageVector = Icons.Default.Search, contentDescription = null)
                                 },
                                 trailingIcon = {
                                     if (searchQuery.isNotBlank()) {
                                         IconButton(onClick = { surahViewModel.setSearchQuery("") }) {
-                                            Icon(imageVector = Icons.Default.Close, contentDescription = "مسح")
+                                            Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear))
                                         }
                                     }
                                 },
@@ -217,19 +220,19 @@ fun SurahIndexScreen(
                                 FilterChip(
                                     selected = filterType == "all",
                                     onClick = { surahViewModel.setFilter("all") },
-                                    label = { Text("الكل (114)") },
+                                    label = { Text(stringResource(R.string.surah_index_filter_all, 114)) },
                                     shape = RoundedCornerShape(12.dp)
                                 )
                                 FilterChip(
                                     selected = filterType == "meccan",
                                     onClick = { surahViewModel.setFilter("meccan") },
-                                    label = { Text("مكية (86)") },
+                                    label = { Text(stringResource(R.string.surah_index_filter_meccan, 86)) },
                                     shape = RoundedCornerShape(12.dp)
                                 )
                                 FilterChip(
                                     selected = filterType == "medinan",
                                     onClick = { surahViewModel.setFilter("medinan") },
-                                    label = { Text("مدنية (28)") },
+                                    label = { Text(stringResource(R.string.surah_index_filter_medinan, 28)) },
                                     shape = RoundedCornerShape(12.dp)
                                 )
                             }
@@ -246,8 +249,8 @@ fun SurahIndexScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = if (searchQuery.isBlank()) "لا توجد سور مطابقة للفلتر"
-                                    else "لا توجد نتائج لـ \"$searchQuery\"",
+                                    text = if (searchQuery.isBlank()) stringResource(R.string.surah_index_empty_filter)
+                                    else stringResource(R.string.surah_index_empty_query, searchQuery),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

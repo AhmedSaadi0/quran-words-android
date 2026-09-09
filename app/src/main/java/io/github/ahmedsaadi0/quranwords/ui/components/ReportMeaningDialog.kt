@@ -36,10 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.ReportMeaningViewModel
 import io.github.ahmedsaadi0.quranwords.util.MeaningReportLimits
 import io.github.ahmedsaadi0.quranwords.util.MeaningReportType
@@ -98,7 +100,7 @@ fun ReportMeaningDialog(
         },
         title = {
             Text(
-                text = "الإبلاغ عن الملخص الذكي",
+                text = stringResource(R.string.report_title),
                 style = MaterialTheme.typography.headlineSmall
             )
         },
@@ -110,7 +112,8 @@ fun ReportMeaningDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "الجذر: [ $rootText ]",
+                    // rootText is Arabic reference data (never translated).
+                    text = stringResource(R.string.report_root_template, rootText),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -133,13 +136,14 @@ fun ReportMeaningDialog(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "المعنى المُبلغ عنه",
+                            text = stringResource(R.string.report_target),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = aiSummary.ifBlank { "لا يوجد ملخص ذكي معروض لهذا الجذر — يمكنك الإبلاغ عن غيابه." },
+                            // aiSummary is Arabic reference data; only the empty fallback is chrome.
+                            text = aiSummary.ifBlank { context.getString(R.string.report_no_summary) },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -147,7 +151,7 @@ fun ReportMeaningDialog(
                 }
 
                 Text(
-                    text = "نوع البلاغ",
+                    text = stringResource(R.string.report_type_label),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -159,7 +163,7 @@ fun ReportMeaningDialog(
                         FilterChip(
                             selected = reportType == type,
                             onClick = { viewModel.setReportType(type) },
-                            label = { Text(type.ar) },
+                            label = { Text(stringResource(type.labelRes)) },
                             modifier = Modifier.testTag("report_type_${type.name}")
                         )
                     }
@@ -168,17 +172,25 @@ fun ReportMeaningDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { viewModel.setDescription(it.take(2000)) },
-                    label = { Text("اشرح المشكلة *") },
-                    placeholder = { Text("مثال: الملخص يذكر أن الجذر يدل على الكتابة بينما السياق القرآني يدل على…") },
+                    label = { Text(stringResource(R.string.report_desc_label)) },
+                    placeholder = { Text(stringResource(R.string.report_desc_hint)) },
                     minLines = 3,
                     maxLines = 8,
                     isError = description.isNotBlank() && !canSubmit,
                     supportingText = {
                         Text(
                             text = if (description.isNotBlank() && !canSubmit) {
-                                "اشرح المشكلة بعشر أحرف على الأقل (${description.trim().length}/${MeaningReportLimits.MIN_DESCRIPTION})"
+                                stringResource(
+                                    R.string.report_desc_error,
+                                    description.trim().length,
+                                    MeaningReportLimits.MIN_DESCRIPTION
+                                )
                             } else {
-                                "${description.length}/${MeaningReportLimits.MAX_DESCRIPTION}"
+                                stringResource(
+                                    R.string.report_desc_count,
+                                    description.length,
+                                    MeaningReportLimits.MAX_DESCRIPTION
+                                )
                             }
                         )
                     },
@@ -190,8 +202,8 @@ fun ReportMeaningDialog(
                 OutlinedTextField(
                     value = suggestion,
                     onValueChange = { viewModel.setSuggestion(it.take(2000)) },
-                    label = { Text("التصحيح المقترح (اختياري)") },
-                    placeholder = { Text("مثال: الصواب أن الملخص يذكر…") },
+                    label = { Text(stringResource(R.string.report_suggest_label)) },
+                    placeholder = { Text(stringResource(R.string.report_suggest_hint)) },
                     minLines = 2,
                     maxLines = 6,
                     modifier = Modifier
@@ -206,7 +218,7 @@ fun ReportMeaningDialog(
                     OutlinedButton(
                         onClick = {
                             clipboardManager.setText(AnnotatedString(currentMarkdown()))
-                            Toast.makeText(context, "تم نسخ نص البلاغ", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.report_copied), Toast.LENGTH_SHORT).show()
                         },
                         enabled = canSubmit,
                         modifier = Modifier
@@ -217,7 +229,7 @@ fun ReportMeaningDialog(
                             imageVector = Icons.Outlined.ContentCopy,
                             contentDescription = null
                         )
-                        Text("نسخ البلاغ")
+                        Text(stringResource(R.string.report_copy))
                     }
                     OutlinedButton(
                         onClick = {
@@ -227,10 +239,10 @@ fun ReportMeaningDialog(
                                     putExtra(Intent.EXTRA_TEXT, currentMarkdown())
                                 }
                                 context.startActivity(
-                                    Intent.createChooser(sendIntent, "مشاركة البلاغ")
+                                    Intent.createChooser(sendIntent, context.getString(R.string.report_share_title))
                                 )
                             } catch (_: ActivityNotFoundException) {
-                                Toast.makeText(context, "لا يوجد تطبيق للمشاركة", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.no_share_app), Toast.LENGTH_SHORT).show()
                             }
                         },
                         enabled = canSubmit,
@@ -242,7 +254,7 @@ fun ReportMeaningDialog(
                             imageVector = Icons.Outlined.Share,
                             contentDescription = null
                         )
-                        Text("مشاركة")
+                        Text(stringResource(R.string.common_share))
                     }
                 }
             }
@@ -275,12 +287,12 @@ fun ReportMeaningDialog(
                     imageVector = Icons.AutoMirrored.Outlined.OpenInNew,
                     contentDescription = null
                 )
-                Text("إرسال عبر GitHub")
+                Text(stringResource(R.string.report_github))
             }
         },
         dismissButton = {
             TextButton(onClick = ::dismissAndReset) {
-                Text("إلغاء")
+                Text(stringResource(R.string.cd_cancel))
             }
         }
     )

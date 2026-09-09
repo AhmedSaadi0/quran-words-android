@@ -18,8 +18,8 @@ android {
     applicationId = "io.github.ahmedsaadi0.quranwords"
     minSdk = 24
     targetSdk = 36
-    versionCode = 3
-    versionName = "0.2.1"
+    versionCode = 4
+    versionName = "0.3.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
@@ -79,6 +79,7 @@ dependencies {
   implementation(platform(libs.androidx.compose.bom))
   implementation(platform(libs.firebase.bom))
   implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.appcompat)
   implementation(libs.androidx.compose.material.icons.core)
   implementation(libs.androidx.compose.material.icons.extended)
   implementation(libs.androidx.compose.material3)

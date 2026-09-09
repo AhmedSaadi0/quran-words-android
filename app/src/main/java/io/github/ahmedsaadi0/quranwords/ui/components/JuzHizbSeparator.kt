@@ -14,9 +14,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeSmall
 
 @Composable
@@ -31,38 +33,35 @@ fun JuzHizbSeparator(
     // No separator if not a boundary (caller guards, but keep safe)
     if (!isJuzStart && !isHizbStart) return
 
+    // Resolve localized parts in @Composable context first: stringResource
+    // cannot be called from inside the buildString lambda below.
+    val quarter = rubElHizb?.let { ((it - 1) % 4) + 1 }
+    val juzText = if (isJuzStart && juz != null) stringResource(R.string.juz_label, juz) else null
+    val hizbText = if (hizb != null) stringResource(R.string.hizb_label, hizb) else null
+    val quarterText = quarter?.let { stringResource(R.string.quarter_label, it) }
     val text = buildString {
-        if (isJuzStart && juz != null) {
-            append("الجزء $juz")
-            if (isHizbStart && hizb != null) {
-                append(" • الحزب $hizb")
+        if (juzText != null) {
+            append(juzText)
+            if (isHizbStart && hizbText != null) {
+                append(" • $hizbText")
             }
             // Quarter only if juz start coincides with hizb but rub is not 1 of that hizb
             // Still show quarter for full Mushaf accuracy when rub present and not aligned
-            if (rubElHizb != null) {
-                val quarter = ((rubElHizb - 1) % 4) + 1
-                if (quarter != 1) {
-                    append(" • ربع $quarter")
-                }
+            if (quarter != null && quarter != 1) {
+                append(" • $quarterText")
             }
-        } else if (isHizbStart && hizb != null) {
-            append("الحزب $hizb")
-            if (rubElHizb != null) {
-                val quarter = ((rubElHizb - 1) % 4) + 1
-                // Show quarter 1..4 for hizb boundaries
-                if (quarter != 1) {
-                    append(" • ربع $quarter")
-                } else if (hizb != null) {
-                    // For clean Hizb start (quarter 1), just show Hizb
-                }
+        } else if (isHizbStart && hizbText != null) {
+            append(hizbText)
+            // Show quarter 2..4 for hizb boundaries; clean Hizb start shows Hizb only
+            if (quarter != null && quarter != 1) {
+                append(" • $quarterText")
             }
-        } else if (rubElHizb != null) {
+        } else if (quarterText != null) {
             // Rub-only (quarter inside hizb) — rare, but handle
-            val quarter = ((rubElHizb - 1) % 4) + 1
-            if (hizb != null) {
-                append("الحزب $hizb • ربع $quarter")
+            if (hizbText != null) {
+                append("$hizbText • $quarterText")
             } else {
-                append("ربع $quarter")
+                append(quarterText)
             }
         }
     }

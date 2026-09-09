@@ -2,10 +2,8 @@ package io.github.ahmedsaadi0.quranwords.ui.screens
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -33,11 +31,13 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.Emerald700
@@ -48,12 +48,15 @@ import io.github.ahmedsaadi0.quranwords.ui.theme.QuranGold
 fun MorphologyGuideScreen(
     onNavigateBack: () -> Unit
 ) {
+    // Follows the per-app locale with no ViewModel plumbing; Arabic-first default.
+    val isArabic = (LocalConfiguration.current.locales.get(0)?.language ?: "ar").startsWith("ar")
+    val formsMap = if (isArabic) QuranMetaConstants.FORMS_MAP else QuranMetaConstants.FORMS_MAP_EN
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "دليل المصطلحات والصرف القرآني",
+                        text = stringResource(R.string.guide_title),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -64,7 +67,7 @@ fun MorphologyGuideScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -101,13 +104,13 @@ fun MorphologyGuideScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "منهجية التحليل الصرفي والنحوي",
+                            text = stringResource(R.string.guide_method_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "يعتمد التطبيق على تجريد الكلمات القرآنية إلى جذورها الثلاثية والرباعية، وتحديد أبواب الأفعال وأوزان المشتقات والمصادر بالاستناد إلى مدونة ليدز للقرآن الكريم (Quranic Arabic Corpus) ومجمع المعاجم التراثية المعتمدة.",
+                            text = stringResource(R.string.guide_method_body),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -118,14 +121,14 @@ fun MorphologyGuideScreen(
             // Verb Forms Table Header
             item {
                 Text(
-                    text = "أبواب وأوزان الأفعال القرآنية (Forms I - XII)",
+                    text = stringResource(R.string.guide_forms_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
             }
 
-            items(QuranMetaConstants.FORMS_MAP.toList(), key = { "form_${it.first}" }) { (code, desc) ->
+            items(formsMap.toList(), key = { "form_${it.first}" }) { (code, desc) ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -143,29 +146,21 @@ fun MorphologyGuideScreen(
                     ) {
                         Column {
                             Text(
+                                // desc is localized dictionary data (AR/EN maps).
                                 text = desc,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "الباب $code في التصنيف اللغوي",
+                                // Arabic ordinal keeps the Arabic locale Latin-free;
+                                // English keeps the standard "Form <code>" convention.
+                                text = stringResource(
+                                    R.string.guide_form_desc,
+                                    if (isArabic) QuranMetaConstants.FORM_ORDINAL_AR[code] ?: code else code
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = "Form $code",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -175,7 +170,7 @@ fun MorphologyGuideScreen(
             // Core Morphology Terms Header
             item {
                 Text(
-                    text = "أقسام الكلم والمصطلحات النحوية والصرفية",
+                    text = stringResource(R.string.guide_terms_title),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -195,34 +190,16 @@ fun MorphologyGuideScreen(
                         modifier = Modifier.padding(14.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = term.nameAr,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.65f))
-                                    .padding(horizontal = 8.dp, vertical = 3.dp)
-                            ) {
-                                Text(
-                                    text = term.code,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.tertiary
-                                )
-                            }
-                        }
+                        Text(
+                            // Localized in C2 (nameAr/nameEn); Latin code badge removed.
+                            text = if (isArabic) term.nameAr else term.nameEn,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
 
                         Text(
-                            text = term.description,
+                            text = if (isArabic) term.description else term.descriptionEn,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -232,13 +209,14 @@ fun MorphologyGuideScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "شاهد قرآني:",
+                                text = stringResource(R.string.guide_example_label),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "${term.exampleWord} (الآية: ${term.exampleLocation})",
+                                // exampleWord/exampleLocation are Arabic data; label is chrome.
+                                text = stringResource(R.string.guide_example_ref, term.exampleWord, term.exampleLocation),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -264,18 +242,13 @@ fun MorphologyGuideScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "المراجع والمصادر التوثيقية",
+                            text = stringResource(R.string.guide_refs_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "• مدونة القرآن الكريم اللغوية (Quranic Arabic Corpus - Kais Dukes, University of Leeds)\n" +
-                                    "• المصحف الإلكتروني لمشروع تنزيل (Tanzil.net Project)\n" +
-                                    "• لسان العرب لابن منظور الإفريقي\n" +
-                                    "• الصحاح في اللغة للجوهري\n" +
-                                    "• معجم مقاييس اللغة لابن فارس\n" +
-                                    "• مكتبة CAMeL اللغوية لتحليل الصرف العربي",
+                            text = stringResource(R.string.guide_refs_body),
                             style = MaterialTheme.typography.bodySmall,
                             lineHeight = 22.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant

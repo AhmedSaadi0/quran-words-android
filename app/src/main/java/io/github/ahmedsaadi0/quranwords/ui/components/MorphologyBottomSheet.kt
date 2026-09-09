@@ -32,10 +32,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -93,7 +95,7 @@ fun MorphologyBottomSheet(
                 }
                 if (ayah != null) {
                     Text(
-                        text = "الآية ${ayah.ayah}",
+                        text = stringResource(R.string.morpho_ayah, ayah.ayah),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -134,7 +136,7 @@ fun MorphologyBottomSheet(
                     ) {
                         Column {
                             Text(
-                                text = "الجذر اللغوي",
+                                text = stringResource(R.string.morpho_root),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -157,7 +159,7 @@ fun MorphologyBottomSheet(
                             shape = ShapeSmall
                         ) {
                             Text(
-                                text = "تفاصيل الجذر والمشتقات",
+                                text = stringResource(R.string.morpho_details),
                                 style = MaterialTheme.typography.labelMedium
                             )
                         }
@@ -200,7 +202,7 @@ private fun AiSummarySection(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
-            text = "الملخص الذكي للجذر",
+            text = stringResource(R.string.morpho_ai_title),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
@@ -275,35 +277,12 @@ private fun AiSummarySection(
             }
             hasTried -> {
                 Text(
-                    text = if (word.rootId == null) "هذه الكلمة غير مرتبطة بجذر لغوي" else "لا يوجد ملخص ذكي متاح لهذا الجذر حالياً",
+                    text = if (word.rootId == null) stringResource(R.string.morpho_no_root)
+                    else stringResource(R.string.morpho_no_summary),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-    }
-}
-
-@Composable
-fun PropertyRow(
-    label: String,
-    value: String
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
     }
 }

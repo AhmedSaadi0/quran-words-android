@@ -16,14 +16,19 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
@@ -65,20 +70,22 @@ fun RootItemCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Root letters badge - M3 Small 12dp
+                // Root letters badge - Arabic data, always RTL even in LTR shell.
                 Box(
                     modifier = Modifier
                         .clip(ShapeSmall)
                         .background(MaterialTheme.colorScheme.primaryContainer)
                         .padding(horizontal = 14.dp, vertical = 6.dp)
                 ) {
-                    Text(
-                        text = rootItem.root.toCharArray().joinToString(" "),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 22.sp
-                    )
+                    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                        Text(
+                            text = rootItem.root.toCharArray().joinToString(" "),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 22.sp
+                        )
+                    }
                 }
 
                 if (rootItem.occurrencesCount > 0) {
@@ -89,7 +96,11 @@ fun RootItemCard(
                             .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = "${rootItem.occurrencesCount} موضع",
+                            text = pluralStringResource(
+                                R.plurals.root_occurrences,
+                                rootItem.occurrencesCount,
+                                rootItem.occurrencesCount
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.tertiary
@@ -98,24 +109,28 @@ fun RootItemCard(
                 }
             }
 
-            // Gloss / Meaning
-            if (!rootItem.glossAr.isNullOrBlank()) {
-                Text(
-                    text = rootItem.glossAr,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            } else if (!rootItem.aiSummary.isNullOrBlank()) {
-                Text(
-                    text = rootItem.aiSummary,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
+            // Gloss / Meaning: Arabic reference data, never translated — only
+            // direction is forced so the block stays RTL inside an LTR shell.
+            // root_glosses is deprecated and must not be read here.
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                if (!rootItem.glossAr.isNullOrBlank()) {
+                    Text(
+                        text = rootItem.glossAr,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } else if (!rootItem.aiSummary.isNullOrBlank()) {
+                    Text(
+                        text = rootItem.aiSummary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
 
             // Statistics Badges - M3 Small 12dp unified
@@ -130,7 +145,11 @@ fun RootItemCard(
                             .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
                         Text(
-                            text = "${rootItem.masadirCount} مصادر",
+                            text = pluralStringResource(
+                                R.plurals.root_masadir_count,
+                                rootItem.masadirCount,
+                                rootItem.masadirCount
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -145,7 +164,11 @@ fun RootItemCard(
                             .padding(horizontal = 8.dp, vertical = 3.dp)
                     ) {
                         Text(
-                            text = "${rootItem.derivativesCount} مشتق",
+                            text = pluralStringResource(
+                                R.plurals.root_derivatives_count,
+                                rootItem.derivativesCount,
+                                rootItem.derivativesCount
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

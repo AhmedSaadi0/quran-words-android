@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.ahmedsaadi0.quranwords.core.util.AppLanguage
+import io.github.ahmedsaadi0.quranwords.core.util.LanguageManager
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
 import io.github.ahmedsaadi0.quranwords.data.remote.DownloadState
 import io.github.ahmedsaadi0.quranwords.data.repository.UserPreferencesRepository
@@ -26,6 +28,7 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val repository: QuranRepository,
     private val preferences: UserPreferencesRepository,
+    private val languageManager: LanguageManager,
     val downloadManager: DatabaseDownloadManager
 ) : ViewModel() {
 
@@ -56,6 +59,9 @@ class MainViewModel @Inject constructor(
     private val _lastReadAyah = MutableStateFlow(1)
     val lastReadAyah: StateFlow<Int> = _lastReadAyah.asStateFlow()
 
+    private val _language = MutableStateFlow(AppLanguage.SYSTEM)
+    val language: StateFlow<String> = _language.asStateFlow()
+
     init {
         viewModelScope.launch {
             preferences.fontSize.collectLatest { _fontSize.value = it }
@@ -81,6 +87,12 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             preferences.lastReadAyah.collectLatest { _lastReadAyah.value = it }
         }
+        viewModelScope.launch {
+            preferences.language.collectLatest {
+                _language.value = it
+                languageManager.apply(it)
+            }
+        }
     }
 
     fun refreshDbStatus() {
@@ -104,6 +116,10 @@ class MainViewModel @Inject constructor(
 
     fun setDarkModeSetting(mode: Int) {
         viewModelScope.launch { preferences.setDarkModeSetting(mode) }
+    }
+
+    fun setLanguage(tag: String) {
+        viewModelScope.launch { preferences.setLanguage(tag) }
     }
 
     fun setColorMode(mode: Int) {
@@ -1066,7 +1082,10 @@ class DatabaseSetupViewModel @Inject constructor(
                 r.data
             }
             is io.github.ahmedsaadi0.quranwords.domain.repository.DbCheckResult.Error -> {
-                _downloadState.value = DownloadState.Error("تعذر جلب معلومات الإصدار: ${r.message}")
+                _downloadState.value = DownloadState.Error(
+                    io.github.ahmedsaadi0.quranwords.data.remote.DownloadError.MANIFEST_FAILED,
+                    r.message
+                )
                 null
             }
         }

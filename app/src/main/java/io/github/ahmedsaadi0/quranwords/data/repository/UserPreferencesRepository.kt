@@ -37,6 +37,11 @@ class UserPreferencesRepository @Inject constructor(@param:ApplicationContext pr
         private val KEY_DB_INSTALLED_AT = longPreferencesKey("db_installed_at")
         private val KEY_DISMISSED_DB_VERSION = intPreferencesKey("dismissed_db_version_code")
         private val KEY_LAST_DB_CHECK_AT = longPreferencesKey("last_db_check_at")
+        private val KEY_LANGUAGE = stringPreferencesKey("app_language") // system|ar|en
+    }
+
+    val language: Flow<String> = context.dataStore.data.map { preferences ->
+        (preferences[KEY_LANGUAGE] ?: "system").takeIf { it in setOf("system", "ar", "en") } ?: "system"
     }
 
     val fontSize: Flow<Float> = context.dataStore.data.map { preferences ->
@@ -110,6 +115,11 @@ class UserPreferencesRepository @Inject constructor(@param:ApplicationContext pr
 
     suspend fun setDarkModeSetting(mode: Int) {
         context.dataStore.edit { it[KEY_DARK_MODE] = mode }
+    }
+
+    suspend fun setLanguage(tag: String) {
+        val normalized = tag.takeIf { it in setOf("system", "ar", "en") } ?: "system"
+        context.dataStore.edit { it[KEY_LANGUAGE] = normalized }
     }
 
     suspend fun setDynamicColorEnabled(enabled: Boolean) {

@@ -36,9 +36,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -70,7 +73,7 @@ fun RootsListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "معجم الجذور القرآنية (${roots.size} جذر)",
+                        text = "${stringResource(R.string.roots_title)} (${pluralStringResource(R.plurals.roots_count, roots.size, roots.size)})",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -81,7 +84,7 @@ fun RootsListScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -103,14 +106,14 @@ fun RootsListScreen(
             OutlinedTextField(
                 value = query,
                 onValueChange = { rootViewModel.setQuery(it) },
-                placeholder = { Text("ابحث عن جذر (مثال: كتب، علم، رحم)...") },
+                placeholder = { Text(stringResource(R.string.roots_search_hint)) },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Search, contentDescription = null)
                 },
                 trailingIcon = {
                     if (query.isNotBlank()) {
                         IconButton(onClick = { rootViewModel.setQuery("") }) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = "مسح")
+                            Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear))
                         }
                     }
                 },

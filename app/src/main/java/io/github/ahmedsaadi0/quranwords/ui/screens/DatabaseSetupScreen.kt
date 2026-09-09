@@ -52,11 +52,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.data.remote.DownloadError
 import io.github.ahmedsaadi0.quranwords.data.remote.DownloadState
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.Emerald700
@@ -94,7 +97,7 @@ fun DatabaseSetupScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "إدارة قاعدة البيانات",
+                        text = stringResource(R.string.db_setup_title),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -108,7 +111,7 @@ fun DatabaseSetupScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -149,7 +152,7 @@ fun DatabaseSetupScreen(
 
             item {
                 Text(
-                    text = "قاعدة بيانات كلمات القرآن",
+                    text = stringResource(R.string.db_setup_heading),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -159,7 +162,7 @@ fun DatabaseSetupScreen(
 
             item {
                 Text(
-                    text = "تحتوي على الإحصاء الكامل للقرآن الكريم: 77,429 موضع كلمة، 1,642 جذراً لغوياً، 5,273 مصدراً، 16,245 مشتقاً، ومعاجم لسان العرب والصحاح ومقاييس اللغة.",
+                    text = stringResource(R.string.db_setup_desc),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -218,7 +221,7 @@ fun DatabaseSetupScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = "حالة القاعدة: جاهزة للتنزيل",
+                                        text = stringResource(R.string.db_status_ready),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
@@ -231,7 +234,7 @@ fun DatabaseSetupScreen(
                                             .fillMaxWidth()
                                             .testTag("start_download_button")
                                     ) {
-                                        Text("بدء تنزيل قاعدة البيانات الكاملة")
+                                        Text(stringResource(R.string.db_start_download))
                                     }
                                 }
                             }
@@ -247,15 +250,15 @@ fun DatabaseSetupScreen(
                                         horizontalArrangement = Arrangement.SpaceBetween
                                     ) {
                                         Text(
-                                            text = if (isExtractPhase) "جاري فك الضغط: ${state.percentage}%"
-                                            else "جاري التنزيل: ${state.percentage}%",
+                                            text = if (isExtractPhase) stringResource(R.string.db_extracting, state.percentage)
+                                            else stringResource(R.string.db_downloading, state.percentage),
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                         if (state.speedKbps > 0 && !isExtractPhase) {
                                             Text(
-                                                text = "${state.speedKbps} ك.ب/ث",
+                                                text = stringResource(R.string.db_speed_kbps, state.speedKbps),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -275,9 +278,9 @@ fun DatabaseSetupScreen(
                                     val mbDownloaded = state.downloadedBytes / (1024 * 1024)
                                     val mbTotal = state.totalBytes / (1024 * 1024)
                                     Text(
-                                        text = if (isExtractPhase) "فك الضغط داخل الجهاز..."
-                                        else if (mbTotal > 0) "$mbDownloaded ميجابايت من $mbTotal ميجابايت"
-                                        else "$mbDownloaded ميجابايت",
+                                        text = if (isExtractPhase) stringResource(R.string.db_extracting_device)
+                                        else if (mbTotal > 0) stringResource(R.string.db_progress_ratio, mbDownloaded, mbTotal)
+                                        else stringResource(R.string.db_progress_single, mbDownloaded),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -290,7 +293,7 @@ fun DatabaseSetupScreen(
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Text(
-                                        text = "جاري فك الضغط: ${state.percentage}%",
+                                        text = stringResource(R.string.db_extracting, state.percentage),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -318,15 +321,15 @@ fun DatabaseSetupScreen(
                                 ) {
                                     if (pendingUpdate != null) {
                                         Text(
-                                            text = "⬆️ يتوفر تحديث جديد ${pendingUpdate.versionName}",
+                                            text = stringResource(R.string.db_update_available, pendingUpdate.versionName),
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary,
                                             textAlign = TextAlign.Center
                                         )
                                         Text(
-                                            text = "حجم التنزيل: ${formatVersionSize(pendingUpdate.compressedSize)}" +
-                                                " • يتم فك الضغط والتثبيت تلقائيًا",
+                                            text = stringResource(R.string.db_update_size, formatVersionSize(pendingUpdate.compressedSize)) +
+                                                stringResource(R.string.db_update_auto),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             textAlign = TextAlign.Center
@@ -341,17 +344,17 @@ fun DatabaseSetupScreen(
                                                 .fillMaxWidth()
                                                 .testTag("start_update_download_button")
                                         ) {
-                                            Text("تنزيل التحديث الآن")
+                                            Text(stringResource(R.string.db_download_update))
                                         }
                                     } else {
                                         Text(
-                                            text = "تم تنزيل وتثبيت قاعدة البيانات بنجاح!",
+                                            text = stringResource(R.string.db_install_success),
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                         Text(
-                                            text = "يمكنك الآن تصفح كامل المصحف والمعجم والمشتقات دون الحاجة إلى إنترنت.",
+                                            text = stringResource(R.string.db_install_success_body),
                                             style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             textAlign = TextAlign.Center
@@ -368,7 +371,7 @@ fun DatabaseSetupScreen(
                                             .fillMaxWidth()
                                             .testTag("finish_setup_button")
                                     ) {
-                                        Text("العودة إلى التطبيق")
+                                        Text(stringResource(R.string.db_back_to_app))
                                     }
                                 }
                             }
@@ -379,13 +382,14 @@ fun DatabaseSetupScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Text(
-                                        text = "تعذر تنزيل قاعدة البيانات",
+                                        text = stringResource(R.string.db_download_failed),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.error
                                     )
                                     Text(
-                                        text = state.message,
+                                        // Localized by error code; raw detail stays in logs only.
+                                        text = downloadErrorMessage(state.error),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.error,
                                         textAlign = TextAlign.Center
@@ -398,7 +402,7 @@ fun DatabaseSetupScreen(
                                             .fillMaxWidth()
                                             .testTag("retry_download_button")
                                     ) {
-                                        Text("إعادة المحاولة")
+                                        Text(stringResource(R.string.common_retry))
                                     }
                                 }
                             }
@@ -417,7 +421,7 @@ fun DatabaseSetupScreen(
                             .fillMaxWidth()
                             .testTag("import_db_button")
                     ) {
-                        Text("📂 استيراد قاعدة البيانات من الذاكرة")
+                        Text(stringResource(R.string.db_import_title))
                     }
                 }
             }
@@ -431,7 +435,7 @@ fun DatabaseSetupScreen(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("المتابعة باستخدام بيانات المعاينة السريعة")
+                    Text(stringResource(R.string.db_preview_action))
                 }
             }
 
@@ -444,10 +448,10 @@ fun DatabaseSetupScreen(
     if (showImportDialog) {
         androidx.compose.material3.AlertDialog(
             onDismissRequest = { showImportDialog = false },
-            title = { Text(text = "استيراد قاعدة البيانات", fontWeight = FontWeight.Bold) },
+            title = { Text(text = stringResource(R.string.db_import_dialog_title), fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    text = "اختر ملف قاعدة البيانات (quran_words.db أو quran_words.db.zip) من ذاكرة الجهاز. الملف المضغوط أسرع في النقل وسيتم فك ضغطه تلقائيًا داخل التطبيق.",
+                    text = stringResource(R.string.db_import_dialog_body),
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -459,12 +463,12 @@ fun DatabaseSetupScreen(
                     },
                     modifier = Modifier.testTag("confirm_import_button")
                 ) {
-                    Text("اختيار الملف")
+                    Text(stringResource(R.string.db_pick_file))
                 }
             },
             dismissButton = {
-                androidx.compose.material3.TextButton(onClick = { showImportDialog = false }) {
-                    Text("إلغاء")
+                androidx.compose.material3.                TextButton(onClick = { showImportDialog = false }) {
+                    Text(stringResource(R.string.cd_cancel))
                 }
             }
         )
@@ -501,7 +505,7 @@ private fun VersionStatusCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "حالة الإصدار",
+                    text = stringResource(R.string.db_version_status),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -510,31 +514,36 @@ private fun VersionStatusCard(
                     enabled = !isChecking,
                     modifier = Modifier.testTag("check_update_button")
                 ) {
-                    Text(if (isChecking) "جاري الفحص..." else "فحص التحديث")
+                    Text(if (isChecking) stringResource(R.string.db_checking) else stringResource(R.string.db_check_update))
                 }
             }
             Text(
-                text = if (installedCode > 0) "المثبتة: $installedName (رمز $installedCode)"
-                else "المثبتة: غير معروفة",
+                text = if (installedCode > 0) stringResource(R.string.db_installed_known, installedName, installedCode)
+                else stringResource(R.string.db_installed_unknown),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (latestRelease != null) {
                 val isNew = latestRelease.versionCode > installedCode && installedCode > 0
+                // Resolve in @Composable context: stringResource cannot be called
+                // from inside the buildString lambda.
+                val latestLine = stringResource(
+                    R.string.db_latest,
+                    latestRelease.versionName,
+                    latestRelease.versionCode
+                ) + if (isNew) stringResource(R.string.db_update_avail_tag) else ""
                 Text(
-                    text = buildString {
-                        append("الأحدث: ${latestRelease.versionName} (رمز ${latestRelease.versionCode})")
-                        if (isNew) append(" • تحديث متوفر")
-                    },
+                    text = latestLine,
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = if (isNew) FontWeight.Bold else FontWeight.Normal,
                     color = if (isNew) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "حجم التنزيل: ${formatVersionSize(latestRelease.compressedSize)}" +
+                    // releaseNotesAr is Arabic reference data from the manifest — never translated.
+                    text = stringResource(R.string.db_update_size, formatVersionSize(latestRelease.compressedSize)) +
                         (if (latestRelease.uncompressedSize > 0)
-                            " • بعد الفك: ${formatVersionSize(latestRelease.uncompressedSize)}" else ""),
+                            stringResource(R.string.db_size_after, formatVersionSize(latestRelease.uncompressedSize)) else ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -543,7 +552,7 @@ private fun VersionStatusCard(
                         onClick = onToggleNotes,
                         modifier = Modifier.testTag("toggle_release_notes_btn")
                     ) {
-                        Text(if (showNotes) "إخفاء ملاحظات الإصدار" else "عرض ملاحظات الإصدار")
+                        Text(if (showNotes) stringResource(R.string.db_hide_notes) else stringResource(R.string.db_show_notes))
                     }
                     if (showNotes) {
                         Text(
@@ -556,7 +565,7 @@ private fun VersionStatusCard(
                 }
             } else if (!isChecking) {
                 Text(
-                    text = "تعذر جلب معلومات الإصدار — تحقق من الاتصال ثم أعد الفحص.",
+                    text = stringResource(R.string.db_manifest_error),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -565,9 +574,27 @@ private fun VersionStatusCard(
     }
 }
 
+@Composable
+private fun downloadErrorMessage(error: DownloadError): String = stringResource(
+    when (error) {
+        DownloadError.NETWORK -> R.string.dl_err_download
+        DownloadError.NOT_ZIP -> R.string.dl_err_not_zip
+        DownloadError.CHECKSUM_MISMATCH -> R.string.dl_err_checksum
+        DownloadError.EXTRACT_FAILED -> R.string.dl_err_extract
+        DownloadError.INVALID_DB -> R.string.dl_err_invalid_db
+        DownloadError.INCOMPLETE_FILE -> R.string.dl_err_incomplete
+        DownloadError.INSTALL_FAILED -> R.string.dl_err_install
+        DownloadError.BAD_PICK -> R.string.dl_err_bad_pick
+        DownloadError.IMPORT_FAILED -> R.string.dl_err_import
+        DownloadError.MANIFEST_FAILED -> R.string.dl_err_manifest
+        DownloadError.UNKNOWN -> R.string.dl_err_unknown
+    }
+)
+
+@Composable
 private fun formatVersionSize(bytes: Long): String {
     if (bytes <= 0) return "—"
     val mb = bytes / (1024 * 1024)
-    if (mb >= 1) return "$mb ميجابايت"
-    return "${bytes / 1024} ك.ب"
+    if (mb >= 1) return stringResource(R.string.db_size_mb, mb)
+    return stringResource(R.string.db_size_kb, bytes / 1024)
 }

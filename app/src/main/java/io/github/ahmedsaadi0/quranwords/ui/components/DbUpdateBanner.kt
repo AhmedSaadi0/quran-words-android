@@ -17,20 +17,23 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.domain.model.DbReleaseInfo
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeSmall
 
-fun formatDbSize(bytes: Long): String {
+fun formatDbSize(bytes: Long, context: android.content.Context): String {
     if (bytes <= 0) return "—"
     val mb = bytes / (1024 * 1024)
-    if (mb >= 1) return "$mb ميجابايت"
+    if (mb >= 1) return context.getString(R.string.db_size_mb, mb)
     val kb = bytes / 1024
-    return "$kb ك.ب"
+    return context.getString(R.string.db_size_kb, kb)
 }
 
 @Composable
@@ -63,7 +66,7 @@ fun DbUpdateBanner(
             ) {
                 Text("⬆️", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    text = "تحديث جديد لقاعدة البيانات ${info.versionName}",
+                    text = stringResource(R.string.db_update_title, info.versionName),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -72,15 +75,20 @@ fun DbUpdateBanner(
                     modifier = Modifier.weight(1f)
                 )
             }
+            val context = LocalContext.current
             Text(
                 text = buildString {
-                    if (installedName.isNotBlank()) append("المثبتة: $installedName • ")
-                    append("التنزيل: ${formatDbSize(info.compressedSize)}")
-                    if (info.uncompressedSize > 0) append(" (بعد الفك ${formatDbSize(info.uncompressedSize)})")
+                    if (installedName.isNotBlank()) append(context.getString(R.string.db_update_installed, installedName))
+                    append(context.getString(R.string.db_update_download, formatDbSize(info.compressedSize, context)))
+                    if (info.uncompressedSize > 0) {
+                        append(" ")
+                        append(context.getString(R.string.db_update_uncompressed, formatDbSize(info.uncompressedSize, context)))
+                    }
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            // Release notes are Arabic reference data from the manifest — never translated.
             if (info.releaseNotesAr.isNotBlank()) {
                 Text(
                     text = info.releaseNotesAr.take(220),
@@ -99,13 +107,13 @@ fun DbUpdateBanner(
                     ),
                     modifier = Modifier.testTag("db_update_now_btn")
                 ) {
-                    Text("التحديث الآن")
+                    Text(stringResource(R.string.db_update_now))
                 }
                 TextButton(
                     onClick = onDismissClick,
                     modifier = Modifier.testTag("db_update_later_btn")
                 ) {
-                    Text("لاحقًا")
+                    Text(stringResource(R.string.db_update_later))
                 }
             }
         }

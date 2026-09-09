@@ -22,11 +22,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.core.util.isMeccan
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import kotlin.math.roundToInt
 
@@ -72,11 +76,13 @@ fun SurahDetailHeader(
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "رجوع"
+                        contentDescription = stringResource(R.string.cd_back)
                     )
                 }
                 Text(
-                    text = surah?.let { "سُورَةُ ${it.nameAr}" } ?: "جاري التحميل...",
+                    // Surah name is Arabic reference data (never translated).
+                    text = surah?.let { stringResource(R.string.surah_title_template, it.nameAr) }
+                        ?: stringResource(R.string.surah_detail_loading),
                     fontWeight = FontWeight.ExtraBold,
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface
@@ -129,7 +135,7 @@ fun SurahDetailHeader(
                     .padding(horizontal = 16.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "${it.revelationType} • ${it.ayahCount} آية",
+                    text = "${if (it.isMeccan) stringResource(R.string.revelation_meccan) else stringResource(R.string.revelation_medinan)} • ${pluralStringResource(R.plurals.ayah_count, it.ayahCount, it.ayahCount)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

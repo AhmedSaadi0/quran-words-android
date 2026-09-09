@@ -23,9 +23,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.core.util.isMeccan
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
@@ -38,7 +42,10 @@ fun StatCard(
     title: String,
     value: Int,
     icon: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    // Stable identifier for testTag: title is localized, so callers pass a
+    // locale-independent tag (defaults to title for backward compatibility).
+    tag: String = title
 ) {
     val formattedValue = NumberFormat.getNumberInstance(Locale.US).format(value)
     Card(
@@ -51,7 +58,7 @@ fun StatCard(
                     easing = AppMotion.EasingStandard
                 )
             )
-            .testTag("stat_card_$title"),
+            .testTag("stat_card_$tag"),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -151,13 +158,14 @@ fun SurahItemCard(
 
                 Column {
                     Text(
-                        text = "سُورَةُ ${surah.nameAr}",
+                        // Surah name is Arabic reference data (never translated).
+                        text = stringResource(R.string.surah_title_template, surah.nameAr),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "${surah.nameEn} • ${surah.ayahCount} آية",
+                        text = "${surah.nameEn} • ${pluralStringResource(R.plurals.ayah_count, surah.ayahCount, surah.ayahCount)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -192,7 +200,7 @@ fun SurahItemCard(
                     modifier = Modifier
                         .clip(ShapeSmall)
                         .background(
-                            if (surah.revelationType.contains("مكية"))
+                            if (surah.isMeccan)
                                 MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.65f)
                             else
                                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.75f)
@@ -200,10 +208,11 @@ fun SurahItemCard(
                         .padding(horizontal = 10.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = surah.revelationType,
+                        text = if (surah.isMeccan) stringResource(R.string.revelation_meccan)
+                        else stringResource(R.string.revelation_medinan),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = if (surah.revelationType.contains("مكية"))
+                        color = if (surah.isMeccan)
                             MaterialTheme.colorScheme.tertiary
                         else
                             MaterialTheme.colorScheme.primary

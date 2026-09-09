@@ -67,7 +67,7 @@ class DbUpdateRepositoryImpl @Inject constructor(
         return try {
             DbCheckResult.Success(manifestSource.fetchLatest())
         } catch (e: Exception) {
-            DbCheckResult.Error(e.message ?: "تعذر جلب معلومات الإصدار", e)
+            DbCheckResult.Error(e.message ?: "Failed to fetch version info", e)
         }
     }
 

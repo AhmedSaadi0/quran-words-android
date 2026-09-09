@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
@@ -159,7 +160,7 @@ fun AyahItemCard(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "آية ${ayah.ayah}",
+                            text = context.getString(R.string.morpho_ayah, ayah.ayah),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = if (isSelected) MaterialTheme.colorScheme.onPrimary
@@ -192,7 +193,7 @@ fun AyahItemCard(
                             val formatted = if (surah != null) QuranCopyFormatter.formatSingle(ayah, surah)
                             else "${ayah.textUthmani} ﴿${ayah.ayah}﴾"
                             clipboardManager.setText(AnnotatedString(formatted))
-                            Toast.makeText(context, "تم نسخ الآية", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.ayah_copied), Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
                             .size(28.dp)

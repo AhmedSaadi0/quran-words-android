@@ -66,6 +66,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -74,6 +76,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.core.util.isMeccan
 import io.github.ahmedsaadi0.quranwords.ui.components.AyahItemCard
 import io.github.ahmedsaadi0.quranwords.ui.components.FontSizeControls
 import io.github.ahmedsaadi0.quranwords.ui.components.JuzHizbSeparator
@@ -243,7 +247,7 @@ fun SurahDetailScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "تم تحديد ${selectedAyahs.size} آيات",
+                            text = pluralStringResource(R.plurals.selected_ayat_count, selectedAyahs.size, selectedAyahs.size),
                             fontWeight = FontWeight.Bold
                         )
                     },
@@ -254,7 +258,7 @@ fun SurahDetailScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.Close,
-                                contentDescription = "إلغاء"
+                                contentDescription = stringResource(R.string.cd_cancel)
                             )
                         }
                     },
@@ -271,7 +275,13 @@ fun SurahDetailScreen(
                                 if (formatted.isNotBlank()) {
                                     clipboardManager.setText(AnnotatedString(formatted))
                                     scope.launch {
-                                        snackbarHostState.showSnackbar("تم نسخ ${selectedAyahs.size} آيات")
+                                        snackbarHostState.showSnackbar(
+                                            context.resources.getQuantityString(
+                                                R.plurals.copied_ayat_count,
+                                                selectedAyahs.size,
+                                                selectedAyahs.size
+                                            )
+                                        )
                                         surahDetailViewModel.clearSelection()
                                     }
                                 }
@@ -288,7 +298,7 @@ fun SurahDetailScreen(
                                         type = "text/plain"
                                         putExtra(Intent.EXTRA_TEXT, formatted)
                                     }
-                                    context.startActivity(Intent.createChooser(intent, "مشاركة الآيات"))
+                                    context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_ayat)))
                                 }
                             },
                             modifier = Modifier.testTag("share_selected_btn")
@@ -332,12 +342,14 @@ fun SurahDetailScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "رجوع"
+                                    contentDescription = stringResource(R.string.cd_back)
                                 )
                             }
                             Column(verticalArrangement = Arrangement.Center) {
                                 Text(
-                                    text = surah?.let { "سورة ${it.nameAr}" } ?: "سورة",
+                                    // Surah name is Arabic reference data (never translated).
+                                    text = surah?.let { stringResource(R.string.bookmarks_surah_item, it.nameAr) }
+                                        ?: stringResource(R.string.surah_unnamed),
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface,
@@ -346,7 +358,7 @@ fun SurahDetailScreen(
                                 )
                                 surah?.let { s ->
                                     Text(
-                                        text = "${s.revelationType} • ${s.ayahCount} آيات",
+                                        text = "${if (s.isMeccan) stringResource(R.string.revelation_meccan) else stringResource(R.string.revelation_medinan)} • ${pluralStringResource(R.plurals.ayah_count, s.ayahCount, s.ayahCount)}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1
@@ -359,9 +371,9 @@ fun SurahDetailScreen(
                             onClick = { mainViewModel.toggleSurahBookmark(surahId) },
                             modifier = Modifier.testTag("bookmark_button")
                         ) {
-                            Icon(
-                                imageVector = if (isSurahBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                                contentDescription = "حفظ السورة",
+                                Icon(
+                                    imageVector = if (isSurahBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                                    contentDescription = stringResource(R.string.cd_save_surah),
                                 tint = if (isSurahBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -469,7 +481,7 @@ fun SurahDetailScreen(
                             Text("📥", fontSize = 48.sp)
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "قاعدة البيانات غير متوفرة",
+                                text = stringResource(R.string.db_missing_title),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onBackground,
@@ -477,7 +489,7 @@ fun SurahDetailScreen(
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "يجب تنزيل قاعدة البيانات الكاملة (118 ميجابايت) لعرض آيات هذه السورة مع التحليل الصرفي.",
+                                text = stringResource(R.string.db_missing_body),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 textAlign = TextAlign.Center

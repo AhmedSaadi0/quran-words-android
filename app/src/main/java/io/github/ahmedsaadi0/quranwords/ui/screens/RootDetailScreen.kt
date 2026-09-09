@@ -65,11 +65,14 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.components.ReportMeaningDialog
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
@@ -224,11 +227,12 @@ fun RootDetailScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "رجوع"
+                                    contentDescription = stringResource(R.string.cd_back)
                                 )
                             }
                             Text(
-                                text = "الجذر: [ ${item.root} ]",
+                                // root text is Arabic reference data (never translated).
+                                text = stringResource(R.string.root_title_template, item.root),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -242,7 +246,7 @@ fun RootDetailScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Outlined.ReportProblem,
-                                contentDescription = "الإبلاغ عن معنى",
+                                contentDescription = stringResource(R.string.cd_report),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -331,11 +335,11 @@ fun RootDetailScreen(
                         divider = {}
                     ) {
                         val tabs = listOf(
-                            "معاجم" to detail.meanings.size,
-                            "مصادر" to detail.masadir.size,
-                            "مشتقات" to detail.derivatives.size,
-                            "كلمات" to rootWords.size,
-                            "آيات" to detail.item.occurrencesCount
+                            stringResource(R.string.tab_meanings) to detail.meanings.size,
+                            stringResource(R.string.tab_masadir) to detail.masadir.size,
+                            stringResource(R.string.tab_derivatives) to detail.derivatives.size,
+                            stringResource(R.string.tab_words) to rootWords.size,
+                            stringResource(R.string.tab_ayat) to detail.item.occurrencesCount
                         )
                         tabs.forEachIndexed { index, (title, count) ->
                             val selected = pagerState.currentPage == index
@@ -402,7 +406,7 @@ fun RootDetailScreen(
                             ) {
                                 if (detail.meanings.isEmpty()) {
                                     item {
-                                        EmptyTabNotice(text = "لا توجد معاني مدخلة لهذا الجذر حالياً")
+                                        EmptyTabNotice(text = stringResource(R.string.root_no_meanings))
                                     }
                                 } else {
                                     items(detail.meanings, key = { it.id }) { meaning ->
@@ -430,7 +434,7 @@ fun RootDetailScreen(
                             ) {
                                 if (detail.masadir.isEmpty()) {
                                     item {
-                                        EmptyTabNotice(text = "لا توجد مصادر مسجلة لهذا الجذر")
+                                        EmptyTabNotice(text = stringResource(R.string.root_no_masadir))
                                     }
                                 } else {
                                     items(detail.masadir, key = { it.id }) { masdar ->
@@ -458,7 +462,7 @@ fun RootDetailScreen(
                             ) {
                                 if (detail.derivatives.isEmpty()) {
                                     item {
-                                        EmptyTabNotice(text = "لا توجد مشتقات مسجلة لهذا الجذر")
+                                        EmptyTabNotice(text = stringResource(R.string.root_no_derivatives))
                                     }
                                 } else {
                                     items(detail.derivatives, key = { it.id }) { derivative ->
@@ -501,7 +505,7 @@ fun RootDetailScreen(
                                     }
                                     rootWords.isEmpty() -> {
                                         item {
-                                            EmptyTabNotice(text = "لا توجد كلمات مسجلة لهذا الجذر")
+                                            EmptyTabNotice(text = stringResource(R.string.root_no_words))
                                         }
                                     }
                                     else -> {
@@ -524,10 +528,10 @@ fun RootDetailScreen(
                                                                         AnnotatedString(formatted)
                                                                     )
                                                                     snackbarHostState.showSnackbar(
-                                                                        "تم نسخ آيات الكلمات المحددة"
+                                                                        context.getString(R.string.root_copied_selected)
                                                                     )
                                                                 } else {
-                                                                    snackbarHostState.showSnackbar("لا توجد آيات للنسخ")
+                                                                    snackbarHostState.showSnackbar(context.getString(R.string.no_ayat_copy))
                                                                 }
                                                             }
                                                         },
@@ -548,14 +552,14 @@ fun RootDetailScreen(
                                                                         context.startActivity(
                                                                             Intent.createChooser(
                                                                                 sendIntent,
-                                                                                "مشاركة الآيات"
+                                                                                context.getString(R.string.share_ayat)
                                                                             )
                                                                         )
                                                                     } catch (_: ActivityNotFoundException) {
-                                                                        snackbarHostState.showSnackbar("لا يوجد تطبيق للمشاركة")
+                                                                        snackbarHostState.showSnackbar(context.getString(R.string.no_share_app))
                                                                     }
                                                                 } else {
-                                                                    snackbarHostState.showSnackbar("لا توجد آيات للمشاركة")
+                                                                    snackbarHostState.showSnackbar(context.getString(R.string.no_ayat_share))
                                                                 }
                                                             }
                                                         },
@@ -613,7 +617,7 @@ fun RootDetailScreen(
                             ) {
                                 if (occurrences.isEmpty() && !occurrencesHasMore && !isOccurrencesLoadingMore) {
                                     item {
-                                        EmptyTabNotice(text = "لا توجد مواضع مسجلة لهذا الجذر في هذه النسخة")
+                                        EmptyTabNotice(text = stringResource(R.string.root_no_occurrences))
                                     }
                                 } else {
                                     // Copy all bar — first item, fetches ALL via single query (bypasses pagination)
@@ -633,10 +637,14 @@ fun RootDetailScreen(
                                                         if (formatted.isNotBlank()) {
                                                             clipboardManager.setText(AnnotatedString(formatted))
                                                             snackbarHostState.showSnackbar(
-                                                                "تم نسخ ${detail.item.occurrencesCount} آيات"
+                                                                context.resources.getQuantityString(
+                                                                    R.plurals.copied_ayat_count,
+                                                                    detail.item.occurrencesCount,
+                                                                    detail.item.occurrencesCount
+                                                                )
                                                             )
                                                         } else {
-                                                            snackbarHostState.showSnackbar("لا توجد آيات للنسخ")
+                                                            snackbarHostState.showSnackbar(context.getString(R.string.no_ayat_copy))
                                                         }
                                                     }
                                                 },
@@ -650,13 +658,13 @@ fun RootDetailScreen(
                                                                     putExtra(Intent.EXTRA_TEXT, formatted)
                                                                 }
                                                                 context.startActivity(
-                                                                    Intent.createChooser(sendIntent, "مشاركة الآيات")
+                                                                    Intent.createChooser(sendIntent, context.getString(R.string.share_ayat))
                                                                 )
                                                             } catch (_: ActivityNotFoundException) {
-                                                                snackbarHostState.showSnackbar("لا يوجد تطبيق للمشاركة")
+                                                                snackbarHostState.showSnackbar(context.getString(R.string.no_share_app))
                                                             }
                                                         } else {
-                                                            snackbarHostState.showSnackbar("لا توجد آيات للمشاركة")
+                                                            snackbarHostState.showSnackbar(context.getString(R.string.no_ayat_share))
                                                         }
                                                     }
                                                 }
@@ -707,7 +715,7 @@ fun RootDetailScreen(
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
-                                                    text = "اسحب للأسفل لتحميل المزيد • ${occurrences.size} / ${detail.item.occurrencesCount}",
+                                                    text = stringResource(R.string.root_load_more, occurrences.size, detail.item.occurrencesCount),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )
@@ -722,7 +730,14 @@ fun RootDetailScreen(
                                                 contentAlignment = Alignment.Center
                                             ) {
                                                 Text(
-                                                    text = "تم عرض جميع الآيات • ${occurrences.size} موضع",
+                                                    text = stringResource(
+                                                        R.string.word_all_shown,
+                                                        pluralStringResource(
+                                                            R.plurals.root_occurrences,
+                                                            occurrences.size,
+                                                            occurrences.size
+                                                        )
+                                                    ),
                                                     style = MaterialTheme.typography.labelSmall,
                                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                                 )

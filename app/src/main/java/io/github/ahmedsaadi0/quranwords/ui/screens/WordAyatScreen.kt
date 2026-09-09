@@ -40,10 +40,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.WordAyatViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -91,7 +94,9 @@ fun WordAyatScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (wordText.isNotBlank()) "الكلمة: $wordText" else "آيات الكلمة",
+                        // wordText is Arabic reference data (never translated).
+                        text = if (wordText.isNotBlank()) stringResource(R.string.word_title_template, wordText)
+                        else stringResource(R.string.word_title_fallback),
                         fontWeight = FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -104,7 +109,7 @@ fun WordAyatScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 }
@@ -131,7 +136,7 @@ fun WordAyatScreen(
                         .testTag("word_ayat_empty"),
                     contentAlignment = Alignment.Center
                 ) {
-                    EmptyTabNotice(text = "لا توجد آيات مسجلة لهذه الكلمة")
+                    EmptyTabNotice(text = stringResource(R.string.word_no_ayat))
                 }
             }
             else -> {
@@ -159,9 +164,15 @@ fun WordAyatScreen(
                                         val formatted = viewModel.getAllFormatted()
                                         if (formatted.isNotBlank()) {
                                             clipboardManager.setText(AnnotatedString(formatted))
-                                            snackbarHostState.showSnackbar("تم نسخ $totalCount آيات")
+                                            snackbarHostState.showSnackbar(
+                                                context.resources.getQuantityString(
+                                                    R.plurals.copied_ayat_count,
+                                                    totalCount,
+                                                    totalCount
+                                                )
+                                            )
                                         } else {
-                                            snackbarHostState.showSnackbar("لا توجد آيات للنسخ")
+                                            snackbarHostState.showSnackbar(context.getString(R.string.no_ayat_copy))
                                         }
                                     }
                                 },
@@ -175,13 +186,13 @@ fun WordAyatScreen(
                                                     putExtra(Intent.EXTRA_TEXT, formatted)
                                                 }
                                                 context.startActivity(
-                                                    Intent.createChooser(sendIntent, "مشاركة الآيات")
+                                                    Intent.createChooser(sendIntent, context.getString(R.string.share_ayat))
                                                 )
                                             } catch (_: ActivityNotFoundException) {
-                                                snackbarHostState.showSnackbar("لا يوجد تطبيق للمشاركة")
+                                                snackbarHostState.showSnackbar(context.getString(R.string.no_share_app))
                                             }
                                         } else {
-                                            snackbarHostState.showSnackbar("لا توجد آيات للمشاركة")
+                                            snackbarHostState.showSnackbar(context.getString(R.string.no_ayat_share))
                                         }
                                     }
                                 }
@@ -227,7 +238,14 @@ fun WordAyatScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = "تم عرض جميع الآيات • ${if (totalCount > 0) totalCount else occurrences.size} موضع",
+                                    text = stringResource(
+                                        R.string.word_all_shown,
+                                        pluralStringResource(
+                                            R.plurals.root_occurrences,
+                                            if (totalCount > 0) totalCount else occurrences.size,
+                                            if (totalCount > 0) totalCount else occurrences.size
+                                        )
+                                    ),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

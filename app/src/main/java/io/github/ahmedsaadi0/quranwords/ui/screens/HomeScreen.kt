@@ -9,13 +9,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -46,10 +49,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.core.util.AppLanguage
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState
 import io.github.ahmedsaadi0.quranwords.ui.components.DbUpdateBanner
@@ -93,6 +102,7 @@ fun HomeScreen(
 
     val lastSurahMeta = QuranMetaConstants.SURAHS.firstOrNull { it.id == lastReadSurah } ?: QuranMetaConstants.SURAHS[0]
     val darkModeSetting by mainViewModel.darkModeSetting.collectAsState()
+    val language by mainViewModel.language.collectAsState()
     var showThemeDialog by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -134,13 +144,13 @@ fun HomeScreen(
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "كلمات القرآن",
+                                    text = stringResource(R.string.home_title),
                                     style = MaterialTheme.typography.displayMedium,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                     fontWeight = FontWeight.Bold
                                 )
                                 Text(
-                                    text = "المعجم والتحليل الصرفي الشامل لألفاظ التنزيل",
+                                    text = stringResource(R.string.home_subtitle),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                                 )
@@ -214,7 +224,7 @@ fun HomeScreen(
                             ) {
                                 Text("🔍", fontSize = 18.sp)
                                 Text(
-                                    text = "ابحث عن جذر، كلمة، مصدر، أو نص آية...",
+                                    text = stringResource(R.string.home_search_hint),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -261,14 +271,14 @@ fun HomeScreen(
                             ) {
                                 Text("💾", fontSize = 20.sp)
                                 Text(
-                                    text = "قاعدة البيانات الكاملة (118 ميجابايت)",
+                                    text = stringResource(R.string.home_db_title),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                             Text(
-                                text = "يمكنك تنزيل المعجم الكامل وقاعدة الصرف للعمل محلياً دون اتصال بالإنترنت، أو الاستمرار ببيانات المعاينة السريعة.",
+                                text = stringResource(R.string.home_db_body),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -281,7 +291,7 @@ fun HomeScreen(
                                     shape = ShapeSmall,
                                     modifier = Modifier.testTag("download_db_btn")
                                 ) {
-                                    Text("تنزيل قاعدة البيانات")
+                                    Text(stringResource(R.string.home_db_action))
                                 }
                             }
                         }
@@ -307,11 +317,14 @@ fun HomeScreen(
                 }
             }
 
-            // Quick Access Nav Chips - M3 Medium + Telegram 250ms stagger
+            // Quick Access Nav Chips - equal-size cards: the Row takes the tallest
+            // child's height and every card stretches to it, so longer English
+            // labels cannot break the symmetry. M3 Medium + Telegram 250ms stagger.
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .height(IntrinsicSize.Max)
                         .animateItem(
                             placementSpec = tween(
                                 durationMillis = AppMotion.DurationMedium,
@@ -327,25 +340,31 @@ fun HomeScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     QuickNavCard(
-                        title = "فهرس السور",
-                        subtitle = "114 سورة",
+                        title = stringResource(R.string.home_nav_surahs_title),
+                        subtitle = stringResource(R.string.home_nav_surahs_subtitle, 114),
                         icon = "📖",
                         onClick = onNavigateToSurahIndex,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
                     )
                     QuickNavCard(
-                        title = "معجم الجذور",
-                        subtitle = "1642 جذر",
+                        title = stringResource(R.string.home_nav_roots_title),
+                        subtitle = stringResource(R.string.home_nav_roots_subtitle, 1642),
                         icon = "🌿",
                         onClick = onNavigateToRoots,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
                     )
                     QuickNavCard(
-                        title = "دليل الصرف",
-                        subtitle = "أوزان وأبواب",
+                        title = stringResource(R.string.home_nav_guide_title),
+                        subtitle = stringResource(R.string.home_nav_guide_subtitle),
                         icon = "📐",
                         onClick = onNavigateToGuide,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
                     )
                 }
             }
@@ -376,47 +395,47 @@ fun HomeScreen(
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
                 ) {
+                    // Twin layout with the bookmarks card: icon + weighted text column,
+                    // no trailing button (the whole card is clickable). Long labels
+                    // ellipsize instead of squeezing the layout.
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text("🔖", fontSize = 22.sp)
-                            }
-                            Column {
-                                Text(
-                                    text = "متابعة التلاوة والتحليل",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "سورة ${lastSurahMeta.nameAr} • الآية $lastReadAyah",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Text("🔖", fontSize = 22.sp)
                         }
-
-                        Button(
-                            onClick = { onNavigateToSurahDetail(lastReadSurah, lastReadAyah) },
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                            shape = ShapeSmall
-                        ) {
-                            Text("فتح")
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.home_continue_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            // Surah name is Arabic reference data (never translated);
+                            // only the surrounding chrome template is localized.
+                            Text(
+                                text = stringResource(
+                                    R.string.home_continue_template,
+                                    lastSurahMeta.nameAr,
+                                    lastReadAyah
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
@@ -443,53 +462,60 @@ fun HomeScreen(
                         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     )
                 ) {
+                    // Twin of the continue-reading card above; tag retained on the
+                    // content row so the navigation entry point stays testable.
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
+                            .padding(16.dp)
+                            .testTag("open_bookmarks_btn"),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    if (hasBookmarks) MaterialTheme.colorScheme.tertiaryContainer
+                                    else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                                ),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        if (hasBookmarks) MaterialTheme.colorScheme.tertiaryContainer
-                                        else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                    ),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(if (hasBookmarks) "⭐" else "🔖", fontSize = 22.sp)
-                            }
-                            Column {
-                                Text(
-                                    text = if (hasBookmarks) "إشاراتي المرجعية" else "إشاراتي المرجعية",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = if (hasBookmarks) "${bookmarkedSurahs.size} سور • ${bookmarkedAyat.size} آيات محفوظة"
-                                    else "احفظ السور والآيات للرجوع السريع",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Text(if (hasBookmarks) "⭐" else "🔖", fontSize = 22.sp)
                         }
-                        Button(
-                            onClick = onNavigateToBookmarks,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = if (hasBookmarks) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary
-                            ),
-                            shape = ShapeSmall,
-                            modifier = Modifier.testTag("open_bookmarks_btn")
-                        ) {
-                            Text(if (hasBookmarks) "عرض" else "فتح")
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(R.string.home_bookmarks_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = if (hasBookmarks) {
+                                    val surahsCount = bookmarkedSurahs.size
+                                    val ayatCount = bookmarkedAyat.size
+                                    val surahsText = pluralStringResource(
+                                        R.plurals.home_bookmarks_surahs,
+                                        surahsCount,
+                                        surahsCount
+                                    )
+                                    val ayatText = pluralStringResource(
+                                        R.plurals.home_bookmarks_ayahs,
+                                        ayatCount,
+                                        ayatCount
+                                    )
+                                    "$surahsText • $ayatText ${stringResource(R.string.home_bookmarks_saved_suffix)}"
+                                } else {
+                                    stringResource(R.string.home_bookmarks_empty)
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
@@ -507,13 +533,13 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "إحصاءات ومعطيات المدونة القرآنية",
+                        text = stringResource(R.string.home_stats_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Text(
-                        text = "مستخرجة من قاعدة بيانات مشروع كلمات القرآن المحققة",
+                        text = stringResource(R.string.home_stats_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -543,13 +569,15 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         StatCard(
-                            title = "كلمات فريدة",
+                            title = stringResource(R.string.home_stat_unique),
+                            tag = "unique",
                             value = QuranMetaConstants.STATS_UNIQUE_WORDS,
                             icon = "📝",
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
-                            title = "جذور محققة",
+                            title = stringResource(R.string.home_stat_verified),
+                            tag = "verified",
                             value = QuranMetaConstants.STATS_VERIFIED_ROOTS,
                             icon = "🌿",
                             modifier = Modifier.weight(1f)
@@ -560,13 +588,15 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         StatCard(
-                            title = "مصادر لغوية",
+                            title = stringResource(R.string.home_stat_masadir),
+                            tag = "masadir",
                             value = QuranMetaConstants.STATS_MASADIR,
                             icon = "📚",
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
-                            title = "مشتقات وأوزان",
+                            title = stringResource(R.string.home_stat_derivatives),
+                            tag = "derivatives",
                             value = QuranMetaConstants.STATS_DERIVATIVES,
                             icon = "✨",
                             modifier = Modifier.weight(1f)
@@ -577,13 +607,15 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         StatCard(
-                            title = "مواضع الكلمات",
+                            title = stringResource(R.string.home_stat_positions),
+                            tag = "positions",
                             value = QuranMetaConstants.STATS_WORD_POSITIONS,
                             icon = "📍",
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
-                            title = "الآيات الكريمة",
+                            title = stringResource(R.string.home_stat_ayat),
+                            tag = "ayat",
                             value = QuranMetaConstants.STATS_AYAT,
                             icon = "۝",
                             modifier = Modifier.weight(1f)
@@ -607,7 +639,7 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "نماذج من الجذور القرآنية",
+                        text = stringResource(R.string.home_featured_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -616,7 +648,7 @@ fun HomeScreen(
                         onClick = onNavigateToRoots,
                         shape = ShapeSmall
                     ) {
-                        Text("عرض الكل")
+                        Text(stringResource(R.string.common_view_all))
                     }
                 }
             }
@@ -657,8 +689,10 @@ fun HomeScreen(
             ThemeChooserDialog(
                 darkModeSetting = darkModeSetting,
                 dynamicEnabled = dynamicEnabled,
+                language = language,
                 onDarkModeChange = { mainViewModel.setDarkModeSetting(it) },
                 onDynamicChange = { mainViewModel.setDynamicColorEnabled(it) },
+                onLanguageChange = { mainViewModel.setLanguage(it) },
                 onDismiss = { showThemeDialog = false }
             )
         }
@@ -697,17 +731,35 @@ fun QuickNavCard(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(icon, fontSize = 24.sp)
+            // Fixed icon slot so the icon never shifts the text block.
+            Box(
+                modifier = Modifier.size(40.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(icon, fontSize = 24.sp)
+            }
+            // Fixed title slot (2 lines): font stays identical, overflow ellipsizes
+            // instead of growing the card — cards remain equal by construction.
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 40.dp)
             )
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
@@ -717,44 +769,66 @@ fun QuickNavCard(
 private fun ThemeChooserDialog(
     darkModeSetting: Int,
     dynamicEnabled: Boolean,
+    language: String,
     onDarkModeChange: (Int) -> Unit,
     onDynamicChange: (Boolean) -> Unit,
+    onLanguageChange: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("المظهر والألوان", fontWeight = FontWeight.Bold) },
+        title = { Text(stringResource(R.string.theme_title), fontWeight = FontWeight.Bold) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 // Theme section
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("الثيم", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                    ThemeOptionRow(label = "تلقائي حسب النظام", selected = darkModeSetting == 0, onClick = { onDarkModeChange(0) })
-                    ThemeOptionRow(label = "فاتح", selected = darkModeSetting == 1, onClick = { onDarkModeChange(1) })
-                    ThemeOptionRow(label = "غامق", selected = darkModeSetting == 2, onClick = { onDarkModeChange(2) })
+                    Text(stringResource(R.string.theme_section), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    ThemeOptionRow(label = stringResource(R.string.theme_system), selected = darkModeSetting == 0, onClick = { onDarkModeChange(0) })
+                    ThemeOptionRow(label = stringResource(R.string.theme_light), selected = darkModeSetting == 1, onClick = { onDarkModeChange(1) })
+                    ThemeOptionRow(label = stringResource(R.string.theme_dark), selected = darkModeSetting == 2, onClick = { onDarkModeChange(2) })
                 }
                 // Colors section
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("الألوان", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.theme_colors), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     ThemeOptionRow(
-                        label = "ألوان التطبيق الزيتوني",
-                        subLabel = "Natural Tones",
+                        label = stringResource(R.string.theme_colors_app),
+                        subLabel = stringResource(R.string.theme_colors_app_sub),
                         selected = !dynamicEnabled,
                         onClick = { onDynamicChange(false) }
                     )
                     ThemeOptionRow(
-                        label = "ألوان النظام",
-                        subLabel = if (Build.VERSION.SDK_INT >= 31) "Material You (Android 12+)" else "غير مدعوم على هذا الجهاز",
+                        label = stringResource(R.string.theme_colors_system),
+                        subLabel = if (Build.VERSION.SDK_INT >= 31) stringResource(R.string.theme_colors_system_sub) else stringResource(R.string.theme_colors_unsupported),
                         selected = dynamicEnabled,
                         enabled = Build.VERSION.SDK_INT >= 31,
                         onClick = { if (Build.VERSION.SDK_INT >= 31) onDynamicChange(true) }
+                    )
+                }
+                // Language section: system default clears the per-app override
+                // (LanguageManager applies an empty locale list), ar/en pin it.
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(stringResource(R.string.lang_title), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                    ThemeOptionRow(
+                        label = stringResource(R.string.lang_system),
+                        selected = language == AppLanguage.SYSTEM,
+                        onClick = { onLanguageChange(AppLanguage.SYSTEM) }
+                    )
+                    ThemeOptionRow(
+                        label = stringResource(R.string.lang_arabic),
+                        selected = language == AppLanguage.ARABIC,
+                        onClick = { onLanguageChange(AppLanguage.ARABIC) }
+                    )
+                    ThemeOptionRow(
+                        label = stringResource(R.string.lang_english),
+                        selected = language == AppLanguage.ENGLISH,
+                        onClick = { onLanguageChange(AppLanguage.ENGLISH) }
                     )
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss, modifier = androidx.compose.ui.Modifier.testTag("close_theme_dialog")) {
-                Text("إغلاق")
+                Text(stringResource(R.string.common_close))
             }
         },
         shape = ShapeMedium

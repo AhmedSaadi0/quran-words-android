@@ -1,0 +1,250 @@
+<resources>
+    <string name="home_title">كلمات القرآن</string>
+    <string name="home_subtitle">المعجم والتحليل الصرفي الشامل لألفاظ التنزيل</string>
+    <string name="home_search_hint">ابحث عن جذر، كلمة، مصدر، أو نص آية...</string>
+
+    <string name="home_db_title">قاعدة البيانات الكاملة (118 ميجابايت)</string>
+    <string name="home_db_body">يمكنك تنزيل المعجم الكامل وقاعدة الصرف للعمل محلياً دون اتصال بالإنترنت، أو الاستمرار ببيانات المعاينة السريعة.</string>
+    <string name="home_db_action">تنزيل قاعدة البيانات</string>
+
+    <string name="home_nav_surahs_title">فهرس السور</string>
+    <string name="home_nav_surahs_subtitle">%1$d سورة</string>
+    <string name="home_nav_roots_title">معجم الجذور</string>
+    <string name="home_nav_roots_subtitle">%1$d جذر</string>
+    <string name="home_nav_guide_title">دليل الصرف</string>
+    <string name="home_nav_guide_subtitle">أوزان وأبواب</string>
+
+    <string name="home_continue_title">متابعة التلاوة والتحليل</string>
+    <string name="home_continue_template">سورة %1$s • الآية %2$d</string>
+    <string name="common_view_all">عرض الكل</string>
+    <string name="common_close">إغلاق</string>
+
+    <string name="home_bookmarks_title">إشاراتي المرجعية</string>
+    <string name="home_bookmarks_empty">احفظ السور والآيات للرجوع السريع</string>
+    <string name="home_bookmarks_saved_suffix">محفوظة</string>
+
+    <string name="home_stats_title">إحصاءات ومعطيات المدونة القرآنية</string>
+    <string name="home_stats_subtitle">مستخرجة من قاعدة بيانات مشروع كلمات القرآن المحققة</string>
+    <string name="home_stat_unique">كلمات فريدة</string>
+    <string name="home_stat_verified">جذور محققة</string>
+    <string name="home_stat_masadir">مصادر لغوية</string>
+    <string name="home_stat_derivatives">مشتقات وأوزان</string>
+    <string name="home_stat_positions">مواضع الكلمات</string>
+    <string name="home_stat_ayat">الآيات الكريمة</string>
+
+    <string name="home_featured_title">نماذج من الجذور القرآنية</string>
+
+    <string name="theme_title">المظهر والألوان</string>
+    <string name="theme_section">الثيم</string>
+    <string name="theme_system">تلقائي حسب النظام</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">غامق</string>
+    <string name="theme_colors">الألوان</string>
+    <string name="theme_colors_app">ألوان التطبيق الزيتوني</string>
+    <string name="theme_colors_app_sub">درجات طبيعية</string>
+    <string name="theme_colors_system">ألوان النظام</string>
+    <string name="theme_colors_system_sub">ألوان النظام (أندرويد 12+)</string>
+    <string name="theme_colors_unsupported">غير مدعوم على هذا الجهاز</string>
+
+    <string name="lang_title">اللغة</string>
+    <string name="lang_system">لغة النظام</string>
+    <string name="lang_arabic">العربية</string>
+    <string name="lang_english">الإنجليزية</string>
+
+    <string name="db_update_title">تحديث جديد لقاعدة البيانات %1$s</string>
+    <string name="db_update_installed">المثبتة: %1$s • </string>
+    <string name="db_update_download">التنزيل: %1$s</string>
+    <string name="db_update_uncompressed">(بعد الفك %1$s)</string>
+    <string name="db_update_now">التحديث الآن</string>
+    <string name="db_update_later">لاحقًا</string>
+    <string name="db_size_mb">%1$d ميجابايت</string>
+    <string name="db_size_kb">%1$d ك.ب</string>
+
+    <string name="nav_home">الرئيسية</string>
+    <string name="nav_surahs">السور</string>
+    <string name="nav_roots">الجذور</string>
+    <string name="nav_search">البحث</string>
+    <string name="nav_guide">الدليل</string>
+
+    <string name="cd_back">رجوع</string>
+    <string name="cd_clear">مسح</string>
+    <string name="cd_cancel">إلغاء</string>
+
+    <string name="surah_title_template">سُورَةُ %1$s</string>
+    <string name="surah_detail_loading">جاري التحميل...</string>
+    <string name="revelation_meccan">مكية</string>
+    <string name="revelation_medinan">مدنية</string>
+
+    <string name="ayah_copied">تم نسخ الآية</string>
+
+    <string name="juz_label">الجزء %1$d</string>
+    <string name="hizb_label">الحزب %1$d</string>
+    <string name="quarter_label">ربع %1$d</string>
+    <string name="page_label">صفحة %1$d</string>
+
+    <string name="morpho_ayah">الآية %1$d</string>
+    <string name="morpho_root">الجذر اللغوي</string>
+    <string name="morpho_details">تفاصيل الجذر والمشتقات</string>
+    <string name="morpho_ai_title">الملخص الذكي للجذر</string>
+    <string name="morpho_no_root">هذه الكلمة غير مرتبطة بجذر لغوي</string>
+    <string name="morpho_no_summary">لا يوجد ملخص ذكي متاح لهذا الجذر حالياً</string>
+
+    <string name="surah_index_title">فهرس القرآن الكريم</string>
+    <string name="surah_index_subtitle">%1$d سورة • %2$d مكية • %3$d مدنية • %4$d جزء</string>
+    <string name="surah_index_tab_surahs">السور (%1$d)</string>
+    <string name="surah_index_tab_juz">الأجزاء (%1$d)</string>
+    <string name="surah_index_search_hint">ابحث باسم السورة أو رقمها...</string>
+    <string name="surah_index_filter_all">الكل (%1$d)</string>
+    <string name="surah_index_filter_meccan">مكية (%1$d)</string>
+    <string name="surah_index_filter_medinan">مدنية (%1$d)</string>
+    <string name="surah_index_empty_filter">لا توجد سور مطابقة للفلتر</string>
+    <string name="surah_index_empty_query">لا توجد نتائج لـ \"%1$s\"</string>
+
+    <string name="roots_title">معجم الجذور القرآنية</string>
+    <string name="roots_search_hint">ابحث عن جذر (مثال: كتب، علم، رحم)...</string>
+
+    <string name="bookmarks_empty_title">لا توجد إشارات مرجعية بعد</string>
+    <string name="bookmarks_empty_hint">استخدم أيقونة ☆ في صفحة السور والآيات لحفظ ما تريد الرجوع إليه</string>
+    <string name="bookmarks_surahs_title">السور المحفوظة (%1$d)</string>
+    <string name="bookmarks_ayahs_title">الآيات المحفوظة (%1$d)</string>
+    <string name="bookmarks_surah_item">سورة %1$s</string>
+    <string name="bookmarks_tap_hint">اضغط للانتقال مباشرة</string>
+
+    <string name="search_title">البحث اللغوي والقرآني الشامل</string>
+    <string name="search_hint">ابحث في الجذور، المصادر، المشتقات، ...</string>
+    <string name="search_tab_roots">الجذور (%1$d)</string>
+    <string name="search_tab_masadir">المصادر (%1$d)</string>
+    <string name="search_tab_derivatives">المشتقات (%1$d)</string>
+    <string name="search_tab_ayat">الآيات (%1$d)</string>
+    <string name="search_empty_hint">اكتب كلمة للبحث في المعجم والقواعد القرآنية</string>
+    <string name="search_no_roots">لا توجد جذور مطابقة للبحث</string>
+    <string name="search_no_masadir">لا توجد مصادر مطابقة للبحث</string>
+    <string name="search_no_derivatives">لا توجد مشتقات مطابقة للبحث</string>
+    <string name="search_no_ayat">لا توجد آيات مطابقة للبحث</string>
+    <string name="search_masdar_line">جذر: %1$s • وزن: %2$s</string>
+    <string name="search_derivative_line">%1$s • وزن: %2$s</string>
+    <string name="search_ayah_ref">سورة رقم %1$d • الآية %2$d</string>
+
+    <string name="cd_save_surah">حفظ السورة</string>
+    <string name="surah_unnamed">سورة</string>
+    <string name="db_missing_title">قاعدة البيانات غير متوفرة</string>
+    <string name="db_missing_body">يجب تنزيل قاعدة البيانات الكاملة (118 ميجابايت) لعرض آيات هذه السورة مع التحليل الصرفي.</string>
+
+    <string name="share_ayat">مشاركة الآيات</string>
+    <string name="no_ayat_copy">لا توجد آيات للنسخ</string>
+    <string name="no_ayat_share">لا توجد آيات للمشاركة</string>
+    <string name="no_share_app">لا يوجد تطبيق للمشاركة</string>
+
+    <string name="word_title_template">الكلمة: %1$s</string>
+    <string name="word_title_fallback">آيات الكلمة</string>
+    <string name="word_no_ayat">لا توجد آيات مسجلة لهذه الكلمة</string>
+    <string name="word_all_shown">تم عرض جميع الآيات • %1$s</string>
+
+    <string name="root_title_template">الجذر: [ %1$s ]</string>
+    <string name="cd_report">الإبلاغ عن معنى</string>
+    <string name="cd_selected">محدد</string>
+    <string name="cd_unselected">غير محدد</string>
+    <string name="tab_meanings">معاجم</string>
+    <string name="tab_masadir">مصادر</string>
+    <string name="tab_derivatives">مشتقات</string>
+    <string name="tab_words">كلمات</string>
+    <string name="tab_ayat">آيات</string>
+    <string name="root_no_meanings">لا توجد معاني مدخلة لهذا الجذر حالياً</string>
+    <string name="root_no_masadir">لا توجد مصادر مسجلة لهذا الجذر</string>
+    <string name="root_no_derivatives">لا توجد مشتقات مسجلة لهذا الجذر</string>
+    <string name="root_no_words">لا توجد كلمات مسجلة لهذا الجذر</string>
+    <string name="root_no_occurrences">لا توجد مواضع مسجلة لهذا الجذر في هذه النسخة</string>
+    <string name="root_copied_selected">تم نسخ آيات الكلمات المحددة</string>
+    <string name="root_load_more">اسحب للأسفل لتحميل المزيد • %1$d / %2$d</string>
+    <string name="root_ayat_title">آيات الجذر</string>
+    <string name="occurrences_progress">%1$d / %2$d • %3$s</string>
+
+    <string name="pattern_label">الوزن: %1$s</string>
+    <string name="attested_badge">وارد في التنزيل</string>
+    <string name="quranic_badge">قرآني</string>
+    <string name="select_all">تحديد الكل</string>
+    <string name="copying">جاري النسخ...</string>
+    <string name="copy_ayat">نسخ الآيات</string>
+    <string name="copy_all">نسخ الكل</string>
+    <string name="common_share">مشاركة</string>
+
+    <string name="guide_title">دليل المصطلحات والصرف القرآني</string>
+    <string name="guide_method_title">منهجية التحليل الصرفي والنحوي</string>
+    <string name="guide_method_body">يعتمد التطبيق على تجريد الكلمات القرآنية إلى جذورها الثلاثية والرباعية، وتحديد أبواب الأفعال وأوزان المشتقات والمصادر بالاستناد إلى مدونة ليدز للقرآن الكريم ومجمع المعاجم التراثية المعتمدة.</string>
+    <string name="guide_forms_title">أبواب وأوزان الأفعال القرآنية (من الأول إلى الثاني عشر)</string>
+    <string name="guide_form_desc">الباب %1$s في التصنيف اللغوي</string>
+    <string name="guide_terms_title">أقسام الكلم والمصطلحات النحوية والصرفية</string>
+    <string name="guide_example_label">شاهد قرآني:</string>
+    <string name="guide_example_ref">%1$s (الآية: %2$s)</string>
+    <string name="guide_refs_title">المراجع والمصادر التوثيقية</string>
+    <string name="guide_refs_body">• مدونة القرآن الكريم اللغوية (Quranic Arabic Corpus - Kais Dukes, University of Leeds)\n• المصحف الإلكتروني لمشروع تنزيل (Tanzil.net Project)\n• لسان العرب لابن منظور الإفريقي\n• الصحاح في اللغة للجوهري\n• معجم مقاييس اللغة لابن فارس\n• مكتبة CAMeL اللغوية لتحليل الصرف العربي</string>
+
+    <string name="db_setup_title">إدارة قاعدة البيانات</string>
+    <string name="db_setup_heading">قاعدة بيانات كلمات القرآن</string>
+    <string name="db_setup_desc">تحتوي على الإحصاء الكامل للقرآن الكريم: 77,429 موضع كلمة، 1,642 جذراً لغوياً، 5,273 مصدراً، 16,245 مشتقاً، ومعاجم لسان العرب والصحاح ومقاييس اللغة.</string>
+    <string name="db_status_ready">حالة القاعدة: جاهزة للتنزيل</string>
+    <string name="db_start_download">بدء تنزيل قاعدة البيانات الكاملة</string>
+    <string name="db_downloading">جاري التنزيل: %1$d%%</string>
+    <string name="db_extracting">جاري فك الضغط: %1$d%%</string>
+    <string name="db_extracting_device">فك الضغط داخل الجهاز...</string>
+    <string name="db_progress_ratio">%1$d ميجابايت من %2$d ميجابايت</string>
+    <string name="db_progress_single">%1$d ميجابايت</string>
+    <string name="db_update_available">⬆️ يتوفر تحديث جديد %1$s</string>
+    <string name="db_update_size">حجم التنزيل: %1$s</string>
+    <string name="db_update_auto"> • يتم فك الضغط والتثبيت تلقائيًا</string>
+    <string name="db_download_update">تنزيل التحديث الآن</string>
+    <string name="db_install_success">تم تنزيل وتثبيت قاعدة البيانات بنجاح!</string>
+    <string name="db_install_success_body">يمكنك الآن تصفح كامل المصحف والمعجم والمشتقات دون الحاجة إلى إنترنت.</string>
+    <string name="db_back_to_app">العودة إلى التطبيق</string>
+    <string name="db_download_failed">تعذر تنزيل قاعدة البيانات</string>
+    <string name="common_retry">إعادة المحاولة</string>
+    <string name="db_import_title">📂 استيراد قاعدة البيانات من الذاكرة</string>
+    <string name="db_preview_action">المتابعة باستخدام بيانات المعاينة السريعة</string>
+    <string name="db_import_dialog_title">استيراد قاعدة البيانات</string>
+    <string name="db_import_dialog_body">اختر ملف قاعدة البيانات (quran_words.db أو quran_words.db.zip) من ذاكرة الجهاز. الملف المضغوط أسرع في النقل وسيتم فك ضغطه تلقائيًا داخل التطبيق.</string>
+    <string name="db_pick_file">اختيار الملف</string>
+    <string name="db_version_status">حالة الإصدار</string>
+    <string name="db_checking">جاري الفحص...</string>
+    <string name="db_check_update">فحص التحديث</string>
+    <string name="db_installed_known">المثبتة: %1$s (رمز %2$d)</string>
+    <string name="db_installed_unknown">المثبتة: غير معروفة</string>
+    <string name="db_latest">الأحدث: %1$s (رمز %2$d)</string>
+    <string name="db_update_avail_tag"> • تحديث متوفر</string>
+    <string name="db_size_after"> • بعد الفك: %1$s</string>
+    <string name="db_show_notes">عرض ملاحظات الإصدار</string>
+    <string name="db_hide_notes">إخفاء ملاحظات الإصدار</string>
+    <string name="db_manifest_error">تعذر جلب معلومات الإصدار — تحقق من الاتصال ثم أعد الفحص.</string>
+    <string name="db_speed_kbps">%1$d ك.ب/ث</string>
+
+    <string name="report_title">الإبلاغ عن الملخص الذكي</string>
+    <string name="report_root_template">الجذر: [ %1$s ]</string>
+    <string name="report_target">المعنى المُبلغ عنه</string>
+    <string name="report_no_summary">لا يوجد ملخص ذكي معروض لهذا الجذر — يمكنك الإبلاغ عن غيابه.</string>
+    <string name="report_type_label">نوع البلاغ</string>
+    <string name="report_type_incorrect">معنى خاطئ</string>
+    <string name="report_type_incomplete">معنى ناقص</string>
+    <string name="report_type_typo">خطأ إملائي</string>
+    <string name="report_type_attribution">عزو خاطئ لكتاب</string>
+    <string name="report_desc_label">اشرح المشكلة *</string>
+    <string name="report_desc_hint">مثال: الملخص يذكر أن الجذر يدل على الكتابة بينما السياق القرآني يدل على…</string>
+    <string name="report_desc_error">اشرح المشكلة بعشر أحرف على الأقل (%1$d/%2$d)</string>
+    <string name="report_desc_count">%1$d/%2$d</string>
+    <string name="report_suggest_label">التصحيح المقترح (اختياري)</string>
+    <string name="report_suggest_hint">مثال: الصواب أن الملخص يذكر…</string>
+    <string name="report_copied">تم نسخ نص البلاغ</string>
+    <string name="report_copy">نسخ البلاغ</string>
+    <string name="report_share_title">مشاركة البلاغ</string>
+    <string name="report_github">إرسال عبر GitHub</string>
+
+    <string name="dl_err_download">فشل التنزيل — تحقق من الاتصال ثم أعد المحاولة</string>
+    <string name="dl_err_not_zip">ملف التحديث ليس مضغوطًا بشكل صحيح</string>
+    <string name="dl_err_checksum">فشل التحقق من سلامة الملف (بصمة غير متطابقة)</string>
+    <string name="dl_err_extract">تعذر فك ضغط قاعدة البيانات</string>
+    <string name="dl_err_invalid_db">الملف المستخرج ليس قاعدة بيانات صالحة</string>
+    <string name="dl_err_incomplete">الملف المستخرج غير مكتمل</string>
+    <string name="dl_err_install">تعذر تثبيت قاعدة البيانات في المسار المخصص</string>
+    <string name="dl_err_bad_pick">الملف المختار غير مكتمل أو ليس قاعدة البيانات الصحيحة</string>
+    <string name="dl_err_import">حدث خطأ أثناء استيراد البيانات</string>
+    <string name="dl_err_manifest">تعذر جلب معلومات الإصدار — تحقق من الاتصال ثم أعد الفحص</string>
+    <string name="dl_err_unknown">خطأ غير متوقع — أعد المحاولة</string>
+</resources>

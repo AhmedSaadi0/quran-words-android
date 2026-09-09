@@ -1,5 +1,7 @@
 package io.github.ahmedsaadi0.quranwords.util
 
+import androidx.annotation.StringRes
+import io.github.ahmedsaadi0.quranwords.R
 import java.net.URLEncoder
 
 /**
@@ -15,11 +17,11 @@ object MeaningReportLimits {
     const val MAX_SAMPLES = 2
 }
 
-enum class MeaningReportType(val ar: String) {
-    INCORRECT("معنى خاطئ"),
-    INCOMPLETE("معنى ناقص"),
-    TYPO("خطأ إملائي"),
-    WRONG_ATTRIBUTION("عزو خاطئ لكتاب")
+enum class MeaningReportType(val ar: String, @StringRes val labelRes: Int) {
+    INCORRECT("معنى خاطئ", R.string.report_type_incorrect),
+    INCOMPLETE("معنى ناقص", R.string.report_type_incomplete),
+    TYPO("خطأ إملائي", R.string.report_type_typo),
+    WRONG_ATTRIBUTION("عزو خاطئ لكتاب", R.string.report_type_attribution)
 }
 
 data class ReportAyahSample(

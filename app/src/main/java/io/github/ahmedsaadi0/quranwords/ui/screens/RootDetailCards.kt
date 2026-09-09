@@ -35,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
@@ -44,6 +46,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
@@ -120,7 +123,8 @@ fun MasdarCard(masdar: MasdarModel) {
                 )
                 masdar.pattern?.let {
                     Text(
-                        text = "الوزن: $it",
+                        // pattern is Arabic reference data; label is chrome.
+                        text = stringResource(R.string.pattern_label, it),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -135,7 +139,7 @@ fun MasdarCard(masdar: MasdarModel) {
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "وارد في التنزيل",
+                        text = stringResource(R.string.attested_badge),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
@@ -169,7 +173,8 @@ fun DerivativeCard(derivative: DerivativeModel) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "${derivative.derivativeType} • وزن: ${derivative.pattern}",
+                    // derivativeType/pattern are Arabic data; label is chrome.
+                    text = stringResource(R.string.search_derivative_line, derivative.derivativeType, derivative.pattern),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -183,7 +188,7 @@ fun DerivativeCard(derivative: DerivativeModel) {
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "قرآني",
+                        text = stringResource(R.string.quranic_badge),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.tertiary,
                         fontWeight = FontWeight.Bold
@@ -245,7 +250,7 @@ fun WordCard(
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "${word.occurrencesCount} موضع",
+                        text = pluralStringResource(R.plurals.root_occurrences, word.occurrencesCount, word.occurrencesCount),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
                         fontWeight = FontWeight.Bold
@@ -254,7 +259,7 @@ fun WordCard(
                 if (isSelectionMode) {
                     Icon(
                         imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = if (isSelected) "محدد" else "غير محدد",
+                        contentDescription = if (isSelected) stringResource(R.string.cd_selected) else stringResource(R.string.cd_unselected),
                         tint = if (isSelected) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.outline,
                         modifier = Modifier.size(22.dp)
@@ -295,7 +300,7 @@ fun SelectedWordsBar(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "تم تحديد $selectedCount كلمات",
+                    text = pluralStringResource(R.plurals.selected_words_count, selectedCount, selectedCount),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -309,7 +314,7 @@ fun SelectedWordsBar(
                         modifier = Modifier.testTag("select_all_words_btn")
                     ) {
                         Text(
-                            text = "تحديد الكل",
+                            text = stringResource(R.string.select_all),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -319,7 +324,7 @@ fun SelectedWordsBar(
                         modifier = Modifier.testTag("clear_words_selection_btn")
                     ) {
                         Text(
-                            text = "إلغاء",
+                            text = stringResource(R.string.cd_cancel),
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -354,7 +359,7 @@ fun SelectedWordsBar(
                     }
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
                     Text(
-                        text = if (isCopying) "جاري النسخ..." else "نسخ الآيات",
+                        text = if (isCopying) stringResource(R.string.copying) else stringResource(R.string.copy_ayat),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -375,7 +380,7 @@ fun SelectedWordsBar(
                     )
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
                     Text(
-                        text = "مشاركة",
+                        text = stringResource(R.string.common_share),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -408,7 +413,8 @@ fun AyahOccurrenceCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "سورة ${occ.surahNameAr} • الآية ${occ.ayahNum}",
+                    // surahNameAr is Arabic reference data (never translated).
+                    text = stringResource(R.string.home_continue_template, occ.surahNameAr, occ.ayahNum),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -481,7 +487,7 @@ fun CopyAllOccurrencesBar(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
-                    text = "آيات الجذر",
+                    text = stringResource(R.string.root_ayat_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -489,7 +495,12 @@ fun CopyAllOccurrencesBar(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = if (totalCount > 0) "$occurrencesSize / $totalCount موضع" else "$occurrencesSize موضع",
+                    text = if (totalCount > 0) stringResource(
+                        R.string.occurrences_progress,
+                        occurrencesSize,
+                        totalCount,
+                        pluralStringResource(R.plurals.root_occurrences, totalCount, totalCount)
+                    ) else pluralStringResource(R.plurals.root_occurrences, occurrencesSize, occurrencesSize),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -521,7 +532,7 @@ fun CopyAllOccurrencesBar(
                     }
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
                     Text(
-                        text = if (isCopying) "جاري النسخ..." else "نسخ الكل",
+                        text = if (isCopying) stringResource(R.string.copying) else stringResource(R.string.copy_all),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -541,7 +552,7 @@ fun CopyAllOccurrencesBar(
                     )
                     androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(ButtonDefaults.IconSpacing))
                     Text(
-                        text = "مشاركة",
+                        text = stringResource(R.string.common_share),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold
                     )

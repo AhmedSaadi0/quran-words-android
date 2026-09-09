@@ -22,8 +22,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,13 +39,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
-import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeSmall
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -63,10 +63,10 @@ fun BookmarksScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("إشاراتي المرجعية", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.home_bookmarks_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack, modifier = Modifier.testTag("back_button")) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "رجوع")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -94,13 +94,13 @@ fun BookmarksScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Text("⭐", fontSize = 48.sp)
                             Text(
-                                "لا توجد إشارات مرجعية بعد",
+                                stringResource(R.string.bookmarks_empty_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "استخدم أيقونة ☆ في صفحة السور والآيات لحفظ ما تريد الرجوع إليه",
+                                stringResource(R.string.bookmarks_empty_hint),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 20.sp
@@ -114,7 +114,7 @@ fun BookmarksScreen(
             if (bookmarkedSurahs.isNotEmpty()) {
                 item {
                     Text(
-                        "السور المحفوظة (${bookmarkedSurahs.size})",
+                        stringResource(R.string.bookmarks_surahs_title, bookmarkedSurahs.size),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -137,10 +137,14 @@ fun BookmarksScreen(
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
@@ -152,29 +156,27 @@ fun BookmarksScreen(
                                 }
                                 Column {
                                     Text(
-                                        text = meta?.let { "سورة ${it.nameAr}" } ?: "سورة $surahId",
+                                        // Surah name is Arabic reference data (never translated).
+                                        text = meta?.let { stringResource(R.string.bookmarks_surah_item, it.nameAr) }
+                                            ?: stringResource(R.string.bookmarks_surah_item, surahId),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = meta?.let { "${it.nameEn} • ${it.ayahCount} آية" } ?: "",
+                                        text = meta?.let {
+                                            "${it.nameEn} • ${pluralStringResource(R.plurals.ayah_count, it.ayahCount, it.ayahCount)}"
+                                        } ?: "",
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
-                                    onClick = { onNavigateToSurahDetail(surahId, 1) },
-                                    shape = ShapeSmall,
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                                ) { Text("فتح") }
-                                IconButton(
-                                    onClick = { mainViewModel.toggleSurahBookmark(surahId) },
-                                    modifier = Modifier.testTag("remove_bookmark_surah_$surahId")
-                                ) { Text("❌", fontSize = 14.sp) }
-                            }
+                            // Card itself navigates; only the distinct remove action keeps a button.
+                            IconButton(
+                                onClick = { mainViewModel.toggleSurahBookmark(surahId) },
+                                modifier = Modifier.testTag("remove_bookmark_surah_$surahId")
+                            ) { Text("❌", fontSize = 14.sp) }
                         }
                     }
                 }
@@ -184,7 +186,7 @@ fun BookmarksScreen(
             if (bookmarkedAyat.isNotEmpty()) {
                 item {
                     Text(
-                        "الآيات المحفوظة (${bookmarkedAyat.size})",
+                        stringResource(R.string.bookmarks_ayahs_title, bookmarkedAyat.size),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -209,10 +211,14 @@ fun BookmarksScreen(
                     ) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(14.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(8.dp))
@@ -223,29 +229,25 @@ fun BookmarksScreen(
                                 }
                                 Column {
                                     Text(
-                                        text = meta?.let { "سورة ${it.nameAr} • الآية $ayahNum" } ?: "سورة $surahId • $ayahNum",
+                                        // Surah name is Arabic reference data (never translated).
+                                        text = meta?.let {
+                                            stringResource(R.string.home_continue_template, it.nameAr, ayahNum)
+                                        } ?: stringResource(R.string.home_continue_template, surahId, ayahNum),
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = "اضغط للانتقال مباشرة",
+                                        text = stringResource(R.string.bookmarks_tap_hint),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
-                                    onClick = { onNavigateToSurahDetail(surahId, ayahNum) },
-                                    shape = ShapeSmall,
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                                ) { Text("فتح") }
-                                IconButton(
-                                    onClick = { mainViewModel.toggleAyahBookmark(surahId, ayahNum) },
-                                    modifier = Modifier.testTag("remove_bookmark_ayah_${surahId}_$ayahNum")
-                                ) { Text("❌", fontSize = 14.sp) }
-                            }
+                            IconButton(
+                                onClick = { mainViewModel.toggleAyahBookmark(surahId, ayahNum) },
+                                modifier = Modifier.testTag("remove_bookmark_ayah_${surahId}_$ayahNum")
+                            ) { Text("❌", fontSize = 14.sp) }
                         }
                     }
                 }

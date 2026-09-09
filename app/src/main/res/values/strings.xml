@@ -1,3 +1,281 @@
 <resources>
-    <string name="app_name">كلمات القرآن</string>
+    <string name="app_name" translatable="false">كلمات القرآن</string>
+
+    <!-- Home hero -->
+    <string name="home_title">Quran Words</string>
+    <string name="home_subtitle">Comprehensive lexicon and morphology of Quranic words</string>
+    <string name="home_search_hint">Search roots, words, masadirs, or ayah text…</string>
+
+    <!-- Home database banner -->
+    <string name="home_db_title">Full database (118 MB)</string>
+    <string name="home_db_body">Download the full lexicon and morphology database to work offline, or keep using the quick preview data.</string>
+    <string name="home_db_action">Download database</string>
+
+    <!-- Home quick navigation -->
+    <string name="home_nav_surahs_title">Surah Index</string>
+    <string name="home_nav_surahs_subtitle">%1$d Surahs</string>
+    <string name="home_nav_roots_title">Root Lexicon</string>
+    <string name="home_nav_roots_subtitle">%1$d Roots</string>
+    <string name="home_nav_guide_title">Morphology Guide</string>
+    <string name="home_nav_guide_subtitle">Patterns &amp; forms</string>
+
+    <!-- Home continue reading: %1$s = surah name (Arabic data, never translated) -->
+    <string name="home_continue_title">Continue recitation &amp; analysis</string>
+    <string name="home_continue_template">Surah %1$s • Ayah %2$d</string>
+    <string name="common_view_all">View all</string>
+    <string name="common_close">Close</string>
+
+    <!-- Home bookmarks -->
+    <string name="home_bookmarks_title">My Bookmarks</string>
+    <string name="home_bookmarks_empty">Save surahs and ayat for quick access</string>
+    <string name="home_bookmarks_saved_suffix">saved</string>
+
+    <!-- Home statistics -->
+    <string name="home_stats_title">Quranic corpus statistics</string>
+    <string name="home_stats_subtitle">From the verified Quran Words database</string>
+    <string name="home_stat_unique">Unique words</string>
+    <string name="home_stat_verified">Verified roots</string>
+    <string name="home_stat_masadir">Masadirs</string>
+    <string name="home_stat_derivatives">Derivatives &amp; patterns</string>
+    <string name="home_stat_positions">Word occurrences</string>
+    <string name="home_stat_ayat">Noble ayat</string>
+
+    <!-- Home featured roots -->
+    <string name="home_featured_title">Sample Quranic roots</string>
+
+    <!-- Appearance dialog -->
+    <string name="theme_title">Appearance &amp; colors</string>
+    <string name="theme_section">Theme</string>
+    <string name="theme_system">System default</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_colors">Colors</string>
+    <string name="theme_colors_app">App olive colors</string>
+    <string name="theme_colors_app_sub">Natural Tones</string>
+    <string name="theme_colors_system">System colors</string>
+    <string name="theme_colors_system_sub">Material You (Android 12+)</string>
+    <string name="theme_colors_unsupported">Not supported on this device</string>
+
+    <!-- Language: values are chrome; native names stay fixed -->
+    <string name="lang_title">Language</string>
+    <string name="lang_system">System default</string>
+    <string name="lang_arabic">Arabic</string>
+    <string name="lang_english">English</string>
+
+    <!-- Database update banner (rendered inside Home) -->
+    <string name="db_update_title">New database update %1$s</string>
+    <string name="db_update_installed">Installed: %1$s • </string>
+    <string name="db_update_download">Download: %1$s</string>
+    <string name="db_update_uncompressed">(after extraction %1$s)</string>
+    <string name="db_update_now">Update now</string>
+    <string name="db_update_later">Later</string>
+    <string name="db_size_mb">%1$d MB</string>
+    <string name="db_size_kb">%1$d KB</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_surahs">Surahs</string>
+    <string name="nav_roots">Roots</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_guide">Guide</string>
+
+    <!-- Shared content descriptions -->
+    <string name="cd_back">Back</string>
+    <string name="cd_clear">Clear</string>
+    <string name="cd_cancel">Cancel</string>
+
+    <!-- Surah header: %1$s = Arabic surah name (data, never translated) -->
+    <string name="surah_title_template">Surah %1$s</string>
+    <string name="surah_detail_loading">Loading…</string>
+    <string name="revelation_meccan">Meccan</string>
+    <string name="revelation_medinan">Medinan</string>
+
+    <!-- Ayah feedback -->
+    <string name="ayah_copied">Ayah copied</string>
+
+    <!-- Mushaf position separators -->
+    <string name="juz_label">Juz %1$d</string>
+    <string name="hizb_label">Hizb %1$d</string>
+    <string name="quarter_label">Quarter %1$d</string>
+    <string name="page_label">Page %1$d</string>
+
+    <!-- Morphology sheet -->
+    <string name="morpho_ayah">Ayah %1$d</string>
+    <string name="morpho_root">Root</string>
+    <string name="morpho_details">Root details &amp; derivatives</string>
+    <string name="morpho_ai_title">AI root summary</string>
+    <string name="morpho_no_root">This word is not linked to a linguistic root</string>
+    <string name="morpho_no_summary">No AI summary available for this root yet</string>
+
+    <!-- Surah index -->
+    <string name="surah_index_title">Holy Quran Index</string>
+    <string name="surah_index_subtitle">%1$d Surahs • %2$d Meccan • %3$d Medinan • %4$d Juz</string>
+    <string name="surah_index_tab_surahs">Surahs (%1$d)</string>
+    <string name="surah_index_tab_juz">Juz (%1$d)</string>
+    <string name="surah_index_search_hint">Search by surah name or number…</string>
+    <string name="surah_index_filter_all">All (%1$d)</string>
+    <string name="surah_index_filter_meccan">Meccan (%1$d)</string>
+    <string name="surah_index_filter_medinan">Medinan (%1$d)</string>
+    <string name="surah_index_empty_filter">No surahs match the filter</string>
+    <string name="surah_index_empty_query">No results for \"%1$s\"</string>
+
+    <!-- Roots list -->
+    <string name="roots_title">Quranic Root Lexicon</string>
+    <string name="roots_search_hint">Search roots (e.g. كتب، علم، رحم)…</string>
+
+    <!-- Bookmarks -->
+    <string name="bookmarks_empty_title">No bookmarks yet</string>
+    <string name="bookmarks_empty_hint">Use the ☆ icon on surah and ayah pages to save items for later</string>
+    <string name="bookmarks_surahs_title">Saved surahs (%1$d)</string>
+    <string name="bookmarks_ayahs_title">Saved ayat (%1$d)</string>
+    <string name="bookmarks_surah_item">Surah %1$s</string>
+    <string name="bookmarks_tap_hint">Tap to jump directly</string>
+
+    <!-- Search -->
+    <string name="search_title">Comprehensive linguistic &amp; Quranic search</string>
+    <string name="search_hint">Search roots, masadirs, derivatives…</string>
+    <string name="search_tab_roots">Roots (%1$d)</string>
+    <string name="search_tab_masadir">Masadirs (%1$d)</string>
+    <string name="search_tab_derivatives">Derivatives (%1$d)</string>
+    <string name="search_tab_ayat">Ayat (%1$d)</string>
+    <string name="search_empty_hint">Type a word to search the lexicon and Quranic corpus</string>
+    <string name="search_no_roots">No matching roots</string>
+    <string name="search_no_masadir">No matching masadirs</string>
+    <string name="search_no_derivatives">No matching derivatives</string>
+    <string name="search_no_ayat">No matching ayat</string>
+    <string name="search_masdar_line">Root: %1$s • Pattern: %2$s</string>
+    <string name="search_derivative_line">%1$s • Pattern: %2$s</string>
+    <string name="search_ayah_ref">Surah no. %1$d • Ayah %2$d</string>
+
+    <!-- Surah detail -->
+    <string name="cd_save_surah">Save surah</string>
+    <string name="surah_unnamed">Surah</string>
+    <string name="db_missing_title">Database unavailable</string>
+    <string name="db_missing_body">Download the full database (118 MB) to view this surah’s ayat with morphology.</string>
+
+    <!-- Shared copy/share feedback -->
+    <string name="share_ayat">Share ayat</string>
+    <string name="no_ayat_copy">No ayat to copy</string>
+    <string name="no_ayat_share">No ayat to share</string>
+    <string name="no_share_app">No app available for sharing</string>
+
+    <!-- Word ayat -->
+    <string name="word_title_template">Word: %1$s</string>
+    <string name="word_title_fallback">Word ayat</string>
+    <string name="word_no_ayat">No ayat recorded for this word</string>
+    <string name="word_all_shown">All ayat shown • %1$s</string>
+
+    <!-- Root detail -->
+    <string name="root_title_template">Root: [ %1$s ]</string>
+    <string name="cd_report">Report meaning</string>
+    <string name="cd_selected">Selected</string>
+    <string name="cd_unselected">Not selected</string>
+    <string name="tab_meanings">Lexicons</string>
+    <string name="tab_masadir">Masadirs</string>
+    <string name="tab_derivatives">Derivatives</string>
+    <string name="tab_words">Words</string>
+    <string name="tab_ayat">Ayat</string>
+    <string name="root_no_meanings">No meanings entered for this root yet</string>
+    <string name="root_no_masadir">No masadirs recorded for this root</string>
+    <string name="root_no_derivatives">No derivatives recorded for this root</string>
+    <string name="root_no_words">No words recorded for this root</string>
+    <string name="root_no_occurrences">No occurrences recorded for this root in this version</string>
+    <string name="root_copied_selected">Copied ayat of selected words</string>
+    <string name="root_load_more">Pull down to load more • %1$d / %2$d</string>
+    <string name="root_ayat_title">Root ayat</string>
+    <string name="occurrences_progress">%1$d / %2$d • %3$s</string>
+
+    <!-- Root cards -->
+    <string name="pattern_label">Pattern: %1$s</string>
+    <string name="attested_badge">Attested in revelation</string>
+    <string name="quranic_badge">Quranic</string>
+    <string name="select_all">Select all</string>
+    <string name="copying">Copying…</string>
+    <string name="copy_ayat">Copy ayat</string>
+    <string name="copy_all">Copy all</string>
+    <string name="common_share">Share</string>
+
+    <!-- Morphology guide -->
+    <string name="guide_title">Quranic terminology &amp; morphology guide</string>
+    <string name="guide_method_title">Morphology &amp; grammar methodology</string>
+    <string name="guide_method_body">The app reduces Quranic words to their triliteral and quadriliteral roots, identifying verb forms, derivative patterns and masadirs based on the Leeds Quranic Arabic Corpus (Quranic Arabic Corpus) and accredited heritage lexicons.</string>
+    <string name="guide_forms_title">Quranic verb forms &amp; patterns (Forms I - XII)</string>
+    <string name="guide_form_desc">Form %1$s in linguistic classification</string>
+    <string name="guide_terms_title">Word classes &amp; grammatical terms</string>
+    <string name="guide_example_label">Quranic example:</string>
+    <string name="guide_example_ref">%1$s (Ayah: %2$s)</string>
+    <string name="guide_refs_title">Documentation references</string>
+    <string name="guide_refs_body">• Quranic Arabic Corpus - Kais Dukes, University of Leeds\n• Tanzil.net Project e-Mushaf\n• Lisan al-Arab by Ibn Manzur\n• Al-Sihah by Al-Jawhari\n• Maqayis al-Lughah by Ibn Faris\n• CAMeL Arabic morphology toolkit</string>
+
+    <!-- Database setup -->
+    <string name="db_setup_title">Database management</string>
+    <string name="db_setup_heading">Quran Words database</string>
+    <string name="db_setup_desc">Holds the complete Quran statistics: 77,429 word occurrences, 1,642 roots, 5,273 masadirs, 16,245 derivatives, plus Lisan al-Arab, Al-Sihah and Maqayis lexicons.</string>
+    <string name="db_status_ready">Database status: ready to download</string>
+    <string name="db_start_download">Start full database download</string>
+    <string name="db_downloading">Downloading: %1$d%%</string>
+    <string name="db_extracting">Extracting: %1$d%%</string>
+    <string name="db_extracting_device">Extracting on device…</string>
+    <string name="db_progress_ratio">%1$d MB of %2$d MB</string>
+    <string name="db_progress_single">%1$d MB</string>
+    <string name="db_update_available">⬆️ New update available %1$s</string>
+    <string name="db_update_size">Download size: %1$s</string>
+    <string name="db_update_auto"> • extracted and installed automatically</string>
+    <string name="db_download_update">Download update now</string>
+    <string name="db_install_success">Database downloaded and installed successfully!</string>
+    <string name="db_install_success_body">You can now browse the full Mushaf, lexicon and derivatives without internet.</string>
+    <string name="db_back_to_app">Back to the app</string>
+    <string name="db_download_failed">Could not download the database</string>
+    <string name="common_retry">Retry</string>
+    <string name="db_import_title">📂 Import database from storage</string>
+    <string name="db_preview_action">Continue with quick preview data</string>
+    <string name="db_import_dialog_title">Import database</string>
+    <string name="db_import_dialog_body">Pick the database file (quran_words.db or quran_words.db.zip) from device storage. The zipped file transfers faster and is extracted automatically inside the app.</string>
+    <string name="db_pick_file">Pick file</string>
+    <string name="db_version_status">Version status</string>
+    <string name="db_checking">Checking…</string>
+    <string name="db_check_update">Check for update</string>
+    <string name="db_installed_known">Installed: %1$s (code %2$d)</string>
+    <string name="db_installed_unknown">Installed: unknown</string>
+    <string name="db_latest">Latest: %1$s (code %2$d)</string>
+    <string name="db_update_avail_tag"> • update available</string>
+    <string name="db_size_after"> • after extraction: %1$s</string>
+    <string name="db_show_notes">Show release notes</string>
+    <string name="db_hide_notes">Hide release notes</string>
+    <string name="db_manifest_error">Could not fetch version info — check connection and retry.</string>
+    <string name="db_speed_kbps">%1$d KB/s</string>
+
+    <!-- Meaning report dialog (issue body itself stays bilingual by design) -->
+    <string name="report_title">Report AI summary</string>
+    <string name="report_root_template">Root: [ %1$s ]</string>
+    <string name="report_target">Reported meaning</string>
+    <string name="report_no_summary">No AI summary shown for this root — you can report its absence.</string>
+    <string name="report_type_label">Report type</string>
+    <string name="report_type_incorrect">Incorrect meaning</string>
+    <string name="report_type_incomplete">Incomplete meaning</string>
+    <string name="report_type_typo">Typo</string>
+    <string name="report_type_attribution">Wrong book attribution</string>
+    <string name="report_desc_label">Describe the problem *</string>
+    <string name="report_desc_hint">E.g. the summary says the root means writing while the Quranic context means…</string>
+    <string name="report_desc_error">Describe the problem in at least ten characters (%1$d/%2$d)</string>
+    <string name="report_desc_count">%1$d/%2$d</string>
+    <string name="report_suggest_label">Suggested correction (optional)</string>
+    <string name="report_suggest_hint">E.g. the summary should say…</string>
+    <string name="report_copied">Report text copied</string>
+    <string name="report_copy">Copy report</string>
+    <string name="report_share_title">Share report</string>
+    <string name="report_github">Send via GitHub</string>
+
+    <!-- Download error codes (detail stays in logs only) -->
+    <string name="dl_err_download">Download failed — check connection and retry</string>
+    <string name="dl_err_not_zip">Update file is not a valid archive</string>
+    <string name="dl_err_checksum">File integrity check failed (checksum mismatch)</string>
+    <string name="dl_err_extract">Could not extract the database</string>
+    <string name="dl_err_invalid_db">Extracted file is not a valid database</string>
+    <string name="dl_err_incomplete">Extracted file is incomplete</string>
+    <string name="dl_err_install">Could not install the database</string>
+    <string name="dl_err_bad_pick">Selected file is incomplete or not the right database</string>
+    <string name="dl_err_import">Error while importing data</string>
+    <string name="dl_err_manifest">Could not fetch version info — check connection and retry</string>
+    <string name="dl_err_unknown">Unexpected error — please retry</string>
 </resources>

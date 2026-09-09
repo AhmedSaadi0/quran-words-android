@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
+    <!-- AppCompat parent is required by MainActivity (per-app locales backport).
+         The UI itself is 100% Compose via MyApplicationTheme; this only styles
+         the window behind the splash/first frame. -->
+    <style name="Theme.MyApplication" parent="Theme.AppCompat.DayNight.NoActionBar" />
 </resources>

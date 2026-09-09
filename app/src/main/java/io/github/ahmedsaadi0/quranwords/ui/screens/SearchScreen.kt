@@ -53,10 +53,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SearchViewModel
@@ -97,7 +99,7 @@ fun SearchScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "البحث اللغوي والقرآني الشامل",
+                        text = stringResource(R.string.search_title),
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -108,7 +110,7 @@ fun SearchScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "رجوع"
+                            contentDescription = stringResource(R.string.cd_back)
                         )
                     }
                 },
@@ -130,14 +132,14 @@ fun SearchScreen(
             OutlinedTextField(
                 value = query,
                 onValueChange = { searchViewModel.onQueryChanged(it) },
-                placeholder = { Text("ابحث في الجذور، المصادر، المشتقات، ...") },
+                placeholder = { Text(stringResource(R.string.search_hint)) },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Search, contentDescription = null)
                 },
                 trailingIcon = {
                     if (query.isNotBlank()) {
                         IconButton(onClick = { searchViewModel.onQueryChanged("") }) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = "مسح")
+                            Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear))
                         }
                     }
                 },
@@ -157,22 +159,22 @@ fun SearchScreen(
                 Tab(
                     selected = selectedTabIndex == 0,
                     onClick = { selectedTabIndex = 0 },
-                    text = { Text("الجذور (${results.roots.size})", fontWeight = FontWeight.Bold) }
+                    text = { Text(stringResource(R.string.search_tab_roots, results.roots.size), fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = selectedTabIndex == 1,
                     onClick = { selectedTabIndex = 1 },
-                    text = { Text("المصادر (${results.masadir.size})", fontWeight = FontWeight.Bold) }
+                    text = { Text(stringResource(R.string.search_tab_masadir, results.masadir.size), fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = selectedTabIndex == 2,
                     onClick = { selectedTabIndex = 2 },
-                    text = { Text("المشتقات (${results.derivatives.size})", fontWeight = FontWeight.Bold) }
+                    text = { Text(stringResource(R.string.search_tab_derivatives, results.derivatives.size), fontWeight = FontWeight.Bold) }
                 )
                 Tab(
                     selected = selectedTabIndex == 3,
                     onClick = { selectedTabIndex = 3 },
-                    text = { Text("الآيات (${results.ayat.size})", fontWeight = FontWeight.Bold) }
+                    text = { Text(stringResource(R.string.search_tab_ayat, results.ayat.size), fontWeight = FontWeight.Bold) }
                 )
             }
 
@@ -188,7 +190,7 @@ fun SearchScreen(
                     ) {
                         Text("🔍", fontSize = 48.sp)
                         Text(
-                            text = "اكتب كلمة للبحث في المعجم والقواعد القرآنية",
+                            text = stringResource(R.string.search_empty_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -212,7 +214,7 @@ fun SearchScreen(
                         when (selectedTabIndex) {
                             0 -> {
                                 if (results.roots.isEmpty()) {
-                                    item { EmptySearchNotice("لا توجد جذور مطابقة للبحث") }
+                                    item { EmptySearchNotice(stringResource(R.string.search_no_roots)) }
                                 } else {
                                     items(results.roots, key = { it.id }) { rootItem ->
                                         RootItemCard(
@@ -225,7 +227,7 @@ fun SearchScreen(
                             }
                             1 -> {
                                 if (results.masadir.isEmpty()) {
-                                    item { EmptySearchNotice("لا توجد مصادر مطابقة للبحث") }
+                                    item { EmptySearchNotice(stringResource(R.string.search_no_masadir)) }
                                 } else {
                                     items(results.masadir, key = { it.id }) { masdar ->
                                         Card(
@@ -250,7 +252,8 @@ fun SearchScreen(
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                     Text(
-                                                        text = "جذر: ${masdar.form ?: ""} • وزن: ${masdar.pattern ?: ""}",
+                                                        // form/pattern are Arabic reference data; labels are chrome.
+                                                        text = stringResource(R.string.search_masdar_line, masdar.form ?: "", masdar.pattern ?: ""),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )
@@ -262,7 +265,7 @@ fun SearchScreen(
                             }
                             2 -> {
                                 if (results.derivatives.isEmpty()) {
-                                    item { EmptySearchNotice("لا توجد مشتقات مطابقة للبحث") }
+                                    item { EmptySearchNotice(stringResource(R.string.search_no_derivatives)) }
                                 } else {
                                     items(results.derivatives, key = { it.id }) { derivative ->
                                         Card(
@@ -287,7 +290,8 @@ fun SearchScreen(
                                                         fontWeight = FontWeight.Bold
                                                     )
                                                     Text(
-                                                        text = "${derivative.derivativeType} • وزن: ${derivative.pattern}",
+                                                        // derivativeType/pattern are Arabic data; label is chrome.
+                                                        text = stringResource(R.string.search_derivative_line, derivative.derivativeType, derivative.pattern),
                                                         style = MaterialTheme.typography.bodySmall,
                                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                                     )
@@ -299,7 +303,7 @@ fun SearchScreen(
                             }
                             3 -> {
                                 if (results.ayat.isEmpty()) {
-                                    item { EmptySearchNotice("لا توجد آيات مطابقة للبحث") }
+                                    item { EmptySearchNotice(stringResource(R.string.search_no_ayat)) }
                                 } else {
                                     items(results.ayat, key = { "${it.surah}-${it.ayah}-${it.textUthmani.hashCode()}" }) { ayah ->
                                         Card(
@@ -316,7 +320,7 @@ fun SearchScreen(
                                                 verticalArrangement = Arrangement.spacedBy(6.dp)
                                             ) {
                                                 Text(
-                                                    text = "سورة رقم ${ayah.surah} • الآية ${ayah.ayah}",
+                                                    text = stringResource(R.string.search_ayah_ref, ayah.surah, ayah.ayah),
                                                     style = MaterialTheme.typography.labelMedium,
                                                     fontWeight = FontWeight.Bold,
                                                     color = MaterialTheme.colorScheme.primary

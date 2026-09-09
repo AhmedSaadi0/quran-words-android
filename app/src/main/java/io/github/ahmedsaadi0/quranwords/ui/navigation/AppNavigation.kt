@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,6 +26,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.hilt.navigation.compose.hiltViewModel
+import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.screens.BookmarksScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.DatabaseSetupScreen
@@ -60,11 +62,11 @@ fun AppNavigation(
     val currentRoute = navBackStackEntry?.destination?.route
 
     val bottomNavItems = listOf(
-        BottomNavItem(Screen.Home.route, "الرئيسية", "🏠"),
-        BottomNavItem(Screen.SurahIndex.route, "السور", "📖"),
-        BottomNavItem(Screen.Roots.route, "الجذور", "🌿"),
-        BottomNavItem(Screen.Search.route, "البحث", "🔍"),
-        BottomNavItem(Screen.Guide.route, "الدليل", "📐")
+        BottomNavItem(Screen.Home.route, stringResource(R.string.nav_home), "🏠"),
+        BottomNavItem(Screen.SurahIndex.route, stringResource(R.string.nav_surahs), "📖"),
+        BottomNavItem(Screen.Roots.route, stringResource(R.string.nav_roots), "🌿"),
+        BottomNavItem(Screen.Search.route, stringResource(R.string.nav_search), "🔍"),
+        BottomNavItem(Screen.Guide.route, stringResource(R.string.nav_guide), "📐")
     )
 
     val showBottomBar = bottomNavItems.any { it.route == currentRoute }
