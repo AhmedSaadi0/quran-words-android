@@ -526,6 +526,7 @@ class RootViewModel @Inject constructor(
         // Persist current root for process death
         savedStateHandle["currentRootIdForOcc"] = rootId
         clearWordSelection()
+        clearMeaningSelection()
         viewModelScope.launch {
             _isLoading.value = true
             currentRootIdForOcc = rootId
@@ -600,6 +601,40 @@ class RootViewModel @Inject constructor(
     fun clearWordSelection() {
         _selectedWordIds.value = emptySet()
         _isWordSelectionMode.value = false
+    }
+
+    // Multi-meaning selection (long-press in Meanings tab) — mirrors words selection
+    private val _selectedMeaningIds = MutableStateFlow<Set<Int>>(emptySet())
+    val selectedMeaningIds: StateFlow<Set<Int>> = _selectedMeaningIds.asStateFlow()
+
+    private val _isMeaningSelectionMode = MutableStateFlow(false)
+    val isMeaningSelectionMode: StateFlow<Boolean> = _isMeaningSelectionMode.asStateFlow()
+
+    fun enterMeaningSelectionMode(meaningId: Int) {
+        _isMeaningSelectionMode.value = true
+        _selectedMeaningIds.value = setOf(meaningId)
+    }
+
+    fun toggleMeaningSelection(meaningId: Int) {
+        val current = _selectedMeaningIds.value.toMutableSet()
+        if (current.contains(meaningId)) current.remove(meaningId) else current.add(meaningId)
+        _selectedMeaningIds.value = current
+        if (current.isEmpty()) {
+            _isMeaningSelectionMode.value = false
+        } else if (!_isMeaningSelectionMode.value) {
+            _isMeaningSelectionMode.value = true
+        }
+    }
+
+    fun selectAllMeanings() {
+        _selectedMeaningIds.value =
+            _rootDetail.value?.meanings?.map { it.id }?.toSet() ?: emptySet()
+        _isMeaningSelectionMode.value = _selectedMeaningIds.value.isNotEmpty()
+    }
+
+    fun clearMeaningSelection() {
+        _selectedMeaningIds.value = emptySet()
+        _isMeaningSelectionMode.value = false
     }
 
     fun loadMoreOccurrencesIfNeeded(lastVisibleIndex: Int) {
@@ -687,6 +722,48 @@ class RootViewModel @Inject constructor(
             repository.getAllOccurrencesForWords(rootId, wordIds).size
         } catch (_: Exception) {
             0
+        }
+    }
+
+    /**
+     * Formats ALL lexicon meanings for the current root for copy/share.
+     * Meanings are fully loaded with the detail (no pagination).
+     * Exposes loading via [isCopyingAll].
+     */
+    suspend fun getAllMeaningsFormatted(): String {
+        val detail = _rootDetail.value ?: return ""
+        if (_isCopyingAll.value) return ""
+        _isCopyingAll.value = true
+        return try {
+            io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatMeanings(
+                detail.item.root,
+                detail.meanings
+            )
+        } catch (_: Exception) {
+            ""
+        } finally {
+            _isCopyingAll.value = false
+        }
+    }
+
+    /**
+     * Formats only the selected lexicon meanings for copy/share.
+     * Exposes loading via [isCopyingAll].
+     */
+    suspend fun getSelectedMeaningsFormatted(): String {
+        val detail = _rootDetail.value ?: return ""
+        val ids = _selectedMeaningIds.value
+        if (ids.isEmpty() || _isCopyingAll.value) return ""
+        _isCopyingAll.value = true
+        return try {
+            io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatMeanings(
+                detail.item.root,
+                detail.meanings.filter { it.id in ids }
+            )
+        } catch (_: Exception) {
+            ""
+        } finally {
+            _isCopyingAll.value = false
         }
     }
 }

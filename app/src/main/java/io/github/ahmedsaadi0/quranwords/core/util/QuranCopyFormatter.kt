@@ -2,6 +2,7 @@ package io.github.ahmedsaadi0.quranwords.core.util
 
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
+import io.github.ahmedsaadi0.quranwords.domain.model.RootMeaningModel
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 
 object QuranCopyFormatter {
@@ -77,6 +78,34 @@ object QuranCopyFormatter {
                 append(" ﴿${occ.ayahNum}﴾")
                 append("\n")
                 append("[سورة ${occ.surahNameAr}: ${occ.ayahNum}]")
+            }
+        }
+    }
+
+    /**
+     * AI summary (single text):
+     * [الملخص الذكي للجذر: {rootText}]
+     * {summary}
+     * Headers stay Arabic: the copied payload is reference data, not UI chrome.
+     */
+    fun formatAiSummary(rootText: String, summary: String): String {
+        if (summary.isBlank()) return ""
+        return "[الملخص الذكي للجذر: $rootText]\n\n${summary.trim()}"
+    }
+
+    /**
+     * Lexicon meanings, each on its own block:
+     * [معاني الجذر: {rootText}]
+     * ▪ {bookName}
+     * {definition}
+     * Blocks separated by double newlines.
+     */
+    fun formatMeanings(rootText: String, meanings: List<RootMeaningModel>): String {
+        if (meanings.isEmpty()) return ""
+        return buildString {
+            append("[معاني الجذر: $rootText]")
+            meanings.forEach { meaning ->
+                append("\n\n▪ ${meaning.bookName}\n${meaning.definition}")
             }
         }
     }

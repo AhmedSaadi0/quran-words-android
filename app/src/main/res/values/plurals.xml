@@ -50,4 +50,18 @@
         <item quantity="one">%1$d word selected</item>
         <item quantity="other">%1$d words selected</item>
     </plurals>
+
+    <!-- Selected meanings count -->
+    <plurals name="selected_meanings_count">
+        <item quantity="one">%1$d meaning selected</item>
+        <item quantity="other">%1$d meanings selected</item>
+    </plurals>
+    <plurals name="copied_meanings_count">
+        <item quantity="one">%1$d meaning copied</item>
+        <item quantity="other">%1$d meanings copied</item>
+    </plurals>
+    <plurals name="meanings_count">
+        <item quantity="one">%1$d meaning</item>
+        <item quantity="other">%1$d meanings</item>
+    </plurals>
 </resources>

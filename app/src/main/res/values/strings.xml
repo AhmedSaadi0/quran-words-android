@@ -278,4 +278,12 @@
     <string name="dl_err_import">Error while importing data</string>
     <string name="dl_err_manifest">Could not fetch version info — check connection and retry</string>
     <string name="dl_err_unknown">Unexpected error — please retry</string>
+
+    <!-- Meanings copy/share -->
+    <string name="meanings_bar_title">Root meanings</string>
+    <string name="copy_meanings">Copy meanings</string>
+    <string name="share_meanings">Share meanings</string>
+    <string name="ai_summary_copied">AI summary copied</string>
+    <string name="no_meanings_copy">No meanings to copy</string>
+    <string name="no_meanings_share">No meanings to share</string>
 </resources>

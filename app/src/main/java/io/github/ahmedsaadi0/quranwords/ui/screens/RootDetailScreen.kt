@@ -72,6 +72,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.components.ReportMeaningDialog
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -100,6 +101,8 @@ fun RootDetailScreen(
     val isWordsLoading by rootViewModel.isWordsLoading.collectAsState()
     val selectedWordIds by rootViewModel.selectedWordIds.collectAsState()
     val isWordSelectionMode by rootViewModel.isWordSelectionMode.collectAsState()
+    val selectedMeaningIds by rootViewModel.selectedMeaningIds.collectAsState()
+    val isMeaningSelectionMode by rootViewModel.isMeaningSelectionMode.collectAsState()
 
     var showReportDialog by remember { mutableStateOf(false) }
 
@@ -323,6 +326,62 @@ fun RootDetailScreen(
                                         )
                                     }
                                 }
+                                // Compact AI-summary actions (copy/share like Ayat):
+                                // inside the measured container so header collapse keeps working.
+                                if (hasSubtitle) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(0.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        IconButton(
+                                            onClick = {
+                                                val formatted = io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatAiSummary(
+                                                    item.root,
+                                                    detail.aiSummary ?: ""
+                                                )
+                                                if (formatted.isNotBlank()) {
+                                                    clipboardManager.setText(AnnotatedString(formatted))
+                                                    scope.launch {
+                                                        snackbarHostState.showSnackbar(context.getString(R.string.ai_summary_copied))
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .testTag("copy_ai_summary_btn")
+                                        ) {
+                                            Text("📋", fontSize = 13.sp)
+                                        }
+                                        IconButton(
+                                            onClick = {
+                                                val formatted = io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatAiSummary(
+                                                    item.root,
+                                                    detail.aiSummary ?: ""
+                                                )
+                                                if (formatted.isNotBlank()) {
+                                                    try {
+                                                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                                            type = "text/plain"
+                                                            putExtra(Intent.EXTRA_TEXT, formatted)
+                                                        }
+                                                        context.startActivity(
+                                                            Intent.createChooser(sendIntent, context.getString(R.string.common_share))
+                                                        )
+                                                    } catch (_: ActivityNotFoundException) {
+                                                        scope.launch {
+                                                            snackbarHostState.showSnackbar(context.getString(R.string.no_share_app))
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            modifier = Modifier
+                                                .size(28.dp)
+                                                .testTag("share_ai_summary_btn")
+                                        ) {
+                                            Text("↗", fontSize = 15.sp)
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -409,13 +468,131 @@ fun RootDetailScreen(
                                         EmptyTabNotice(text = stringResource(R.string.root_no_meanings))
                                     }
                                 } else {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(horizontal = 16.dp, vertical = 5.dp)
+                                                .animateItem()
+                                        ) {
+                                            CopyAllMeaningsBar(
+                                                meaningsCount = detail.meanings.size,
+                                                isCopying = isCopyingAll,
+                                                onCopyClick = {
+                                                    scope.launch {
+                                                        val formatted = rootViewModel.getAllMeaningsFormatted()
+                                                        if (formatted.isNotBlank()) {
+                                                            clipboardManager.setText(AnnotatedString(formatted))
+                                                            snackbarHostState.showSnackbar(
+                                                                context.resources.getQuantityString(
+                                                                    R.plurals.copied_meanings_count,
+                                                                    detail.meanings.size,
+                                                                    detail.meanings.size
+                                                                )
+                                                            )
+                                                        } else {
+                                                            snackbarHostState.showSnackbar(context.getString(R.string.no_meanings_copy))
+                                                        }
+                                                    }
+                                                },
+                                                onShareClick = {
+                                                    scope.launch {
+                                                        val formatted = rootViewModel.getAllMeaningsFormatted()
+                                                        if (formatted.isNotBlank()) {
+                                                            try {
+                                                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                                                    type = "text/plain"
+                                                                    putExtra(Intent.EXTRA_TEXT, formatted)
+                                                                }
+                                                                context.startActivity(
+                                                                    Intent.createChooser(sendIntent, context.getString(R.string.share_meanings))
+                                                                )
+                                                            } catch (_: ActivityNotFoundException) {
+                                                                snackbarHostState.showSnackbar(context.getString(R.string.no_share_app))
+                                                            }
+                                                        } else {
+                                                            snackbarHostState.showSnackbar(context.getString(R.string.no_meanings_share))
+                                                        }
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    }
+                                    if (isMeaningSelectionMode) {
+                                        item {
+                                            Box(
+                                                modifier = Modifier
+                                                    .padding(horizontal = 16.dp, vertical = 5.dp)
+                                                    .animateItem()
+                                            ) {
+                                                SelectedMeaningsBar(
+                                                    selectedCount = selectedMeaningIds.size,
+                                                    isCopying = isCopyingAll,
+                                                    onCopyClick = {
+                                                        scope.launch {
+                                                            val formatted = rootViewModel.getSelectedMeaningsFormatted()
+                                                            if (formatted.isNotBlank()) {
+                                                                clipboardManager.setText(AnnotatedString(formatted))
+                                                                snackbarHostState.showSnackbar(
+                                                                    context.resources.getQuantityString(
+                                                                        R.plurals.copied_meanings_count,
+                                                                        selectedMeaningIds.size,
+                                                                        selectedMeaningIds.size
+                                                                    )
+                                                                )
+                                                            } else {
+                                                                snackbarHostState.showSnackbar(context.getString(R.string.no_meanings_copy))
+                                                            }
+                                                        }
+                                                    },
+                                                    onShareClick = {
+                                                        scope.launch {
+                                                            val formatted = rootViewModel.getSelectedMeaningsFormatted()
+                                                            if (formatted.isNotBlank()) {
+                                                                try {
+                                                                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                                                        type = "text/plain"
+                                                                        putExtra(Intent.EXTRA_TEXT, formatted)
+                                                                    }
+                                                                    context.startActivity(
+                                                                        Intent.createChooser(sendIntent, context.getString(R.string.share_meanings))
+                                                                    )
+                                                                } catch (_: ActivityNotFoundException) {
+                                                                    snackbarHostState.showSnackbar(context.getString(R.string.no_share_app))
+                                                                }
+                                                            } else {
+                                                                snackbarHostState.showSnackbar(context.getString(R.string.no_meanings_share))
+                                                            }
+                                                        }
+                                                    },
+                                                    onSelectAllClick = { rootViewModel.selectAllMeanings() },
+                                                    onClearClick = { rootViewModel.clearMeaningSelection() }
+                                                )
+                                            }
+                                        }
+                                    }
                                     items(detail.meanings, key = { it.id }) { meaning ->
                                         Box(
                                             modifier = Modifier
                                                 .padding(horizontal = 16.dp, vertical = 5.dp)
                                                 .animateItem()
                                         ) {
-                                            MeaningCard(meaning)
+                                            MeaningCard(
+                                                meaning = meaning,
+                                                isSelected = selectedMeaningIds.contains(meaning.id),
+                                                isSelectionMode = isMeaningSelectionMode,
+                                                onClick = {
+                                                    if (isMeaningSelectionMode) {
+                                                        rootViewModel.toggleMeaningSelection(meaning.id)
+                                                    }
+                                                },
+                                                onLongClick = {
+                                                    if (isMeaningSelectionMode) {
+                                                        rootViewModel.toggleMeaningSelection(meaning.id)
+                                                    } else {
+                                                        rootViewModel.enterMeaningSelectionMode(meaning.id)
+                                                    }
+                                                }
+                                            )
                                         }
                                     }
                                 }

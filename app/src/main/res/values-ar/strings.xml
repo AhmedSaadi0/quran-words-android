@@ -247,4 +247,11 @@
     <string name="dl_err_import">حدث خطأ أثناء استيراد البيانات</string>
     <string name="dl_err_manifest">تعذر جلب معلومات الإصدار — تحقق من الاتصال ثم أعد الفحص</string>
     <string name="dl_err_unknown">خطأ غير متوقع — أعد المحاولة</string>
+
+    <string name="meanings_bar_title">معاني الجذر</string>
+    <string name="copy_meanings">نسخ المعاني</string>
+    <string name="share_meanings">مشاركة المعاني</string>
+    <string name="ai_summary_copied">تم نسخ الملخص الذكي</string>
+    <string name="no_meanings_copy">لا توجد معانٍ للنسخ</string>
+    <string name="no_meanings_share">لا توجد معانٍ للمشاركة</string>
 </resources>

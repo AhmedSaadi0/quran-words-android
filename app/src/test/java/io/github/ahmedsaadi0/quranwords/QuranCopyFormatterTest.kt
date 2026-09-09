@@ -2,6 +2,7 @@ package io.github.ahmedsaadi0.quranwords
 
 import io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
+import io.github.ahmedsaadi0.quranwords.domain.model.RootMeaningModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -41,5 +42,34 @@ class QuranCopyFormatterTest {
         val sorted = reversed.sortedWith(compareBy({ it.surahId }, { it.ayahNum }))
         val result = QuranCopyFormatter.formatOccurrences(sorted)
         assertTrue(result.indexOf("الفاتحة") < result.indexOf("البقرة"))
+    }
+
+    @Test
+    fun `formatAiSummary blank returns empty`() {
+        assertEquals("", QuranCopyFormatter.formatAiSummary("كتب", "  "))
+    }
+
+    @Test
+    fun `formatAiSummary prefixes root header`() {
+        val result = QuranCopyFormatter.formatAiSummary("كتب", "ملخص تجريبي")
+        assertEquals("[الملخص الذكي للجذر: كتب]\n\nملخص تجريبي", result)
+    }
+
+    @Test
+    fun `formatMeanings empty returns empty`() {
+        assertEquals("", QuranCopyFormatter.formatMeanings("كتب", emptyList()))
+    }
+
+    @Test
+    fun `formatMeanings separates entries with double newline`() {
+        val list = listOf(
+            RootMeaningModel(1, "تعريف أول", "لسان العرب"),
+            RootMeaningModel(2, "تعريف ثان", "الصحاح")
+        )
+        val result = QuranCopyFormatter.formatMeanings("كتب", list)
+        assertEquals(
+            "[معاني الجذر: كتب]\n\n▪ لسان العرب\nتعريف أول\n\n▪ الصحاح\nتعريف ثان",
+            result
+        )
     }
 }

@@ -81,4 +81,29 @@
         <item quantity="many">تم تحديد %1$d كلمة</item>
         <item quantity="other">تم تحديد %1$d كلمة</item>
     </plurals>
+
+    <plurals name="selected_meanings_count">
+        <item quantity="zero">لم يتم تحديد معانٍ</item>
+        <item quantity="one">تم تحديد معنى واحد</item>
+        <item quantity="two">تم تحديد معنيين</item>
+        <item quantity="few">تم تحديد %1$d معانٍ</item>
+        <item quantity="many">تم تحديد %1$d معنًى</item>
+        <item quantity="other">تم تحديد %1$d معنًى</item>
+    </plurals>
+    <plurals name="copied_meanings_count">
+        <item quantity="zero">لا توجد معانٍ للنسخ</item>
+        <item quantity="one">تم نسخ معنى واحد</item>
+        <item quantity="two">تم نسخ معنيين</item>
+        <item quantity="few">تم نسخ %1$d معانٍ</item>
+        <item quantity="many">تم نسخ %1$d معنًى</item>
+        <item quantity="other">تم نسخ %1$d معنًى</item>
+    </plurals>
+    <plurals name="meanings_count">
+        <item quantity="zero">لا معانٍ</item>
+        <item quantity="one">معنى واحد</item>
+        <item quantity="two">معنيان</item>
+        <item quantity="few">%1$d معانٍ</item>
+        <item quantity="many">%1$d معنًى</item>
+        <item quantity="other">%1$d معنًى</item>
+    </plurals>
 </resources>
