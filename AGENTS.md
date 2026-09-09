@@ -36,7 +36,7 @@
 
 ### 2.3 Critical User Journeys
 1. **First launch → DB missing → Download/import DB (118MB) → Home**
-2. **Browse surahs by Surah/Juz → Open SurahDetail (paged 20) → Scroll with pagination → Tap word → Morphology sheet → Navigate to RootDetail**
+2. **Browse surahes by Surah/Juz → Open SurahDetail (paged 20) → Scroll with pagination → Tap word → Morphology sheet → Navigate to RootDetail**
 3. **Search (Arabic-normalized) → Tabs: Roots/Masadir/Derivatives/Ayat → Open result**
 4. **RootDetail → Tabs: Meanings/Masadir/Derivatives/AyatOccurrences (paged 30) → Tap ayah → SurahDetail at exact ayah**
 5. **Bookmark surah/ayah → View Bookmarks → Resume last-read**
@@ -90,12 +90,12 @@ Document any future architectural deviation (e.g., adding multi-module, Ktor, Wo
 
 ```
 Unified package (namespace + applicationId + every Kotlin package):
-  io.github.ahmedsaadi0.quranwords
+  com.quranwords
 
 Source: reverse DNS of the repository github.com/AhmedSaadi0/quran-words-android
 ```
 
-- Every Kotlin file starts with `package io.github.ahmedsaadi0.quranwords.<layer>.<feature>`
+- Every Kotlin file starts with `package com.quranwords.<layer>.<feature>`
 - `com.example` must not exist anywhere.
 - `AndroidManifest.xml` and `app/build.gradle.kts` have identical `namespace` and `applicationId`.
 
@@ -123,8 +123,8 @@ Source: reverse DNS of the repository github.com/AhmedSaadi0/quran-words-android
 ## 7) Ideal Folder Structure
 
 ```
-app/src/main/java/io/github/ahmedsaadi0/quranwords/
-├── App.kt                          # @HiltAndroidApp
+app/src/main/java/com/quranwords/
+├── QuranWordsApp.kt                # @HiltAndroidApp
 ├── MainActivity.kt                 # @AndroidEntryPoint — single RTL provider
 │
 ├── core/
@@ -298,7 +298,7 @@ class SurahDetailViewModel @Inject constructor(
 @Serializable data class RootDetail(val rootId: Int)
 
 NavHost(startDestination = Home) {
-    composable<Home> { HomeScreen(...) }
+    composable<Home> { HomeScreen() }
     composable<SurahDetail> { backStackEntry.toRoute<SurahDetail>() }
 }
 ```
@@ -362,7 +362,7 @@ sealed interface Result<out T> {
 - `gradle.properties`: `org.gradle.caching=true`, `configuration-cache=true`, `nonTransitiveRClass=true`.
 - CI pipeline (GitHub Actions — Base §27): `Build → ktlintCheck + detekt + lintDebug → testDebugUnitTest → assemble`. Do not claim a check passes without running it (Base §27).
 - `Room` exports its schema to `app/schemas/`. Dependency checks via `detekt`/`lint` locally and in CI (Base §26).
-- **Agent build policy — manual verification only:** Agents must **never** run `./gradlew`, `gradle`, `assembleDebug`, `ktlintCheck`, `detekt`, `lintDebug`, or `test*` commands automatically. Instead list the exact command(s) for the user to run and wait for their output. This avoids heavy local builds and respects the user's environment.
+- **Agent build policy — manual verification only:** Agents must **never** run `./gradlew`, `gradle`, `assembleDebug`, `ktlintCheck`, `detekt`, `lintDebug`, or `test*` commands automatically. Instead, list the exact command(s) for the user to run and wait for their output. This avoids heavy local builds and respects the user's environment.
 
 ---
 
@@ -426,7 +426,7 @@ sealed interface Result<out T> {
 
 | # | Decision | Context | Options considered | Chosen | Reason | Trade-offs | Date |
 |---|---|---|---|---|---|---|---|
-| 1 | Package `io.github.ahmedsaadi0.quranwords` | Repo `AhmedSaadi0/quran-words-android`, need Play-safe unified namespace | `com.example` / `com.aistudio.quranwords.wkzq` / `io.github...` | `io.github.ahmedsaadi0.quranwords` | Reverse DNS of GitHub repo, globally unique, matches discovery product identity | Longer package, renames ~30 files | 2026-08-29 |
+| 1 | Package `com.quranwords` | Repo `AhmedSaadi0/quran-words-android`, need Play-safe unified namespace | `com.example` / `com.aistudio.quranwords.wkzq` / `io.github...` | `com.quranwords` | Reverse DNS of GitHub repo, globally unique, matches discovery product identity | Longer package, renames ~30 files | 2026-08-29 |
 | 2 | Room as single source of truth + prepackaged `quran_words.db` | 77k positions, 11 tables, 118MB read-only corpus, offline-first | `SQLiteDatabase.openDatabase` raw / Room only / Room + raw fallback | Room `createFromFile` only | Type-safe DAOs, schema export, transactions; raw access was leaking into ViewModels | Must handle `wal/shm` on replace; destructive migration acceptable | 2026-08-29 |
 | 3 | Paging3 for ayat (20/page) and ayat-occurrences (30/page) | 286 ayat/surah max, 854 occurrences/root max; loading all at once causes jank | Load all / manual `LIMIT/OFFSET` + `delay` / Paging3 | Paging3 + injected Dispatchers | Efficient lazy lists (Base §21), smooth pagination per §17 | Extra PagingSource boilerplate, but needed at scale | 2026-08-29 |
 | 4 | Hilt DI | 6+ ViewModels, Room, OkHttp, DataStore | Manual construction / Koin / Hilt | Hilt | Constructor injection, centralized `SingletonComponent` modules, testable `TestDispatcher` | Gradle KSP overhead, but justified for medium app (Base §6.2) | 2026-08-29 |

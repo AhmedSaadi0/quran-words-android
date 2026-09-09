@@ -1,4 +1,6 @@
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
   alias(libs.plugins.android.application)
@@ -11,11 +13,11 @@ plugins {
 }
 
 android {
-  namespace = "io.github.ahmedsaadi0.quranwords"
+  namespace = "com.quranwords"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "io.github.ahmedsaadi0.quranwords"
+    applicationId = "com.quranwords"
     minSdk = 24
     targetSdk = 36
     versionCode = 3
@@ -25,29 +27,58 @@ android {
   }
 
   signingConfigs {
-    create("release") {
-      val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      storeFile = file(keystorePath)
-      storePassword = System.getenv("STORE_PASSWORD")
-      keyAlias = "upload"
-      keyPassword = System.getenv("KEY_PASSWORD")
+    val keyPropertiesFile = rootProject.file("key.properties")
+    val keyProperties = Properties()
+    if (keyPropertiesFile.exists()) {
+      FileInputStream(keyPropertiesFile).use { stream ->
+        keyProperties.load(stream)
+      }
     }
-    create("debugConfig") {
-      storeFile = file("${rootDir}/debug.keystore")
-      storePassword = "android"
-      keyAlias = "androiddebugkey"
-      keyPassword = "android"
+
+    create("release") {
+      val rawKeystorePath: String? = System.getenv("KEYSTORE_PATH")
+        ?: keyProperties.getProperty("storeFile")
+      val keystoreFile = when {
+        rawKeystorePath.isNullOrEmpty() -> file("$rootDir/my-upload-key.jks")
+        file(rawKeystorePath).isAbsolute -> file(rawKeystorePath)
+        else -> rootProject.file(rawKeystorePath)
+      }
+
+      storeFile = keystoreFile
+      storePassword = System.getenv("STORE_PASSWORD") ?: keyProperties.getProperty("storePassword")
+      keyAlias = System.getenv("KEY_ALIAS") ?: keyProperties.getProperty("keyAlias") ?: "upload"
+      keyPassword = System.getenv("KEY_PASSWORD") ?: keyProperties.getProperty("keyPassword")
+    }
+
+    val customDebugKeystore = file("$rootDir/debug.keystore")
+    if (customDebugKeystore.exists()) {
+      create("debugConfig") {
+        storeFile = customDebugKeystore
+        storePassword = "android"
+        keyAlias = "androiddebugkey"
+        keyPassword = "android"
+      }
     }
   }
 
   buildTypes {
     release {
       isCrunchPngs = false
-      isMinifyEnabled = false
+      isMinifyEnabled = true
+      isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-      signingConfig = signingConfigs.getByName("release")
+      val releaseSigning = signingConfigs.getByName("release")
+      signingConfig = if ((releaseSigning.storeFile?.exists() == true) && !releaseSigning.storePassword.isNullOrEmpty()) {
+        releaseSigning
+      } else {
+        signingConfigs.findByName("debugConfig") ?: signingConfigs.getByName("debug")
+      }
     }
-    debug { signingConfig = signingConfigs.getByName("debugConfig") }
+    debug {
+      signingConfigs.findByName("debugConfig")?.let {
+        signingConfig = it
+      }
+    }
   }
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_11
@@ -62,6 +93,44 @@ android {
     includeInApk = false
     includeInBundle = true
   }
+}
+
+// Ensure externalOverride (injected by IDE/AGP) falls back to valid signing config if storeFile is missing
+fun fixExternalOverrideSigningConfig() {
+  android.signingConfigs.findByName("externalOverride")?.let { externalOverride ->
+    val targetFile = externalOverride.storeFile
+    val releaseSigning = android.signingConfigs.findByName("release")
+    val debugSigning = android.signingConfigs.findByName("debugConfig") ?: android.signingConfigs.findByName("debug")
+
+    val validSigning = if (releaseSigning?.storeFile?.exists() == true && !releaseSigning.storePassword.isNullOrEmpty()) {
+      releaseSigning
+    } else if (debugSigning?.storeFile?.exists() == true) {
+      debugSigning
+    } else {
+      null
+    }
+
+    if (validSigning != null) {
+      if (targetFile != null && !targetFile.exists()) {
+        try {
+          targetFile.parentFile?.mkdirs()
+          validSigning.storeFile?.copyTo(targetFile, overwrite = true)
+        } catch (_: Exception) {}
+      }
+      externalOverride.storeFile = validSigning.storeFile
+      externalOverride.storePassword = validSigning.storePassword
+      externalOverride.keyAlias = validSigning.keyAlias
+      externalOverride.keyPassword = validSigning.keyPassword
+    }
+  }
+}
+
+afterEvaluate {
+  fixExternalOverrideSigningConfig()
+}
+
+gradle.taskGraph.whenReady {
+  fixExternalOverrideSigningConfig()
 }
 
 // Configure the Secrets Gradle Plugin to use .env and .env.example files

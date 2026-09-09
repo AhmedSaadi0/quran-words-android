@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "io.github.ahmedsaadi0.quranwords",
+  "applicationId": "com.quranwords",
   "variantName": "release",
   "elements": [
     {
