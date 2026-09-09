@@ -109,8 +109,17 @@ data class AyahOccurrenceModel(
 data class RootWordModel(
     val wordId: Int,
     val text: String,
-    val occurrencesCount: Int
-)
+    val occurrencesCount: Int,
+    /**
+     * All diacritized variant ids merged into this group (same clean text).
+     * [wordId] is the smallest id and acts as the stable group key.
+     * Defaults to [wordId] alone so single-variant call sites keep working.
+     */
+    val wordIds: List<Int> = emptyList()
+) {
+    /** Effective id list: explicit group or the single representative id. */
+    val allIds: List<Int> get() = if (wordIds.isEmpty()) listOf(wordId) else wordIds
+}
 
 data class SearchResult(
     val roots: List<RootItem> = emptyList(),

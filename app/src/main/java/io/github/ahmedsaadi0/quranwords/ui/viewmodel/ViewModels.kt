@@ -598,6 +598,14 @@ class RootViewModel @Inject constructor(
         _isWordSelectionMode.value = _selectedWordIds.value.isNotEmpty()
     }
 
+    /** Expands selected group keys to every diacritized variant id. */
+    private fun expandSelectedWordIds(): List<Int> {
+        val groups = _rootWords.value.associateBy { it.wordId }
+        return _selectedWordIds.value.flatMap { repId ->
+            groups[repId]?.allIds ?: listOf(repId)
+        }.distinct()
+    }
+
     fun clearWordSelection() {
         _selectedWordIds.value = emptySet()
         _isWordSelectionMode.value = false
@@ -701,7 +709,7 @@ class RootViewModel @Inject constructor(
      */
     suspend fun getSelectedWordsOccurrencesFormatted(): String {
         val rootId = currentRootIdForOcc ?: return ""
-        val wordIds = _selectedWordIds.value.toList()
+        val wordIds = expandSelectedWordIds()
         if (wordIds.isEmpty() || _isCopyingAll.value) return ""
         _isCopyingAll.value = true
         return try {
@@ -716,7 +724,7 @@ class RootViewModel @Inject constructor(
 
     suspend fun getSelectedWordsOccurrencesCount(): Int {
         val rootId = currentRootIdForOcc ?: return 0
-        val wordIds = _selectedWordIds.value.toList()
+        val wordIds = expandSelectedWordIds()
         if (wordIds.isEmpty()) return 0
         return try {
             repository.getAllOccurrencesForWords(rootId, wordIds).size
@@ -795,6 +803,7 @@ class WordAyatViewModel @Inject constructor(
 
     private var currentRootId: Int? = null
     private var currentWordId: Int? = null
+    private var currentWordIds: List<Int> = emptyList()
     private var offset: Int = 0
     private val pageSize: Int = 30
 
@@ -811,10 +820,13 @@ class WordAyatViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val words = repository.getRootWords(rootId)
+                // Expand the representative id to its whole diacritized group.
                 val matched = words.firstOrNull { it.wordId == wordId }
+                    ?: words.firstOrNull { wordId in it.allIds }
+                currentWordIds = matched?.allIds ?: listOf(wordId)
                 _wordText.value = matched?.text ?: ""
                 _totalCount.value = matched?.occurrencesCount ?: 0
-                val first = repository.getWordOccurrencesPaged(rootId, wordId, pageSize, 0)
+                val first = repository.getWordOccurrencesPaged(rootId, currentWordIds, pageSize, 0)
                 _occurrences.value = first
                 offset = first.size
                 if (_totalCount.value < first.size) {
@@ -843,13 +855,13 @@ class WordAyatViewModel @Inject constructor(
 
     private fun loadMore() {
         val rootId = currentRootId ?: return
-        val wordId = currentWordId ?: return
+        val wordIds = currentWordIds.ifEmpty { return }
         if (_isLoadingMore.value || !_hasMore.value) return
         viewModelScope.launch {
             _isLoadingMore.value = true
             kotlinx.coroutines.delay(80)
             try {
-                val next = repository.getWordOccurrencesPaged(rootId, wordId, pageSize, offset)
+                val next = repository.getWordOccurrencesPaged(rootId, wordIds, pageSize, offset)
                 if (next.isNotEmpty()) {
                     _occurrences.value = _occurrences.value + next
                     offset += next.size
@@ -874,11 +886,11 @@ class WordAyatViewModel @Inject constructor(
 
     suspend fun getAllFormatted(): String {
         val rootId = currentRootId ?: return ""
-        val wordId = currentWordId ?: return ""
+        val wordIds = currentWordIds.ifEmpty { return "" }
         if (_isCopyingAll.value) return ""
         _isCopyingAll.value = true
         return try {
-            val all = repository.getAllWordOccurrences(rootId, wordId)
+            val all = repository.getAllWordOccurrences(rootId, wordIds)
             io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatOccurrences(all)
         } catch (_: Exception) {
             ""

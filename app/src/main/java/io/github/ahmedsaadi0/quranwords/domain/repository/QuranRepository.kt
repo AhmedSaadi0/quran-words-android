@@ -24,8 +24,8 @@ interface QuranRepository {
     suspend fun getAllRootOccurrences(rootId: Int): List<AyahOccurrenceModel>
     suspend fun getRootOccurrencesCount(rootId: Int): Int
     suspend fun getRootWords(rootId: Int): List<RootWordModel>
-    suspend fun getWordOccurrencesPaged(rootId: Int, wordId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel>
-    suspend fun getAllWordOccurrences(rootId: Int, wordId: Int): List<AyahOccurrenceModel>
+    suspend fun getWordOccurrencesPaged(rootId: Int, wordIds: List<Int>, limit: Int, offset: Int): List<AyahOccurrenceModel>
+    suspend fun getAllWordOccurrences(rootId: Int, wordIds: List<Int>): List<AyahOccurrenceModel>
     suspend fun getAllOccurrencesForWords(rootId: Int, wordIds: List<Int>): List<AyahOccurrenceModel>
     suspend fun getRootByText(rootText: String): RootDetail?
     suspend fun searchAll(query: String): SearchResult

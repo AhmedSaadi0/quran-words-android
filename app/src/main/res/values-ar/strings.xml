@@ -252,6 +252,7 @@
     <string name="copy_meanings">نسخ المعاني</string>
     <string name="share_meanings">مشاركة المعاني</string>
     <string name="ai_summary_copied">تم نسخ الملخص الذكي</string>
+    <string name="share_ai_summary">مشاركة الملخص</string>
     <string name="no_meanings_copy">لا توجد معانٍ للنسخ</string>
     <string name="no_meanings_share">لا توجد معانٍ للمشاركة</string>
 </resources>

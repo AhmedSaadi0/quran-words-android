@@ -29,6 +29,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ReportProblem
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -113,6 +114,12 @@ fun RootDetailScreen(
     val wordsState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
 
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { 5 })
+
+    // Visible tab order: meanings, ayat, words, masadir, derivatives.
+    // Content ids: 0 meanings, 1 masadir, 2 derivatives, 3 words, 4 ayat.
+    // Maps pager position -> content id rendered by the when() below.
+    val tabContentIds = remember { listOf(0, 4, 3, 1, 2) }
+    val ayatTabPosition = remember { tabContentIds.indexOf(4) }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val clipboardManager = LocalClipboardManager.current
@@ -166,7 +173,7 @@ fun RootDetailScreen(
             val lastIdx = ayatState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
             page to lastIdx
         }.collectLatest { (page, lastIdx) ->
-            if (page != 4) return@collectLatest
+            if (page != ayatTabPosition) return@collectLatest
             if (lastIdx == -1) return@collectLatest
             // LazyColumn has CopyAllOccurrencesBar as item 0 when data exists, so subtract 1
             val adjustedIdx = if (lastIdx > 0) lastIdx - 1 else lastIdx
@@ -378,7 +385,12 @@ fun RootDetailScreen(
                                                 .size(28.dp)
                                                 .testTag("share_ai_summary_btn")
                                         ) {
-                                            Text("↗", fontSize = 15.sp)
+                                            Icon(
+                                                imageVector = Icons.Outlined.Share,
+                                                contentDescription = stringResource(R.string.share_ai_summary),
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.size(16.dp)
+                                            )
                                         }
                                     }
                                 }
@@ -395,10 +407,10 @@ fun RootDetailScreen(
                     ) {
                         val tabs = listOf(
                             stringResource(R.string.tab_meanings) to detail.meanings.size,
-                            stringResource(R.string.tab_masadir) to detail.masadir.size,
-                            stringResource(R.string.tab_derivatives) to detail.derivatives.size,
+                            stringResource(R.string.tab_ayat) to detail.item.occurrencesCount,
                             stringResource(R.string.tab_words) to rootWords.size,
-                            stringResource(R.string.tab_ayat) to detail.item.occurrencesCount
+                            stringResource(R.string.tab_masadir) to detail.masadir.size,
+                            stringResource(R.string.tab_derivatives) to detail.derivatives.size
                         )
                         tabs.forEachIndexed { index, (title, count) ->
                             val selected = pagerState.currentPage == index
@@ -453,7 +465,7 @@ fun RootDetailScreen(
                         .fillMaxWidth(),
                     beyondViewportPageCount = 1
                 ) { page ->
-                    when (page) {
+                    when (tabContentIds[page]) {
                         0 -> {
                             LazyColumn(
                                 state = meaningsState,

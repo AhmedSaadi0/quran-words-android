@@ -71,14 +71,18 @@ private class FakeQuranRepository(
 
     override suspend fun getRootWords(rootId: Int): List<RootWordModel> = words
 
-    override suspend fun getWordOccurrencesPaged(rootId: Int, wordId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel> {
-        val all = wordOccurrences[wordId] ?: emptyList()
+    override suspend fun getWordOccurrencesPaged(rootId: Int, wordIds: List<Int>, limit: Int, offset: Int): List<AyahOccurrenceModel> {
+        val all = wordIds.flatMap { wordOccurrences[it] ?: emptyList() }
+            .distinctBy { it.surahId to it.ayahNum }
+            .sortedWith(compareBy({ it.surahId }, { it.ayahNum }))
         if (offset >= all.size) return emptyList()
         return all.drop(offset).take(limit)
     }
 
-    override suspend fun getAllWordOccurrences(rootId: Int, wordId: Int): List<AyahOccurrenceModel> =
-        wordOccurrences[wordId] ?: emptyList()
+    override suspend fun getAllWordOccurrences(rootId: Int, wordIds: List<Int>): List<AyahOccurrenceModel> =
+        wordIds.flatMap { wordOccurrences[it] ?: emptyList() }
+            .distinctBy { it.surahId to it.ayahNum }
+            .sortedWith(compareBy({ it.surahId }, { it.ayahNum }))
 
     override suspend fun getAllOccurrencesForWords(rootId: Int, wordIds: List<Int>): List<AyahOccurrenceModel> {
         // Mirror SQL: GROUP BY ayah (dedupe), ORDER BY surah, ayah
@@ -186,5 +190,38 @@ class RootWordsTest {
         assertTrue(formatted.contains("[سورة البقرة: 183]"))
         assertTrue(formatted.contains("[سورة البقرة: 282]"))
         assertTrue(formatted.contains("[سورة النساء: 103]"))
+    }
+
+    @Test
+    fun `grouped model exposes every variant id`() {
+        assertEquals(listOf(10), RootWordModel(10, "كَتَبَ", 5).allIds)
+        assertEquals(
+            listOf(10, 13),
+            RootWordModel(10, "كتب", 4, wordIds = listOf(10, 13)).allIds
+        )
+    }
+
+    @Test
+    fun `WordAyatViewModel expands diacritized group into one list`() = runTest {
+        val repo = FakeQuranRepository(
+            words = listOf(RootWordModel(10, "كتب", 3, wordIds = listOf(10, 13))),
+            wordOccurrences = mapOf(
+                10 to listOf(
+                    AyahOccurrenceModel(2, "البقرة", 183, "نص 183", "كَتَبَ"),
+                    AyahOccurrenceModel(2, "البقرة", 282, "نص 282", "كَتَبَ")
+                ),
+                13 to listOf(
+                    AyahOccurrenceModel(2, "البقرة", 282, "نص 282", "كَتَبُ"),
+                    AyahOccurrenceModel(4, "النساء", 103, "نص مشترك", "كَتَبُ")
+                )
+            )
+        )
+        val vm = WordAyatViewModel(repo)
+        vm.loadWord(1, 10)
+        advanceUntilIdle()
+        // Clean group title, shared ayah counted once across variants
+        assertEquals("كتب", vm.wordText.value)
+        assertEquals(3, vm.occurrences.value.size)
+        assertEquals(3, vm.totalCount.value)
     }
 }

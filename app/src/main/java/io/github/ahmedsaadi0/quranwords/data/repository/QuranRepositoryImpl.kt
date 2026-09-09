@@ -704,23 +704,32 @@ class QuranRepositoryImpl @Inject constructor(
         val db = getDb() ?: return@withContext emptyList()
         val list = mutableListOf<RootWordModel>()
         try {
+            // Merge diacritized variants by clean text: كَتَبَ and كَتَبُ share one row.
+            // Count is DISTINCT ayat across the whole group (shared ayat counted once).
+            // Display text is the clean (undiacritized) group key itself.
             val sql = """
-                SELECT w.id, w.text, COUNT(DISTINCT wa.ayah_id)
+                SELECT MIN(w.id), COALESCE(w.text_clean, w.text), COUNT(DISTINCT wa.ayah_id), GROUP_CONCAT(DISTINCT w.id)
                 FROM word_morphology wm
                 JOIN word_ayah wa ON wa.id = wm.word_ayah_id
                 JOIN words w ON w.id = wa.word_id
                 WHERE wm.root_id = ?
-                GROUP BY w.id
-                ORDER BY 3 DESC, w.text ASC
+                GROUP BY COALESCE(w.text_clean, w.text)
+                ORDER BY 3 DESC, 2 ASC
             """.trimIndent()
             val cursor = db.rawQuery(sql, arrayOf(rootId.toString()))
             cursor.use {
                 while (it.moveToNext()) {
+                    val ids = (it.getString(3) ?: "")
+                        .split(",")
+                        .mapNotNull { id -> id.toIntOrNull() }
+                        .distinct()
+                        .sorted()
                     list.add(
                         RootWordModel(
                             wordId = it.getInt(0),
                             text = it.getString(1) ?: "",
-                            occurrencesCount = it.getInt(2)
+                            occurrencesCount = it.getInt(2),
+                            wordIds = ids.ifEmpty { listOf(it.getInt(0)) }
                         )
                     )
                 }
@@ -729,10 +738,12 @@ class QuranRepositoryImpl @Inject constructor(
         return@withContext list
     }
 
-    override suspend fun getWordOccurrencesPaged(rootId: Int, wordId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel> = withContext(ioDispatcher) {
+    override suspend fun getWordOccurrencesPaged(rootId: Int, wordIds: List<Int>, limit: Int, offset: Int): List<AyahOccurrenceModel> = withContext(ioDispatcher) {
+        if (wordIds.isEmpty()) return@withContext emptyList()
         val db = getDb() ?: return@withContext emptyList()
         val list = mutableListOf<AyahOccurrenceModel>()
         try {
+            val placeholders = wordIds.joinToString(",") { "?" }
             val sql = """
                 SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, w.text
                 FROM word_morphology wm
@@ -740,14 +751,15 @@ class QuranRepositoryImpl @Inject constructor(
                 JOIN ayat a ON a.id = wa.ayah_id
                 JOIN surahs s ON s.id = a.surah
                 JOIN words w ON w.id = wa.word_id
-                WHERE wm.root_id = ? AND wa.word_id = ?
+                WHERE wm.root_id = ? AND wa.word_id IN ($placeholders)
                 GROUP BY a.id
                 ORDER BY a.surah ASC, a.ayah ASC
                 LIMIT ? OFFSET ?
             """.trimIndent()
             val cursor = db.rawQuery(
                 sql,
-                arrayOf(rootId.toString(), wordId.toString(), limit.toString(), offset.toString())
+                arrayOf(rootId.toString()) + wordIds.map { it.toString() }.toTypedArray() +
+                    arrayOf(limit.toString(), offset.toString())
             )
             cursor.use {
                 while (it.moveToNext()) {
@@ -766,10 +778,12 @@ class QuranRepositoryImpl @Inject constructor(
         return@withContext list
     }
 
-    override suspend fun getAllWordOccurrences(rootId: Int, wordId: Int): List<AyahOccurrenceModel> = withContext(ioDispatcher) {
+    override suspend fun getAllWordOccurrences(rootId: Int, wordIds: List<Int>): List<AyahOccurrenceModel> = withContext(ioDispatcher) {
+        if (wordIds.isEmpty()) return@withContext emptyList()
         val db = getDb() ?: return@withContext emptyList()
         val list = mutableListOf<AyahOccurrenceModel>()
         try {
+            val placeholders = wordIds.joinToString(",") { "?" }
             val sql = """
                 SELECT a.surah, s.name_ar, a.ayah, a.text_uthmani, w.text
                 FROM word_morphology wm
@@ -777,11 +791,14 @@ class QuranRepositoryImpl @Inject constructor(
                 JOIN ayat a ON a.id = wa.ayah_id
                 JOIN surahs s ON s.id = a.surah
                 JOIN words w ON w.id = wa.word_id
-                WHERE wm.root_id = ? AND wa.word_id = ?
+                WHERE wm.root_id = ? AND wa.word_id IN ($placeholders)
                 GROUP BY a.id
                 ORDER BY a.surah ASC, a.ayah ASC
             """.trimIndent()
-            val cursor = db.rawQuery(sql, arrayOf(rootId.toString(), wordId.toString()))
+            val cursor = db.rawQuery(
+                sql,
+                arrayOf(rootId.toString()) + wordIds.map { it.toString() }.toTypedArray()
+            )
             cursor.use {
                 while (it.moveToNext()) {
                     list.add(
