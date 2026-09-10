@@ -285,6 +285,8 @@
     <string name="share_meanings">Share meanings</string>
     <string name="ai_summary_copied">AI summary copied</string>
     <string name="share_ai_summary">Share summary</string>
+    <string name="cd_copy_ai_summary">Copy AI summary</string>
+    <string name="read_more">Read more</string>
     <string name="no_meanings_copy">No meanings to copy</string>
     <string name="no_meanings_share">No meanings to share</string>
 </resources>

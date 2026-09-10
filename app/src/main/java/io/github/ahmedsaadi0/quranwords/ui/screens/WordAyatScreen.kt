@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.CopyAllActionBar
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.WordAyatViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -155,10 +156,14 @@ fun WordAyatScreen(
                                 .padding(horizontal = 16.dp, vertical = 5.dp)
                                 .animateItem()
                         ) {
-                            CopyAllOccurrencesBar(
-                                totalCount = totalCount,
-                                occurrencesSize = occurrences.size,
-                                isCopying = isCopyingAll,
+                            CopyAllActionBar(
+                                title = stringResource(R.string.root_ayat_title),
+                                subtitle = if (totalCount > 0) stringResource(
+                                    R.string.occurrences_progress,
+                                    occurrences.size,
+                                    totalCount,
+                                    pluralStringResource(R.plurals.root_occurrences, totalCount, totalCount)
+                                ) else pluralStringResource(R.plurals.root_occurrences, occurrences.size, occurrences.size),
                                 onCopyClick = {
                                     scope.launch {
                                         val formatted = viewModel.getAllFormatted()
@@ -195,7 +200,12 @@ fun WordAyatScreen(
                                             snackbarHostState.showSnackbar(context.getString(R.string.no_ayat_share))
                                         }
                                     }
-                                }
+                                },
+                                copyButtonText = stringResource(R.string.copy_all),
+                                copyTag = "copy_all_occurrences_btn",
+                                shareTag = "share_all_occurrences_btn",
+                                isCopying = isCopyingAll,
+                                modifier = Modifier.testTag("copy_all_bar")
                             )
                         }
                     }

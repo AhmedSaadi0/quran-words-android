@@ -1,8 +1,5 @@
 package io.github.ahmedsaadi0.quranwords.ui.components
 
-import android.content.ActivityNotFoundException
-import android.content.Intent
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -33,11 +30,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -53,6 +47,11 @@ import io.github.ahmedsaadi0.quranwords.util.buildMeaningReportMarkdown
  * حوار البلاغ عن الملخص الذكي: نوع البلاغ + وصف + تصحيح مقترح.
  * البلاغ مرتبط دائمًا بالمعنى المكتوب بالذكاء الاصطناعي (يُعرض للمراجعة أعلى النموذج)،
  * ويُنتج نصًا غنيًا يُرسل عبر GitHub أو النسخ/المشاركة.
+ *
+ * Platform side-effects (clipboard, share sheet, browser) are hoisted to the
+ * caller via [onCopyReport]/[onShareReport]/[onOpenUrl] (Phase 2c) so this
+ * dialog stays previewable and unit-testable. [viewModel] stays internally
+ * owned for this phase; it will be hoisted in Phase 3.
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -62,12 +61,12 @@ fun ReportMeaningDialog(
     aiSummary: String,
     samples: List<ReportAyahSample>,
     onDismissRequest: () -> Unit,
+    onCopyReport: (markdown: String) -> Unit,
+    onShareReport: (markdown: String) -> Unit,
+    onOpenUrl: (url: String) -> Unit,
     viewModel: ReportMeaningViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
-
     val reportType by viewModel.reportType.collectAsState()
     val description by viewModel.description.collectAsState()
     val suggestion by viewModel.suggestion.collectAsState()
@@ -143,7 +142,7 @@ fun ReportMeaningDialog(
                         )
                         Text(
                             // aiSummary is Arabic reference data; only the empty fallback is chrome.
-                            text = aiSummary.ifBlank { context.getString(R.string.report_no_summary) },
+                            text = aiSummary.ifBlank { stringResource(R.string.report_no_summary) },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -216,10 +215,7 @@ fun ReportMeaningDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
-                        onClick = {
-                            clipboardManager.setText(AnnotatedString(currentMarkdown()))
-                            Toast.makeText(context, context.getString(R.string.report_copied), Toast.LENGTH_SHORT).show()
-                        },
+                        onClick = { onCopyReport(currentMarkdown()) },
                         enabled = canSubmit,
                         modifier = Modifier
                             .weight(1f)
@@ -232,19 +228,7 @@ fun ReportMeaningDialog(
                         Text(stringResource(R.string.report_copy))
                     }
                     OutlinedButton(
-                        onClick = {
-                            try {
-                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, currentMarkdown())
-                                }
-                                context.startActivity(
-                                    Intent.createChooser(sendIntent, context.getString(R.string.report_share_title))
-                                )
-                            } catch (_: ActivityNotFoundException) {
-                                Toast.makeText(context, context.getString(R.string.no_share_app), Toast.LENGTH_SHORT).show()
-                            }
-                        },
+                        onClick = { onShareReport(currentMarkdown()) },
                         enabled = canSubmit,
                         modifier = Modifier
                             .weight(1f)
@@ -262,22 +246,14 @@ fun ReportMeaningDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    try {
-                        val content = viewModel.buildContent(
-                            rootText = rootText,
-                            rootId = rootId,
-                            aiSummary = aiSummary,
-                            samples = samples
-                        )
-                        val url = buildMeaningReportIssueUrl(content)
-                        context.startActivity(
-                            Intent(
-                                Intent.ACTION_VIEW,
-                                android.net.Uri.parse(url)
-                            )
-                        )
-                    } catch (_: ActivityNotFoundException) {
-                    }
+                    val content = viewModel.buildContent(
+                        rootText = rootText,
+                        rootId = rootId,
+                        aiSummary = aiSummary,
+                        samples = samples
+                    )
+                    val url = buildMeaningReportIssueUrl(content)
+                    onOpenUrl(url)
                     dismissAndReset()
                 },
                 enabled = canSubmit,

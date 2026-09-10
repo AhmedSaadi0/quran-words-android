@@ -32,7 +32,7 @@ import io.github.ahmedsaadi0.quranwords.ui.screens.BookmarksScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.DatabaseSetupScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.HomeScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.MorphologyGuideScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.RootDetailScreen
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailRoute
 import io.github.ahmedsaadi0.quranwords.ui.screens.RootsListScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SearchScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahDetailScreen
@@ -224,7 +224,7 @@ fun AppNavigation(
                 popExitTransition = { AppMotion.navPopExitTransition() }
             ) { backStackEntry ->
                 val rootId = backStackEntry.arguments?.getInt("rootId") ?: 1
-                RootDetailScreen(
+                RootDetailRoute(
                     rootId = rootId,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId, ayahNum ->

@@ -16,11 +16,25 @@ import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.AyatTabState
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.CopyAction
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.MeaningsTabState
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailEffect
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailEvent
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailTabUi
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailUiState
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.WordsTabState
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.util.RootDetailTab
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -477,6 +491,23 @@ class RootViewModel @Inject constructor(
     private val _isCopyingAll = MutableStateFlow(false)
     val isCopyingAll: StateFlow<Boolean> = _isCopyingAll.asStateFlow()
 
+    // Per-action copying state (Phase 3): replaces the global boolean for UI.
+    // [_isCopyingAll] is kept in sync for backward compat until all call-sites migrate.
+    private val _copyingAction = MutableStateFlow<CopyAction?>(null)
+    val copyingAction: StateFlow<CopyAction?> = _copyingAction.asStateFlow()
+
+    private fun beginCopying(action: CopyAction): Boolean {
+        if (_copyingAction.value != null) return false
+        _copyingAction.value = action
+        _isCopyingAll.value = true
+        return true
+    }
+
+    private fun endCopying() {
+        _copyingAction.value = null
+        _isCopyingAll.value = false
+    }
+
     // Distinct Quran words for the current root (grouped by words.id, most frequent first)
     private val _rootWords = MutableStateFlow<List<io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel>>(emptyList())
     val rootWords: StateFlow<List<io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel>> = _rootWords.asStateFlow()
@@ -687,19 +718,20 @@ class RootViewModel @Inject constructor(
     /**
      * Fetches ALL occurrences for current root (single query, bypasses pagination)
      * and returns formatted text for copy/share (Format B1).
-     * Exposes loading via [isCopyingAll].
+     * Exposes loading via [isCopyingAll] (legacy) and [copyingAction] (per-action).
      */
-    suspend fun getAllOccurrencesFormatted(): String {
+    suspend fun getAllOccurrencesFormatted(
+        action: CopyAction = CopyAction.COPY_OCCURRENCES_ALL,
+    ): String {
         val rootId = currentRootIdForOcc ?: return ""
-        if (_isCopyingAll.value) return ""
-        _isCopyingAll.value = true
+        if (!beginCopying(action)) return ""
         return try {
             val all = repository.getAllRootOccurrences(rootId)
             io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatOccurrences(all)
         } catch (_: Exception) {
             ""
         } finally {
-            _isCopyingAll.value = false
+            endCopying()
         }
     }
 
@@ -707,18 +739,19 @@ class RootViewModel @Inject constructor(
      * Fetches ALL ayat for the currently selected words (deduplicated, sorted)
      * and returns formatted text for copy/share. Exposes loading via [isCopyingAll].
      */
-    suspend fun getSelectedWordsOccurrencesFormatted(): String {
+    suspend fun getSelectedWordsOccurrencesFormatted(
+        action: CopyAction = CopyAction.COPY_WORDS_SELECTED,
+    ): String {
         val rootId = currentRootIdForOcc ?: return ""
         val wordIds = expandSelectedWordIds()
-        if (wordIds.isEmpty() || _isCopyingAll.value) return ""
-        _isCopyingAll.value = true
+        if (wordIds.isEmpty() || !beginCopying(action)) return ""
         return try {
             val all = repository.getAllOccurrencesForWords(rootId, wordIds)
             io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatOccurrences(all)
         } catch (_: Exception) {
             ""
         } finally {
-            _isCopyingAll.value = false
+            endCopying()
         }
     }
 
@@ -738,10 +771,11 @@ class RootViewModel @Inject constructor(
      * Meanings are fully loaded with the detail (no pagination).
      * Exposes loading via [isCopyingAll].
      */
-    suspend fun getAllMeaningsFormatted(): String {
+    suspend fun getAllMeaningsFormatted(
+        action: CopyAction = CopyAction.COPY_MEANINGS_ALL,
+    ): String {
         val detail = _rootDetail.value ?: return ""
-        if (_isCopyingAll.value) return ""
-        _isCopyingAll.value = true
+        if (!beginCopying(action)) return ""
         return try {
             io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatMeanings(
                 detail.item.root,
@@ -750,7 +784,7 @@ class RootViewModel @Inject constructor(
         } catch (_: Exception) {
             ""
         } finally {
-            _isCopyingAll.value = false
+            endCopying()
         }
     }
 
@@ -758,11 +792,12 @@ class RootViewModel @Inject constructor(
      * Formats only the selected lexicon meanings for copy/share.
      * Exposes loading via [isCopyingAll].
      */
-    suspend fun getSelectedMeaningsFormatted(): String {
+    suspend fun getSelectedMeaningsFormatted(
+        action: CopyAction = CopyAction.COPY_MEANINGS_SELECTED,
+    ): String {
         val detail = _rootDetail.value ?: return ""
         val ids = _selectedMeaningIds.value
-        if (ids.isEmpty() || _isCopyingAll.value) return ""
-        _isCopyingAll.value = true
+        if (ids.isEmpty() || !beginCopying(action)) return ""
         return try {
             io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter.formatMeanings(
                 detail.item.root,
@@ -771,9 +806,166 @@ class RootViewModel @Inject constructor(
         } catch (_: Exception) {
             ""
         } finally {
-            _isCopyingAll.value = false
+            endCopying()
         }
     }
+
+    // --- Phase 3: unified UiState (derived, no repo change) ---
+
+    private val _reportVisible = MutableStateFlow(false)
+    val reportVisible: StateFlow<Boolean> = _reportVisible.asStateFlow()
+
+    fun setReportVisible(visible: Boolean) {
+        _reportVisible.value = visible
+    }
+
+    /**
+     * Single-collection UiState for the new Route/Screen split.
+     * Combines the existing granular flows; old flows stay as source of truth.
+     */
+    val uiState: StateFlow<RootDetailUiState> = combine(
+        _isLoading,
+        _rootDetail,
+        _occurrences,
+        _occurrencesHasMore,
+        _isOccurrencesLoadingMore,
+        _rootWords,
+        _isWordsLoading,
+        _selectedWordIds,
+        _isWordSelectionMode,
+        _selectedMeaningIds,
+        _isMeaningSelectionMode,
+        _copyingAction,
+        _reportVisible
+    ) { args ->
+        @Suppress("UNCHECKED_CAST")
+        val isLoading = args[0] as Boolean
+        val detail = args[1] as RootDetail?
+        val occ = args[2] as List<io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel>
+        val hasMore = args[3] as Boolean
+        val loadingMore = args[4] as Boolean
+        val words = args[5] as List<io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel>
+        val wordsLoading = args[6] as Boolean
+        val selWordIds = args[7] as Set<Int>
+        val wordSelMode = args[8] as Boolean
+        val selMeaningIds = args[9] as Set<Int>
+        val meaningSelMode = args[10] as Boolean
+        val copying = args[11] as CopyAction?
+        val report = args[12] as Boolean
+
+        val subtitle = detail?.aiSummary?.takeIf { it.isNotBlank() }
+            ?: detail?.item?.glossAr?.takeIf { it.isNotBlank() }
+        val metaLine = formatAiMetaLine(detail?.aiModel, detail?.aiGeneratedAt)
+        RootDetailUiState(
+            isLoading = isLoading,
+            detail = detail,
+            rootText = detail?.item?.root.orEmpty(),
+            subtitleText = subtitle,
+            hasSubtitle = !subtitle.isNullOrBlank(),
+            aiMetaLine = metaLine,
+            hasAiMeta = !metaLine.isNullOrBlank() ||
+                !detail?.aiModel.isNullOrBlank() ||
+                !detail?.aiGeneratedAt.isNullOrBlank(),
+            tabs = listOf(
+                RootDetailTabUi(RootDetailTab.MEANINGS, detail?.meanings?.size ?: 0),
+                RootDetailTabUi(RootDetailTab.AYAT, detail?.item?.occurrencesCount ?: 0),
+                RootDetailTabUi(RootDetailTab.WORDS, words.size),
+                RootDetailTabUi(RootDetailTab.MASADIR, detail?.masadir?.size ?: 0),
+                RootDetailTabUi(RootDetailTab.DERIVATIVES, detail?.derivatives?.size ?: 0)
+            ),
+            meanings = MeaningsTabState(
+                meanings = detail?.meanings.orEmpty(),
+                selectedIds = selMeaningIds,
+                isSelectionMode = meaningSelMode
+            ),
+            words = WordsTabState(
+                words = words,
+                isLoading = wordsLoading,
+                selectedIds = selWordIds,
+                isSelectionMode = wordSelMode
+            ),
+            ayat = AyatTabState(
+                occurrences = occ,
+                totalCount = detail?.item?.occurrencesCount ?: 0,
+                hasMore = hasMore,
+                isLoadingMore = loadingMore
+            ),
+            copyingAction = copying,
+            isCopying = copying != null,
+            reportDialogVisible = report,
+            error = null
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, RootDetailUiState())
+
+    private val _effect = MutableSharedFlow<RootDetailEffect>(extraBufferCapacity = 8)
+    val effect: SharedFlow<RootDetailEffect> = _effect
+
+    /**
+     * Single entry for UI events (UDF). State-only events are handled here;
+     * copy/share/report-platform events are intercepted by the Route (which owns
+     * ShareHandler + Context) and never reach this function. Navigation that
+     * depends on VM state (word click vs selection) emits one-shot [effect].
+     */
+    fun onEvent(event: RootDetailEvent) {
+        when (event) {
+            is RootDetailEvent.Load -> loadRootDetail(event.rootId)
+            is RootDetailEvent.ToggleMeaning -> toggleMeaningSelection(event.id)
+            is RootDetailEvent.EnterMeaningSelection -> enterMeaningSelectionMode(event.id)
+            RootDetailEvent.SelectAllMeanings -> selectAllMeanings()
+            RootDetailEvent.ClearMeaningSelection -> clearMeaningSelection()
+            is RootDetailEvent.WordClicked -> {
+                if (_isWordSelectionMode.value) {
+                    toggleWordSelection(event.wordId)
+                } else {
+                    _effect.tryEmit(RootDetailEffect.NavigateToWordAyat(event.rootId, event.wordId))
+                }
+            }
+            is RootDetailEvent.WordLongPressed -> {
+                if (_isWordSelectionMode.value) toggleWordSelection(event.wordId)
+                else enterWordSelectionMode(event.wordId)
+            }
+            RootDetailEvent.SelectAllWords -> selectAllWords()
+            RootDetailEvent.ClearWordSelection -> clearWordSelection()
+            is RootDetailEvent.OccurrenceClicked ->
+                _effect.tryEmit(RootDetailEffect.NavigateToSurah(event.surahId, event.ayahNum))
+            is RootDetailEvent.AyatNearingEnd -> loadMoreOccurrencesIfNeeded(event.lastVisibleIndex)
+            RootDetailEvent.ShowReport -> setReportVisible(true)
+            RootDetailEvent.DismissReport -> setReportVisible(false)
+            RootDetailEvent.Retry -> currentRootIdForOcc?.let { loadRootDetail(it) }
+            // Platform events (copy/share/report markdown) are handled by the Route.
+            RootDetailEvent.CopyAiSummary, RootDetailEvent.ShareAiSummary,
+            RootDetailEvent.CopyAllMeanings, RootDetailEvent.ShareAllMeanings,
+            RootDetailEvent.CopySelectedMeanings, RootDetailEvent.ShareSelectedMeanings,
+            RootDetailEvent.CopySelectedWords, RootDetailEvent.ShareSelectedWords,
+            RootDetailEvent.CopyAllOccurrences, RootDetailEvent.ShareAllOccurrences,
+            is RootDetailEvent.CopyReport, is RootDetailEvent.ShareReport,
+            is RootDetailEvent.OpenReportUrl -> Unit
+        }
+    }
+}
+
+/**
+ * Pure helpers for AI meta line (Phase 3, extracted from RootDetailScreen).
+ * No Android deps — unit-testable.
+ */
+fun cleanAiDate(raw: String?): String {
+    if (raw.isNullOrBlank()) return ""
+    return try {
+        val cleaned = raw.replace("T", " ")
+        if (cleaned.length >= 16) cleaned.substring(0, 16) else cleaned
+    } catch (_: Exception) {
+        raw
+    }
+}
+
+fun formatAiMetaLine(aiModel: String?, aiGeneratedAt: String?): String? {
+    val date = cleanAiDate(aiGeneratedAt)
+    val line = buildString {
+        if (!aiModel.isNullOrBlank()) append(aiModel)
+        if (!aiModel.isNullOrBlank() && date.isNotBlank()) append("  •  ")
+        if (date.isNotBlank()) append(date)
+    }
+    return line.takeIf { it.isNotBlank() }
 }
 
 @HiltViewModel
