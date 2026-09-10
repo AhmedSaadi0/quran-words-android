@@ -12,7 +12,7 @@ import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
 import io.github.ahmedsaadi0.quranwords.ui.navigation.SurahDetail
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailEvent
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.WordAyatViewModel
+import io.github.ahmedsaadi0.quranwords.ui.roots.word.WordAyatViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

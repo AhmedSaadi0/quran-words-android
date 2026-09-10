@@ -38,6 +38,7 @@ import androidx.navigation.toRoute
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.roots.RootsListRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailRoute
+import io.github.ahmedsaadi0.quranwords.ui.roots.word.WordAyatRoute
 import io.github.ahmedsaadi0.quranwords.ui.screens.BookmarksScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.DatabaseSetupScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.HomeScreen
@@ -45,7 +46,6 @@ import io.github.ahmedsaadi0.quranwords.ui.screens.MorphologyGuideScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SearchScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahDetailScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahIndexScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.WordAyatScreen
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.DatabaseSetupViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.HomeViewModel
@@ -53,7 +53,6 @@ import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SearchViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahDetailViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.WordAyatViewModel
 
 data class BottomNavItem(
     val route: Any,
@@ -216,14 +215,13 @@ fun AppNavigation(
 
             composable<WordAyat> { backStackEntry ->
                 val route: WordAyat = backStackEntry.toRoute()
-                WordAyatScreen(
+                WordAyatRoute(
                     rootId = route.rootId,
                     wordId = route.wordId,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId, ayahNum ->
                         navController.navigate(SurahDetail(surahId, ayahNum))
-                    },
-                    viewModel = hiltViewModel<WordAyatViewModel>()
+                    }
                 )
             }
 

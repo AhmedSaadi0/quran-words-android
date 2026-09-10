@@ -104,6 +104,7 @@
     <string name="roots_search_hint">ابحث عن جذر (مثال: كتب، علم، رحم)...</string>
     <string name="roots_empty_results">لا توجد جذور مطابقة لبحثك.</string>
     <string name="roots_error_load">تعذر تحميل معجم الجذور.</string>
+    <string name="word_ayat_error">تعذر تحميل مواضع الكلمة.</string>
 
     <string name="bookmarks_empty_title">لا توجد إشارات مرجعية بعد</string>
     <string name="bookmarks_empty_hint">استخدم أيقونة ☆ في صفحة السور والآيات لحفظ ما تريد الرجوع إليه</string>

@@ -124,6 +124,7 @@
     <string name="roots_search_hint">Search roots (e.g. كتب، علم، رحم)…</string>
     <string name="roots_empty_results">No roots match your search.</string>
     <string name="roots_error_load">Could not load the roots lexicon.</string>
+    <string name="word_ayat_error">Could not load word occurrences.</string>
 
     <!-- Bookmarks -->
     <string name="bookmarks_empty_title">No bookmarks yet</string>

@@ -2,7 +2,7 @@
 
 > Sub-roadmap of `AGENTS.md §22`. Scope: `ui/screens/`, `ui/viewmodel/`, `ui/navigation/`, `ui/components/`.
 > Reference pattern: `ui/roots/detail/` — the completed RootDetail refactor (see `REFACTOR_PLAN.md`).
-> Status: **Phase 1–2 ✅ verified, Phase 3 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
+> Status: **Phase 1–3 ✅ verified, Phase 4 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
 
 ---
 
@@ -137,8 +137,11 @@
 
 ### Phase 4 — WordAyat (worst platform offender)
 
-### Phase 4 — WordAyat (worst platform offender)
-- [ ] **Extract `WordAyatViewModel` → `ui/roots/word/`**; Contract + Route; **reuse `ShareHandler`** (kills clipboard/Intent/ActivityNotFound/context.getString in composable); pagination → `snapshotFlow` trigger; error state.
+### Phase 4 — WordAyat (worst platform offender) — ✅ implemented
+- [x] **Extracted `WordAyatViewModel` → `ui/roots/word/`**: ported pagination 1:1; `loadWord`/`loadMore` Result-mapped (`runCatchingResult`) — load failures surface via `WordAyatUiState.error` (was silent); `Retry` event (first-page vs next-page aware); derived `uiState` via combine with granular flows kept as source of truth.
+- [x] **`WordAyatRoute`**: owns VM + `ShareHandler` — clipboard/`Intent(ACTION_SEND)`/`createChooser`/`ActivityNotFoundException`/`context.getString` all removed from the composable; copy/share success/empty/no-app feedback identical (same strings, same quantity plurals).
+- [x] **Stateless `WordAyatScreen`** (~280 L → uiState + onEvent + callbacks): snapshotFlow pagination trigger with `distinctUntilChanged` kept; **new error states** — full-screen error+retry on first-page failure, inline error row during pagination (`word_ayat_error` string en/ar, `word_ayat_retry_btn` tag); ALL legacy testTags preserved (`back_button`, `word_ayat_empty`, `word_ayat_list`, `copy_all_bar`, `copy_all_occurrences_btn`, `share_all_occurrences_btn`).
+- [x] `ui/screens/WordAyatScreen.kt` deleted; `AppNavigation` switched to `WordAyatRoute`; tests re-pointed (`RootWordsTest`); ViewModels.kt **948 → 810 lines**.
 
 ### Phase 5 — Search
 - [ ] **Extract `SearchViewModel` → `ui/search/`**; Contract incl. **error state** (today silent); one parameterized pager keyed by `SearchTab` enum (kills 4 copy-paste `loadMoreX()` + magic ints); stable list keys (drop `hashCode()`).
