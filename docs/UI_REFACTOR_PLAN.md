@@ -2,7 +2,7 @@
 
 > Sub-roadmap of `AGENTS.md §22`. Scope: `ui/screens/`, `ui/viewmodel/`, `ui/navigation/`, `ui/components/`.
 > Reference pattern: `ui/roots/detail/` — the completed RootDetail refactor (see `REFACTOR_PLAN.md`).
-> Status: **Phase 1–7 ✅ verified, Phase 8 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
+> Status: **Phase 1–8 ✅ verified, Phase 9–10 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
 
 ---
 
@@ -162,13 +162,17 @@
 - [x] All 7 consumers migrated atomically (QuranRepositoryImpl, HomeScreen, BookmarksScreen, SurahIndexScreen, MorphologyGuideScreen, RevelationType + its test) — `data.util` package **no longer exists**; grep-verified.
 - [x] MorphologyGuideScreen moved → `ui/guide/` (package update, unused `Emerald700`/`QuranGold` dropped); AppNavigation import updated. Locale AR/EN map selection kept in the screen (documented deviation: dictionary reference data with explicit AR/EN variants, not UI strings — converting to resources would add churn with no user-visible gain; revisit at closure if desired). No VM needed (static screen).
 
-### Phase 9 — Home + Settings (big but low interaction risk)
-- [ ] Split → `HomeScreen` (<200) + `HomeHeader`, `DbBanner`, `QuickNavRow`, `StatsGrid`, `FeaturedRoots`; **extract `HomeViewModel` → `ui/home/`**, `DbUpdateViewModel` → `ui/appstate/`; `ThemeChooserDialog` + theme/language setters → `ui/settings/SettingsDialog` + `SettingsViewModel`; ⚙️🎨🌓🔖⭐💾📖 → vectors; 40dp → 48dp; HomeScreen drops MainViewModel.
+### Phase 9 — Home + Settings — ✅ implemented
+- [x] Split → `HomeScreen` (~160 L) + components/: `HomeHeader` (3 hero toggles → vectors @ 48dp, 🔍 trigger bar → `Icons.Filled.Search`), `HomeBanners` (DbSetupBanner 💾→`Download`, HomeUpdateBanner), `QuickNavRow` (📖🌿📐 → MenuBook/Eco/Architecture vectors), `HomeQuickCards` (🔖→`Bookmark`, ⭐→`Star`), `StatsGrid` (6 StatCards; `StatCard` icon: String→ImageVector), `FeaturedRootsSection` (`LazyListScope` ext).
+- [x] **`HomeViewModel` → `ui/home/`** + `HomeUiState` (adds isDbReady + bookmark slices; Result-mapped featured roots); **`DbUpdateViewModel` → `ui/appstate/`**; **`SettingsViewModel` + `SettingsDialog` → `ui/settings/`** (theme/language setters leave MainViewModel; dead `colorMode` not exposed; `close_theme_dialog`/`open_theme_dialog`/`toggle_*` testTags preserved).
+- [x] `HomeRoute` hosts 3 VMs + settings dialog; `LifecycleResumeEffect` refreshes DB status on resume (replaces shared-MainViewModel refresh; Home no longer takes MainViewModel). New strings `cd_open_settings`/`cd_toggle_dynamic_color`/`cd_toggle_dark_mode` (en/ar); ALL home testTags preserved; `ui/screens/HomeScreen.kt` deleted.
+- [x] `SurahItemCard` 🔖/☆ bookmark → Bookmark/BookmarkBorder vectors.
 
-### Phase 10 — SurahDetail (highest risk) + DatabaseSetup + MainViewModel deletion
-- [ ] **SurahDetail**: Route + Contract; **extract `SurahDetailViewModel` → `ui/surah/detail/`**; extract `SurahSelectionTopBar` (ShareHandler; ✓📋↗ → vectors), `SurahCollapsingHeader` (port `CollapsingHeaderState` pattern; preserve quick-return physics + layout modifier), `AyatList`; `onPageClick` delay/peek hack → VM suspend `scrollTargetFor(page)`; **fix double `updateLastRead`** (single owner); MorphologyBottomSheet dead-code fixes (`hasTried`, `aiSummary!!`, date dedupe).
-- [ ] **DatabaseSetup**: **extract `DatabaseSetupViewModel` → `ui/setup/`**; VM maps `DownloadState/DownloadError` → `SetupUiState` (data.remote stops leaking); file-picker in Route; `formatVersionSize`/byte math → pure util + tests.
-- [ ] **Delete `ui/viewmodel/ViewModels.kt`** — last consumer (MainViewModel) migrated to `ui/appstate/AppStateViewModel` in Phase 2 groundwork; remove once no screen references it.
+### Phase 10 — SurahDetail + DatabaseSetup + MainViewModel deletion — ✅ implemented
+- [x] **SurahDetail atomic migration** (`ui/surah/detail/`): `SurahDetailContract` (UiState incl. fontSize/bookmarks/isDbReady slices + error) + `SurahDetailViewModel` (ported 1:1; `SelectionState` for ayah multi-select — 3rd duplicate killed; Result-mapped loadSurah/loadNextPage/ensureAyahLoaded/ensurePageLoaded; **single `updateLastRead` owner** — double-write removed; AI-summary failure documented non-fatal) + `SurahDetailRoute` (ShareHandler for ✓📋↗ selection bar → Done/ContentCopy/Share vectors) + stateless `SurahDetailScreen` + components/: `SurahCollapsingHeaderState` (saveable holder, physics 1:1), `SurahDetailHeader` (pinned bar + collapsible area, quick-return nested-scroll preserved), `SurahAyatList` (basmalah/separators/stagger), `SelectionTopBar`. `onPageClick` delay(100)+peek hack → pending-page LaunchedEffect. 📥 empty state → Download vector. ALL testTags preserved.
+- [x] **DatabaseSetup atomic migration** (`ui/setup/`): `SetupContract` with `SetupDownload`/`SetupError` UI mirror — VM maps `DownloadState` 1:1, **data.remote stops leaking into UI**; file-picker moved to `DatabaseSetupRoute`; ✅/💾 → CheckCircle/Download vectors; dead imports (`viewModel`, `Emerald700`, `QuranGold`) gone; FQ `TextButton`/`AlertDialog` fixed; ALL testTags preserved (`db_setup_screen`, `start_download_button`, `import_db_button`, `confirm_import_button`, `db_version_card`, …).
+- [x] **`ui/viewmodel/` package DELETED** (ViewModels.kt 1,428→510→0; AppPreferencesUiState removed): MainActivity theme/language → `SettingsViewModel`; AppNavigation takes no VMs — every destination is a self-contained Route; MainViewModel dissolution completed via feature slices (Decision 14 amendment).
+- [x] **MorphologyBottomSheet fixes**: dead `hasTried = true` removed (else-branch), `aiSummary!!` → smart-cast local, 🤖/🕒 emoji → plain chips, inline date formatting → `core.util.cleanAiDate`.
 
 ### Phase 11 — Cross-cutting closure
 - [ ] testTag convention sweep → `<feature>_<element>_<id>` (only tags not referenced by tests).

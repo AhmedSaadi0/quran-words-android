@@ -27,7 +27,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
@@ -40,17 +39,13 @@ import io.github.ahmedsaadi0.quranwords.ui.bookmarks.BookmarksRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.RootsListRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.word.WordAyatRoute
-import io.github.ahmedsaadi0.quranwords.ui.screens.DatabaseSetupScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.HomeScreen
+import io.github.ahmedsaadi0.quranwords.ui.setup.DatabaseSetupRoute
 import io.github.ahmedsaadi0.quranwords.ui.guide.MorphologyGuideScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.SurahDetailScreen
+import io.github.ahmedsaadi0.quranwords.ui.home.HomeRoute
+import io.github.ahmedsaadi0.quranwords.ui.surah.detail.SurahDetailRoute
 import io.github.ahmedsaadi0.quranwords.ui.search.SearchRoute
 import io.github.ahmedsaadi0.quranwords.ui.surah.SurahIndexRoute
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.DatabaseSetupViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.HomeViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahDetailViewModel
 
 data class BottomNavItem(
     val route: Any,
@@ -71,9 +66,7 @@ private fun NavDestination?.isTopLevelDestination(item: BottomNavItem): Boolean 
     this?.hasRoute(item.route::class) == true
 
 @Composable
-fun AppNavigation(
-    mainViewModel: MainViewModel
-) {
+fun AppNavigation() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
@@ -145,9 +138,7 @@ fun AppNavigation(
             popExitTransition = { AppMotion.navPopExitTransition() }
         ) {
             composable<Home> {
-                HomeScreen(
-                    mainViewModel = mainViewModel,
-                    homeViewModel = hiltViewModel<HomeViewModel>(),
+                HomeRoute(
                     onNavigateToSurahIndex = { navController.navigate(SurahIndex) },
                     onNavigateToSurahDetail = { surahId, ayah ->
                         navController.navigate(SurahDetail(surahId, ayah))
@@ -174,11 +165,9 @@ fun AppNavigation(
 
             composable<SurahDetail> { backStackEntry ->
                 val route: SurahDetail = backStackEntry.toRoute()
-                SurahDetailScreen(
+                SurahDetailRoute(
                     surahId = route.surahId,
                     targetAyah = route.ayah,
-                    mainViewModel = mainViewModel,
-                    surahDetailViewModel = hiltViewModel<SurahDetailViewModel>(),
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToRootDetail = { rootId ->
                         navController.navigate(RootDetail(rootId))
@@ -240,10 +229,8 @@ fun AppNavigation(
             }
 
             composable<Setup> {
-                DatabaseSetupScreen(
-                    mainViewModel = mainViewModel,
-                    onNavigateBack = { navController.popBackStack() },
-                    setupViewModel = hiltViewModel<DatabaseSetupViewModel>()
+                DatabaseSetupRoute(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 

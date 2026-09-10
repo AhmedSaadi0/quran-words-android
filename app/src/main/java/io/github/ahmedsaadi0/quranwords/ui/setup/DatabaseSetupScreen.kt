@@ -1,7 +1,5 @@
-package io.github.ahmedsaadi0.quranwords.ui.screens
+package io.github.ahmedsaadi0.quranwords.ui.setup
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
@@ -25,6 +23,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Download
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -49,48 +50,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.ahmedsaadi0.quranwords.R
-import io.github.ahmedsaadi0.quranwords.data.remote.DownloadError
-import io.github.ahmedsaadi0.quranwords.data.remote.DownloadState
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.theme.Emerald700
-import io.github.ahmedsaadi0.quranwords.ui.theme.QuranGold
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.DatabaseSetupViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun DatabaseSetupScreen(
-    mainViewModel: MainViewModel,
-    onNavigateBack: () -> Unit,
-    setupViewModel: DatabaseSetupViewModel
+    uiState: SetupUiState,
+    onEvent: (SetupEvent) -> Unit,
+    onPickImportFile: () -> Unit,
+    onNavigateBack: () -> Unit
 ) {
-    val downloadState by setupViewModel.downloadState.collectAsStateWithLifecycle()
-    val latestRelease by setupViewModel.latestRelease.collectAsStateWithLifecycle()
-    val installedVersion by setupViewModel.installedVersion.collectAsStateWithLifecycle()
-    val isCheckingUpdate by setupViewModel.isCheckingUpdate.collectAsStateWithLifecycle()
+    val downloadState = uiState.download
+    val latestRelease = uiState.latestRelease
+    val installedVersion = uiState.installedVersion
+    val isCheckingUpdate = uiState.isCheckingUpdate
     var showImportDialog by remember { mutableStateOf(false) }
     var showNotes by remember { mutableStateOf(false) }
-    val importPicker = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            setupViewModel.importDatabase(uri)
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        setupViewModel.checkForUpdate()
-    }
 
     Scaffold(
         topBar = {
@@ -103,10 +85,7 @@ fun DatabaseSetupScreen(
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = {
-                            mainViewModel.refreshDbStatus()
-                            onNavigateBack()
-                        },
+                        onClick = onNavigateBack,
                         modifier = Modifier.testTag("back_button")
                     ) {
                         Icon(
@@ -123,8 +102,8 @@ fun DatabaseSetupScreen(
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
-        val isBusy = downloadState is DownloadState.Progress ||
-            downloadState is DownloadState.Extracting
+        val isBusy = downloadState is SetupDownload.Progress ||
+            downloadState is SetupDownload.Extracting
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -143,9 +122,13 @@ fun DatabaseSetupScreen(
                         .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = if (downloadState is DownloadState.Completed) "✅" else "💾",
-                        fontSize = 38.sp
+                    Icon(
+                        imageVector = if (downloadState is SetupDownload.Completed) Icons.Outlined.CheckCircle
+                        else Icons.Outlined.Download,
+                        contentDescription = null,
+                        tint = if (downloadState is SetupDownload.Completed) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(38.dp)
                     )
                 }
             }
@@ -178,7 +161,7 @@ fun DatabaseSetupScreen(
                     isChecking = isCheckingUpdate,
                     showNotes = showNotes,
                     onToggleNotes = { showNotes = !showNotes },
-                    onCheckClick = { setupViewModel.checkForUpdate() }
+                    onCheckClick = { onEvent(SetupEvent.CheckForUpdate) }
                 )
             }
 
@@ -202,11 +185,11 @@ fun DatabaseSetupScreen(
                     // مفتاح ثابت لكل نوع حالة: يمنع إعادة حركة التلاشي مع كل نبضة
                     // تقدم (Progress جديد كل نسبة)، ويبقيها للانتقالات الحقيقية فقط.
                     val stateKey = when (downloadState) {
-                        is DownloadState.Idle -> 0
-                        is DownloadState.Progress -> 1
-                        is DownloadState.Extracting -> 2
-                        is DownloadState.Completed -> 3
-                        is DownloadState.Error -> 4
+                        is SetupDownload.Idle -> 0
+                        is SetupDownload.Progress -> 1
+                        is SetupDownload.Extracting -> 2
+                        is SetupDownload.Completed -> 3
+                        is SetupDownload.Error -> 4
                     }
                     Crossfade(
                         targetState = stateKey,
@@ -214,7 +197,7 @@ fun DatabaseSetupScreen(
                         label = "downloadStateCrossfade"
                     ) {
                         when (val state = downloadState) {
-                            is DownloadState.Idle -> {
+                            is SetupDownload.Idle -> {
                                 Column(
                                     verticalArrangement = Arrangement.spacedBy(16.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -227,7 +210,7 @@ fun DatabaseSetupScreen(
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Button(
-                                        onClick = { setupViewModel.startDownload() },
+                                        onClick = { onEvent(SetupEvent.StartDownload) },
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
@@ -238,9 +221,8 @@ fun DatabaseSetupScreen(
                                     }
                                 }
                             }
-                            is DownloadState.Progress -> {
-                                val isExtractPhase =
-                                    state.phase == io.github.ahmedsaadi0.quranwords.data.remote.DownloadPhase.EXTRACT
+                            is SetupDownload.Progress -> {
+                                val isExtractPhase = state.isExtractPhase
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -286,7 +268,7 @@ fun DatabaseSetupScreen(
                                     )
                                 }
                             }
-                            is DownloadState.Extracting -> {
+                            is SetupDownload.Extracting -> {
                                 Column(
                                     modifier = Modifier.fillMaxWidth(),
                                     verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -309,7 +291,7 @@ fun DatabaseSetupScreen(
                                     )
                                 }
                             }
-                            is DownloadState.Completed -> {
+                            is SetupDownload.Completed -> {
                                 val pendingUpdate = latestRelease?.takeIf {
                                     it.versionCode > installedVersion.versionCode &&
                                         installedVersion.versionCode > 0
@@ -335,7 +317,7 @@ fun DatabaseSetupScreen(
                                             textAlign = TextAlign.Center
                                         )
                                         Button(
-                                            onClick = { setupViewModel.startDownload() },
+                                            onClick = { onEvent(SetupEvent.StartDownload) },
                                             colors = ButtonDefaults.buttonColors(
                                                 containerColor = MaterialTheme.colorScheme.primary
                                             ),
@@ -361,10 +343,7 @@ fun DatabaseSetupScreen(
                                         )
                                     }
                                     Button(
-                                        onClick = {
-                                            mainViewModel.refreshDbStatus()
-                                            onNavigateBack()
-                                        },
+                                        onClick = onNavigateBack,
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
@@ -375,7 +354,7 @@ fun DatabaseSetupScreen(
                                     }
                                 }
                             }
-                            is DownloadState.Error -> {
+                            is SetupDownload.Error -> {
                                 Column(
                                     verticalArrangement = Arrangement.spacedBy(12.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -395,7 +374,7 @@ fun DatabaseSetupScreen(
                                         textAlign = TextAlign.Center
                                     )
                                     Button(
-                                        onClick = { setupViewModel.startDownload() },
+                                        onClick = { onEvent(SetupEvent.StartDownload) },
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                                         shape = RoundedCornerShape(12.dp),
                                         modifier = Modifier
@@ -428,10 +407,7 @@ fun DatabaseSetupScreen(
 
             item {
                 OutlinedButton(
-                    onClick = {
-                        mainViewModel.refreshDbStatus()
-                        onNavigateBack()
-                    },
+                    onClick = onNavigateBack,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -446,7 +422,7 @@ fun DatabaseSetupScreen(
     }
 
     if (showImportDialog) {
-        androidx.compose.material3.AlertDialog(
+        AlertDialog(
             onDismissRequest = { showImportDialog = false },
             title = { Text(text = stringResource(R.string.db_import_dialog_title), fontWeight = FontWeight.Bold) },
             text = {
@@ -456,10 +432,10 @@ fun DatabaseSetupScreen(
                 )
             },
             confirmButton = {
-                androidx.compose.material3.TextButton(
+                TextButton(
                     onClick = {
                         showImportDialog = false
-                        importPicker.launch(arrayOf("*/*"))
+                        onPickImportFile()
                     },
                     modifier = Modifier.testTag("confirm_import_button")
                 ) {
@@ -467,7 +443,7 @@ fun DatabaseSetupScreen(
                 }
             },
             dismissButton = {
-                androidx.compose.material3.                TextButton(onClick = { showImportDialog = false }) {
+                TextButton(onClick = { showImportDialog = false }) {
                     Text(stringResource(R.string.cd_cancel))
                 }
             }
@@ -575,19 +551,19 @@ private fun VersionStatusCard(
 }
 
 @Composable
-private fun downloadErrorMessage(error: DownloadError): String = stringResource(
+private fun downloadErrorMessage(error: SetupError): String = stringResource(
     when (error) {
-        DownloadError.NETWORK -> R.string.dl_err_download
-        DownloadError.NOT_ZIP -> R.string.dl_err_not_zip
-        DownloadError.CHECKSUM_MISMATCH -> R.string.dl_err_checksum
-        DownloadError.EXTRACT_FAILED -> R.string.dl_err_extract
-        DownloadError.INVALID_DB -> R.string.dl_err_invalid_db
-        DownloadError.INCOMPLETE_FILE -> R.string.dl_err_incomplete
-        DownloadError.INSTALL_FAILED -> R.string.dl_err_install
-        DownloadError.BAD_PICK -> R.string.dl_err_bad_pick
-        DownloadError.IMPORT_FAILED -> R.string.dl_err_import
-        DownloadError.MANIFEST_FAILED -> R.string.dl_err_manifest
-        DownloadError.UNKNOWN -> R.string.dl_err_unknown
+        SetupError.NETWORK -> R.string.dl_err_download
+        SetupError.NOT_ZIP -> R.string.dl_err_not_zip
+        SetupError.CHECKSUM_MISMATCH -> R.string.dl_err_checksum
+        SetupError.EXTRACT_FAILED -> R.string.dl_err_extract
+        SetupError.INVALID_DB -> R.string.dl_err_invalid_db
+        SetupError.INCOMPLETE_FILE -> R.string.dl_err_incomplete
+        SetupError.INSTALL_FAILED -> R.string.dl_err_install
+        SetupError.BAD_PICK -> R.string.dl_err_bad_pick
+        SetupError.IMPORT_FAILED -> R.string.dl_err_import
+        SetupError.MANIFEST_FAILED -> R.string.dl_err_manifest
+        SetupError.UNKNOWN -> R.string.dl_err_unknown
     }
 )
 

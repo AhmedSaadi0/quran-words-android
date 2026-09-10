@@ -81,6 +81,9 @@
 
     <!-- Shared content descriptions -->
     <string name="cd_back">Back</string>
+    <string name="cd_open_settings">Open settings</string>
+    <string name="cd_toggle_dynamic_color">Toggle dynamic color</string>
+    <string name="cd_toggle_dark_mode">Toggle dark mode</string>
     <string name="cd_clear">Clear</string>
     <string name="cd_cancel">Cancel</string>
     <string name="cd_remove_bookmark">Remove bookmark</string>
@@ -194,6 +197,7 @@
     <string name="attested_badge">Attested in revelation</string>
     <string name="quranic_badge">Quranic</string>
     <string name="select_all">Select all</string>
+    <string name="cd_copy_selection">Copy selected ayat</string>
     <string name="copying">Copying…</string>
     <string name="copy_ayat">Copy ayat</string>
     <string name="copy_all">Copy all</string>

@@ -67,6 +67,9 @@
     <string name="nav_guide">الدليل</string>
 
     <string name="cd_back">رجوع</string>
+    <string name="cd_open_settings">فتح الإعدادات</string>
+    <string name="cd_toggle_dynamic_color">تبديل الألوان الديناميكية</string>
+    <string name="cd_toggle_dark_mode">تبديل الوضع الداكن</string>
     <string name="cd_clear">مسح</string>
     <string name="cd_cancel">إلغاء</string>
     <string name="cd_remove_bookmark">إزالة العلامة</string>
@@ -167,6 +170,7 @@
     <string name="attested_badge">وارد في التنزيل</string>
     <string name="quranic_badge">قرآني</string>
     <string name="select_all">تحديد الكل</string>
+    <string name="cd_copy_selection">نسخ الآيات المحددة</string>
     <string name="copying">جاري النسخ...</string>
     <string name="copy_ayat">نسخ الآيات</string>
     <string name="copy_all">نسخ الكل</string>
