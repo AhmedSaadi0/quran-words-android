@@ -2,6 +2,8 @@
 
 > Sub-roadmap of `AGENTS.md §22`. Target: `RootDetailScreen.kt` + direct deps.
 > Status: all phases complete — Stateful/Stateless split landed, God file deleted.
+>
+> **Active roadmap:** screens/ViewModels/navigation refactor → see `UI_REFACTOR_PLAN.md` (start there for new tasks).
 
 ## Phases
 

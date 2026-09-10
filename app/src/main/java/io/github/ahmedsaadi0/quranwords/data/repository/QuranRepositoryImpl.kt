@@ -4,7 +4,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
-import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
+import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.di.IoDispatcher
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah

@@ -30,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,6 +45,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.CopyAllActionBar
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.WordAyatViewModel
@@ -62,13 +62,13 @@ fun WordAyatScreen(
     onNavigateToSurahDetail: (Int, Int) -> Unit,
     viewModel: WordAyatViewModel
 ) {
-    val wordText by viewModel.wordText.collectAsState()
-    val occurrences by viewModel.occurrences.collectAsState()
-    val hasMore by viewModel.hasMore.collectAsState()
-    val totalCount by viewModel.totalCount.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isLoadingMore by viewModel.isLoadingMore.collectAsState()
-    val isCopyingAll by viewModel.isCopyingAll.collectAsState()
+    val wordText by viewModel.wordText.collectAsStateWithLifecycle()
+    val occurrences by viewModel.occurrences.collectAsStateWithLifecycle()
+    val hasMore by viewModel.hasMore.collectAsStateWithLifecycle()
+    val totalCount by viewModel.totalCount.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
+    val isCopyingAll by viewModel.isCopyingAll.collectAsStateWithLifecycle()
 
     val listState: LazyListState = rememberLazyListState()
     val scope = rememberCoroutineScope()

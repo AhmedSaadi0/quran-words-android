@@ -44,7 +44,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -76,6 +75,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.core.util.isMeccan
 import io.github.ahmedsaadi0.quranwords.ui.components.AyahItemCard
@@ -104,20 +104,20 @@ fun SurahDetailScreen(
     onNavigateBack: () -> Unit,
     onNavigateToRootDetail: (Int) -> Unit
 ) {
-    val surah by surahDetailViewModel.surah.collectAsState()
-    val ayat by surahDetailViewModel.ayat.collectAsState()
-    val isLoading by surahDetailViewModel.isLoading.collectAsState()
-    val isLoadingMore by surahDetailViewModel.isLoadingMore.collectAsState()
-    val selectedWord by surahDetailViewModel.selectedWord.collectAsState()
-    val selectedWordAyah by surahDetailViewModel.selectedWordAyah.collectAsState()
-    val aiSummary by surahDetailViewModel.aiSummary.collectAsState()
-    val aiModel by surahDetailViewModel.aiModel.collectAsState()
-    val aiGeneratedAt by surahDetailViewModel.aiGeneratedAt.collectAsState()
-    val isAiLoading by surahDetailViewModel.isAiLoading.collectAsState()
-    val fontSize by mainViewModel.fontSize.collectAsState()
-    val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsState()
-    val bookmarkedAyat by mainViewModel.bookmarkedAyat.collectAsState()
-    val isDbReady by mainViewModel.isDbReady.collectAsState()
+    val surah by surahDetailViewModel.surah.collectAsStateWithLifecycle()
+    val ayat by surahDetailViewModel.ayat.collectAsStateWithLifecycle()
+    val isLoading by surahDetailViewModel.isLoading.collectAsStateWithLifecycle()
+    val isLoadingMore by surahDetailViewModel.isLoadingMore.collectAsStateWithLifecycle()
+    val selectedWord by surahDetailViewModel.selectedWord.collectAsStateWithLifecycle()
+    val selectedWordAyah by surahDetailViewModel.selectedWordAyah.collectAsStateWithLifecycle()
+    val aiSummary by surahDetailViewModel.aiSummary.collectAsStateWithLifecycle()
+    val aiModel by surahDetailViewModel.aiModel.collectAsStateWithLifecycle()
+    val aiGeneratedAt by surahDetailViewModel.aiGeneratedAt.collectAsStateWithLifecycle()
+    val isAiLoading by surahDetailViewModel.isAiLoading.collectAsStateWithLifecycle()
+    val fontSize by mainViewModel.fontSize.collectAsStateWithLifecycle()
+    val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsStateWithLifecycle()
+    val bookmarkedAyat by mainViewModel.bookmarkedAyat.collectAsStateWithLifecycle()
+    val isDbReady by mainViewModel.isDbReady.collectAsStateWithLifecycle()
 
     val isSurahBookmarked = bookmarkedSurahs.contains(surahId.toString())
     val listState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
@@ -128,15 +128,15 @@ fun SurahDetailScreen(
     var hasHandledInitialScroll by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
 
     // Selection mode
-    val isSelectionMode by surahDetailViewModel.isSelectionMode.collectAsState()
-    val selectedAyahs by surahDetailViewModel.selectedAyahs.collectAsState()
+    val isSelectionMode by surahDetailViewModel.isSelectionMode.collectAsStateWithLifecycle()
+    val selectedAyahs by surahDetailViewModel.selectedAyahs.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
 
     // Page header state
-    val surahPages by surahDetailViewModel.surahPages.collectAsState()
+    val surahPages by surahDetailViewModel.surahPages.collectAsStateWithLifecycle()
 
     // Shared Header Collapse State (Quick-Return / Enter Always)
     var collapsibleHeightPx by rememberSaveable { mutableIntStateOf(0) }

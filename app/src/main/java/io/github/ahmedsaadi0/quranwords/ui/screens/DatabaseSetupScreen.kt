@@ -42,7 +42,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +56,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.data.remote.DownloadError
@@ -74,10 +74,10 @@ fun DatabaseSetupScreen(
     onNavigateBack: () -> Unit,
     setupViewModel: DatabaseSetupViewModel
 ) {
-    val downloadState by setupViewModel.downloadState.collectAsState()
-    val latestRelease by setupViewModel.latestRelease.collectAsState()
-    val installedVersion by setupViewModel.installedVersion.collectAsState()
-    val isCheckingUpdate by setupViewModel.isCheckingUpdate.collectAsState()
+    val downloadState by setupViewModel.downloadState.collectAsStateWithLifecycle()
+    val latestRelease by setupViewModel.latestRelease.collectAsStateWithLifecycle()
+    val installedVersion by setupViewModel.installedVersion.collectAsStateWithLifecycle()
+    val isCheckingUpdate by setupViewModel.isCheckingUpdate.collectAsStateWithLifecycle()
     var showImportDialog by remember { mutableStateOf(false) }
     var showNotes by remember { mutableStateOf(false) }
     val importPicker = rememberLauncherForActivityResult(

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.ahmedsaadi0.quranwords.core.util.AppLanguage
 import io.github.ahmedsaadi0.quranwords.core.util.LanguageManager
+import io.github.ahmedsaadi0.quranwords.core.util.formatAiMetaLine
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
 import io.github.ahmedsaadi0.quranwords.data.remote.DownloadState
 import io.github.ahmedsaadi0.quranwords.data.repository.UserPreferencesRepository
@@ -42,8 +43,7 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val repository: QuranRepository,
     private val preferences: UserPreferencesRepository,
-    private val languageManager: LanguageManager,
-    val downloadManager: DatabaseDownloadManager
+    private val languageManager: LanguageManager
 ) : ViewModel() {
 
     private val _isDbReady = MutableStateFlow(repository.isDatabaseReady())
@@ -75,6 +75,38 @@ class MainViewModel @Inject constructor(
 
     private val _language = MutableStateFlow(AppLanguage.SYSTEM)
     val language: StateFlow<String> = _language.asStateFlow()
+
+    /**
+     * Single-collection app state (Decision 14). Screens migrate to this as
+     * their features are refactored; the granular flows above stay until the
+     * last consumer migrates.
+     */
+    val appState: StateFlow<AppPreferencesUiState> = combine(
+        _fontSize,
+        _darkModeSetting,
+        _dynamicColorEnabled,
+        _colorMode,
+        _bookmarkedSurahs,
+        _bookmarkedAyat,
+        _lastReadSurah,
+        _lastReadAyah,
+        _language,
+        _isDbReady
+    ) { values ->
+        @Suppress("UNCHECKED_CAST")
+        AppPreferencesUiState(
+            fontSize = values[0] as Float,
+            darkModeSetting = values[1] as Int,
+            dynamicColorEnabled = values[2] as Boolean,
+            colorMode = values[3] as Int,
+            bookmarkedSurahs = values[4] as Set<String>,
+            bookmarkedAyat = values[5] as Set<String>,
+            lastReadSurah = values[6] as Int,
+            lastReadAyah = values[7] as Int,
+            language = values[8] as String,
+            isDbReady = values[9] as Boolean
+        )
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, AppPreferencesUiState())
 
     init {
         viewModelScope.launch {
@@ -942,30 +974,6 @@ class RootViewModel @Inject constructor(
             is RootDetailEvent.OpenReportUrl -> Unit
         }
     }
-}
-
-/**
- * Pure helpers for AI meta line (Phase 3, extracted from RootDetailScreen).
- * No Android deps — unit-testable.
- */
-fun cleanAiDate(raw: String?): String {
-    if (raw.isNullOrBlank()) return ""
-    return try {
-        val cleaned = raw.replace("T", " ")
-        if (cleaned.length >= 16) cleaned.substring(0, 16) else cleaned
-    } catch (_: Exception) {
-        raw
-    }
-}
-
-fun formatAiMetaLine(aiModel: String?, aiGeneratedAt: String?): String? {
-    val date = cleanAiDate(aiGeneratedAt)
-    val line = buildString {
-        if (!aiModel.isNullOrBlank()) append(aiModel)
-        if (!aiModel.isNullOrBlank() && date.isNotBlank()) append("  •  ")
-        if (date.isNotBlank()) append(date)
-    }
-    return line.takeIf { it.isNotBlank() }
 }
 
 @HiltViewModel

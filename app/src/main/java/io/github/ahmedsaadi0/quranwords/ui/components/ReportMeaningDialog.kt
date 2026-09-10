@@ -27,7 +27,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -35,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.ReportMeaningViewModel
 import io.github.ahmedsaadi0.quranwords.util.MeaningReportLimits
@@ -67,10 +67,10 @@ fun ReportMeaningDialog(
     viewModel: ReportMeaningViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
-    val reportType by viewModel.reportType.collectAsState()
-    val description by viewModel.description.collectAsState()
-    val suggestion by viewModel.suggestion.collectAsState()
-    val canSubmit by viewModel.canSubmit.collectAsState()
+    val reportType by viewModel.reportType.collectAsStateWithLifecycle()
+    val description by viewModel.description.collectAsStateWithLifecycle()
+    val suggestion by viewModel.suggestion.collectAsStateWithLifecycle()
+    val canSubmit by viewModel.canSubmit.collectAsStateWithLifecycle()
 
     fun currentMarkdown(): String {
         val content = viewModel.buildContent(

@@ -40,7 +40,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.ahmedsaadi0.quranwords.R
-import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
+import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
 import io.github.ahmedsaadi0.quranwords.domain.model.MasdarModel

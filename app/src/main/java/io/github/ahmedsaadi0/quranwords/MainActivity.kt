@@ -8,10 +8,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.ahmedsaadi0.quranwords.ui.navigation.AppNavigation
 import io.github.ahmedsaadi0.quranwords.ui.theme.MyApplicationTheme
@@ -25,12 +25,12 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val darkModeSetting by mainViewModel.darkModeSetting.collectAsState()
-            val dynamicEnabled by mainViewModel.dynamicColorEnabled.collectAsState()
+            val darkModeSetting by mainViewModel.darkModeSetting.collectAsStateWithLifecycle()
+            val dynamicEnabled by mainViewModel.dynamicColorEnabled.collectAsStateWithLifecycle()
             // Triggers recomposition on language change. The locale switch itself
             // is applied by MainViewModel via LanguageManager (per-app locales
             // recreate the activity automatically).
-            val language by mainViewModel.language.collectAsState()
+            val language by mainViewModel.language.collectAsStateWithLifecycle()
             val isDark = when (darkModeSetting) {
                 1 -> false
                 2 -> true

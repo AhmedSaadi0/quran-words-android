@@ -33,7 +33,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -57,8 +57,8 @@ fun BookmarksScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSurahDetail: (Int, Int) -> Unit
 ) {
-    val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsState()
-    val bookmarkedAyat by mainViewModel.bookmarkedAyat.collectAsState()
+    val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsStateWithLifecycle()
+    val bookmarkedAyat by mainViewModel.bookmarkedAyat.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {

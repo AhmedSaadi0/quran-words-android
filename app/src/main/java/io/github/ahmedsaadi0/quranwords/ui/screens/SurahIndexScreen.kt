@@ -41,7 +41,6 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -55,10 +54,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.core.util.isMeccan
-import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
+import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
 import io.github.ahmedsaadi0.quranwords.ui.components.SurahItemCard
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -73,10 +73,10 @@ fun SurahIndexScreen(
     mainViewModel: MainViewModel,
     surahViewModel: SurahViewModel
 ) {
-    val surahs by surahViewModel.surahs.collectAsState()
-    val filterType by surahViewModel.filterType.collectAsState()
-    val searchQuery by surahViewModel.searchQuery.collectAsState()
-    val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsState()
+    val surahs by surahViewModel.surahs.collectAsStateWithLifecycle()
+    val filterType by surahViewModel.filterType.collectAsStateWithLifecycle()
+    val searchQuery by surahViewModel.searchQuery.collectAsStateWithLifecycle()
+    val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsStateWithLifecycle()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 

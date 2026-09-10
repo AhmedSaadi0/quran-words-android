@@ -39,7 +39,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.core.util.AppLanguage
 import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
@@ -87,22 +87,22 @@ fun HomeScreen(
     homeViewModel: HomeViewModel,
     dbUpdateViewModel: DbUpdateViewModel = hiltViewModel()
 ) {
-    val isDbReady by mainViewModel.isDbReady.collectAsState()
-    val featuredRoots by homeViewModel.featuredRoots.collectAsState()
-    val lastReadSurah by mainViewModel.lastReadSurah.collectAsState()
-    val lastReadAyah by mainViewModel.lastReadAyah.collectAsState()
-    val dynamicEnabled by mainViewModel.dynamicColorEnabled.collectAsState()
-    val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsState()
-    val bookmarkedAyat by mainViewModel.bookmarkedAyat.collectAsState()
-    val dbUpdateState by dbUpdateViewModel.state.collectAsState()
+    val isDbReady by mainViewModel.isDbReady.collectAsStateWithLifecycle()
+    val featuredRoots by homeViewModel.featuredRoots.collectAsStateWithLifecycle()
+    val lastReadSurah by mainViewModel.lastReadSurah.collectAsStateWithLifecycle()
+    val lastReadAyah by mainViewModel.lastReadAyah.collectAsStateWithLifecycle()
+    val dynamicEnabled by mainViewModel.dynamicColorEnabled.collectAsStateWithLifecycle()
+    val bookmarkedSurahs by mainViewModel.bookmarkedSurahs.collectAsStateWithLifecycle()
+    val bookmarkedAyat by mainViewModel.bookmarkedAyat.collectAsStateWithLifecycle()
+    val dbUpdateState by dbUpdateViewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(isDbReady) {
         if (isDbReady) dbUpdateViewModel.checkOnce()
     }
 
     val lastSurahMeta = QuranMetaConstants.SURAHS.firstOrNull { it.id == lastReadSurah } ?: QuranMetaConstants.SURAHS[0]
-    val darkModeSetting by mainViewModel.darkModeSetting.collectAsState()
-    val language by mainViewModel.language.collectAsState()
+    val darkModeSetting by mainViewModel.darkModeSetting.collectAsStateWithLifecycle()
+    val language by mainViewModel.language.collectAsStateWithLifecycle()
     var showThemeDialog by remember { mutableStateOf(false) }
 
     Scaffold(

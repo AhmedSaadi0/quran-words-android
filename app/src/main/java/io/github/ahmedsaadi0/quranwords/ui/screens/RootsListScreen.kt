@@ -30,7 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -40,9 +39,10 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.ahmedsaadi0.quranwords.R
-import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
+import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
@@ -54,9 +54,9 @@ fun RootsListScreen(
     onNavigateToRootDetail: (Int) -> Unit,
     rootViewModel: RootViewModel
 ) {
-    val roots by rootViewModel.roots.collectAsState()
-    val isLoading by rootViewModel.isLoading.collectAsState()
-    val query by rootViewModel.query.collectAsState()
+    val roots by rootViewModel.roots.collectAsStateWithLifecycle()
+    val isLoading by rootViewModel.isLoading.collectAsStateWithLifecycle()
+    val query by rootViewModel.query.collectAsStateWithLifecycle()
 
     val filteredRoots = remember(roots, query) {
         val q = ArabicNormalizer.normalizeAr(query)
