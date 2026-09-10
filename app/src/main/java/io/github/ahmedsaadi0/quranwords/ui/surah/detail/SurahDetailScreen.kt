@@ -37,7 +37,6 @@ import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SelectionTopB
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahAyatList
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahCollapsingHeaderState
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahDetailHeader
-import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.rememberSurahCollapsingHeaderState
 
 /**
  * Stateless surah detail screen. Collapse state is saveable; pagination,

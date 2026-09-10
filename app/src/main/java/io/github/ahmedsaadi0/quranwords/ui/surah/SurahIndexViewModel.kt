@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.core.util.RevelationFilter
 import io.github.ahmedsaadi0.quranwords.core.util.isMeccan
-import io.github.ahmedsaadi0.quranwords.data.repository.UserPreferencesRepository
+import io.github.ahmedsaadi0.quranwords.domain.repository.UserPreferencesRepository
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
 import javax.inject.Inject

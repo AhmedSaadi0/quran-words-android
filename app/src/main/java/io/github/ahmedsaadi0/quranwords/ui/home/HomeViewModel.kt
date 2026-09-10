@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.ahmedsaadi0.quranwords.core.util.Result
 import io.github.ahmedsaadi0.quranwords.core.util.runCatchingResult
-import io.github.ahmedsaadi0.quranwords.data.repository.UserPreferencesRepository
+import io.github.ahmedsaadi0.quranwords.domain.repository.UserPreferencesRepository
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
 import javax.inject.Inject

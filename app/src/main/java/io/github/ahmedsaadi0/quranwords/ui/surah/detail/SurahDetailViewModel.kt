@@ -7,7 +7,7 @@ import io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter
 import io.github.ahmedsaadi0.quranwords.core.util.Result
 import io.github.ahmedsaadi0.quranwords.core.util.SelectionState
 import io.github.ahmedsaadi0.quranwords.core.util.runCatchingResult
-import io.github.ahmedsaadi0.quranwords.data.repository.UserPreferencesRepository
+import io.github.ahmedsaadi0.quranwords.domain.repository.UserPreferencesRepository
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
