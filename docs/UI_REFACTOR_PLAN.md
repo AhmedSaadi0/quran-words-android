@@ -2,7 +2,7 @@
 
 > Sub-roadmap of `AGENTS.md §22`. Scope: `ui/screens/`, `ui/viewmodel/`, `ui/navigation/`, `ui/components/`.
 > Reference pattern: `ui/roots/detail/` — the completed RootDetail refactor (see `REFACTOR_PLAN.md`).
-> Status: **Phase 1–3 ✅ verified, Phase 4 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
+> Status: **Phase 1–4 ✅ verified, Phase 5–7 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
 
 ---
 
@@ -143,14 +143,19 @@
 - [x] **Stateless `WordAyatScreen`** (~280 L → uiState + onEvent + callbacks): snapshotFlow pagination trigger with `distinctUntilChanged` kept; **new error states** — full-screen error+retry on first-page failure, inline error row during pagination (`word_ayat_error` string en/ar, `word_ayat_retry_btn` tag); ALL legacy testTags preserved (`back_button`, `word_ayat_empty`, `word_ayat_list`, `copy_all_bar`, `copy_all_occurrences_btn`, `share_all_occurrences_btn`).
 - [x] `ui/screens/WordAyatScreen.kt` deleted; `AppNavigation` switched to `WordAyatRoute`; tests re-pointed (`RootWordsTest`); ViewModels.kt **948 → 810 lines**.
 
-### Phase 5 — Search
-- [ ] **Extract `SearchViewModel` → `ui/search/`**; Contract incl. **error state** (today silent); one parameterized pager keyed by `SearchTab` enum (kills 4 copy-paste `loadMoreX()` + magic ints); stable list keys (drop `hashCode()`).
+### Phase 5 — Search — ✅ implemented
+- [x] **Extracted `SearchViewModel` → `ui/search/`**: `SearchTab` enum (kills magic ints 0–3); **one parameterized pager** replaces the 4 copy-pasted `loadMoreX()` (~90 L deduped); `searchAll`/page fetches Result-mapped — **error state surfaced** (was silent `catch → empty`); `Retry` re-runs the stored query; stable ayat list key `${surah}_${ayah}_${textUthmani}` replaces fragile `hashCode()`.
+- [x] `SearchRoute` + stateless `SearchScreen` (uiState + onEvent + callbacks, tab selection as `rememberSaveable` view state); 🔍 empty-state emoji → `Icons.Filled.Search`; ALL legacy testTags preserved (`search_screen`, `unified_search_input`, `back_button`, `search_results_list`) + new `search_retry_btn`; new string `search_error_load` (en/ar); `ui/screens/SearchScreen.kt` deleted.
 
-### Phase 6 — SurahIndex
-- [ ] **Extract `SurahViewModel` → `ui/surah/`**; filtering+normalization → VM; `"meccan"/"medinan"` → `core/util/RevelationType`; counts 114/86/28/30 → core constants; loading state; 📖 → vector.
+### Phase 6 — SurahIndex — ✅ implemented
+- [x] **Extracted `SurahIndexViewModel` → `ui/surah/`**: filtering + Arabic normalization moved from composable `remember{}` into VM combine; `"meccan"/"medinan"` strings → new `RevelationFilter` enum (in `core/util/RevelationType.kt`); 114/86/28/30 → new `core/util/QuranStats`; loading + error states added (Flow `catch`); **owns its bookmark slice** (`bookmarkedSurahIds` + toggle) — screen no longer takes MainViewModel.
+- [x] `SurahIndexRoute` + stateless `SurahIndexScreen` split into `SurahsTab`/`JuzTab`; 📖 juz emoji → `Icons.AutoMirrored.Filled.MenuBook`; ALL testTags preserved (`tab_surahs`, `tab_juz`, `surah_search_input`, `juz_item_*`, `back_button`, `surah_index_screen`); `ui/screens/SurahIndexScreen.kt` deleted.
 
-### Phase 7 — Bookmarks
-- [ ] New `BookmarksViewModel` (reads AppStateViewModel slices / prefs); ❌ IconButtons → `Icons.Outlined.Close`; key parsing `split(":")` → domain mapper `BookmarkRef(surahId, ayah?)` + tests; typed UiState.
+### Phase 7 — Bookmarks — ✅ implemented
+- [x] New `core/util/BookmarkRef` (typed surah/ayah bookmark ref + `parseSurah`/`parseAyah`/`AYAH_ORDER`, null on malformed — kills `split(":")` + `?: 1` fallbacks in the composable) + 4 unit tests.
+- [x] **New `BookmarksViewModel`** (`ui/bookmarks/`): DataStore keys parsed + ordered in VM; `ToggleSurah/ToggleAyah` events; loading gate avoids empty-state flash.
+- [x] `BookmarksRoute` + stateless `BookmarksScreen` split into `SurahBookmarkCard`/`AyahBookmarkCard`; ❌ remove IconButtons → `Icons.Outlined.Close` + `contentDescription` (`cd_remove_bookmark` en/ar); ⭐ empty-state → `Icons.Outlined.Star`; ALL testTags preserved (`bookmarks_screen`, `bookmark_surah_*`, `remove_bookmark_surah_*`, `bookmark_ayah_*`, `remove_bookmark_ayah_*`, `back_button`); `ui/screens/BookmarksScreen.kt` deleted.
+- [x] ViewModels.kt **810 → 577 lines** (Main, Home, SurahDetail, DatabaseSetup, DbUpdate remain); AppNavigation switched to 3 new Routes.
 
 ### Phase 8 — MorphologyGuide (trivial)
 - [ ] `QuranMetaConstants` morphology maps → `core/util/MorphologyMaps.kt` (AGENTS §14); drop unused imports; locale branch → resource qualifier. (No VM.)

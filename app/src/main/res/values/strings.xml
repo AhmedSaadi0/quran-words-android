@@ -83,6 +83,7 @@
     <string name="cd_back">Back</string>
     <string name="cd_clear">Clear</string>
     <string name="cd_cancel">Cancel</string>
+    <string name="cd_remove_bookmark">Remove bookmark</string>
 
     <!-- Surah header: %1$s = Arabic surah name (data, never translated) -->
     <string name="surah_title_template">Surah %1$s</string>

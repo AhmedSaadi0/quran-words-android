@@ -36,23 +36,21 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.ui.bookmarks.BookmarksRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.RootsListRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.word.WordAyatRoute
-import io.github.ahmedsaadi0.quranwords.ui.screens.BookmarksScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.DatabaseSetupScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.HomeScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.MorphologyGuideScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.SearchScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahDetailScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.SurahIndexScreen
+import io.github.ahmedsaadi0.quranwords.ui.search.SearchRoute
+import io.github.ahmedsaadi0.quranwords.ui.surah.SurahIndexRoute
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.DatabaseSetupViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.HomeViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SearchViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahDetailViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahViewModel
 
 data class BottomNavItem(
     val route: Any,
@@ -166,13 +164,11 @@ fun AppNavigation(
             }
 
             composable<SurahIndex> {
-                SurahIndexScreen(
+                SurahIndexRoute(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId ->
                         navController.navigate(SurahDetail(surahId))
-                    },
-                    mainViewModel = mainViewModel,
-                    surahViewModel = hiltViewModel<SurahViewModel>()
+                    }
                 )
             }
 
@@ -226,15 +222,14 @@ fun AppNavigation(
             }
 
             composable<Search> {
-                SearchScreen(
+                SearchRoute(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToRootDetail = { rootId ->
                         navController.navigate(RootDetail(rootId))
                     },
                     onNavigateToSurahDetail = { surahId, ayahNum ->
                         navController.navigate(SurahDetail(surahId, ayahNum))
-                    },
-                    searchViewModel = hiltViewModel<SearchViewModel>()
+                    }
                 )
             }
 
@@ -253,8 +248,7 @@ fun AppNavigation(
             }
 
             composable<Bookmarks> {
-                BookmarksScreen(
-                    mainViewModel = mainViewModel,
+                BookmarksRoute(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId, ayah ->
                         navController.navigate(SurahDetail(surahId, ayah))

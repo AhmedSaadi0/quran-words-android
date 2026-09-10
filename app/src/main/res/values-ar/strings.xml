@@ -69,6 +69,7 @@
     <string name="cd_back">رجوع</string>
     <string name="cd_clear">مسح</string>
     <string name="cd_cancel">إلغاء</string>
+    <string name="cd_remove_bookmark">إزالة العلامة</string>
 
     <string name="surah_title_template">سُورَةُ %1$s</string>
     <string name="surah_detail_loading">جاري التحميل...</string>

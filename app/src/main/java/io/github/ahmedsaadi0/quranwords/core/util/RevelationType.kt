@@ -15,3 +15,10 @@ val Surah.isMeccan: Boolean
 
 val SurahMeta.isMeccan: Boolean
     get() = revelationType == "مكية"
+
+/** Surah-index filter chips (Phase 6) — replaces the raw `"all"/"meccan"/"medinan"` strings. */
+enum class RevelationFilter {
+    ALL,
+    MECCAN,
+    MEDINAN
+}
