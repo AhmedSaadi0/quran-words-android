@@ -1,4 +1,4 @@
-package io.github.ahmedsaadi0.quranwords.ui.screens
+package io.github.ahmedsaadi0.quranwords.ui.guide
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -38,10 +38,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.ahmedsaadi0.quranwords.R
-import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
+import io.github.ahmedsaadi0.quranwords.core.util.MorphologyMaps
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.theme.Emerald700
-import io.github.ahmedsaadi0.quranwords.ui.theme.QuranGold
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -50,7 +48,7 @@ fun MorphologyGuideScreen(
 ) {
     // Follows the per-app locale with no ViewModel plumbing; Arabic-first default.
     val isArabic = (LocalConfiguration.current.locales.get(0)?.language ?: "ar").startsWith("ar")
-    val formsMap = if (isArabic) QuranMetaConstants.FORMS_MAP else QuranMetaConstants.FORMS_MAP_EN
+    val formsMap = if (isArabic) MorphologyMaps.FORMS_MAP else MorphologyMaps.FORMS_MAP_EN
     Scaffold(
         topBar = {
             TopAppBar(
@@ -157,7 +155,7 @@ fun MorphologyGuideScreen(
                                 // English keeps the standard "Form <code>" convention.
                                 text = stringResource(
                                     R.string.guide_form_desc,
-                                    if (isArabic) QuranMetaConstants.FORM_ORDINAL_AR[code] ?: code else code
+                                    if (isArabic) MorphologyMaps.FORM_ORDINAL_AR[code] ?: code else code
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -177,7 +175,7 @@ fun MorphologyGuideScreen(
                 )
             }
 
-            items(QuranMetaConstants.MORPHOLOGY_TERMS, key = { "term_${it.code}_${it.nameAr}" }) { term ->
+            items(MorphologyMaps.MORPHOLOGY_TERMS, key = { "term_${it.code}_${it.nameAr}" }) { term ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()

@@ -59,7 +59,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.core.util.AppLanguage
-import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
+import io.github.ahmedsaadi0.quranwords.core.util.QuranStats
+import io.github.ahmedsaadi0.quranwords.core.util.SurahMetadata
 import io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState
 import io.github.ahmedsaadi0.quranwords.ui.components.DbUpdateBanner
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
@@ -100,7 +101,7 @@ fun HomeScreen(
         if (isDbReady) dbUpdateViewModel.checkOnce()
     }
 
-    val lastSurahMeta = QuranMetaConstants.SURAHS.firstOrNull { it.id == lastReadSurah } ?: QuranMetaConstants.SURAHS[0]
+    val lastSurahMeta = SurahMetadata.SURAHS.firstOrNull { it.id == lastReadSurah } ?: SurahMetadata.SURAHS[0]
     val darkModeSetting by mainViewModel.darkModeSetting.collectAsStateWithLifecycle()
     val language by mainViewModel.language.collectAsStateWithLifecycle()
     var showThemeDialog by remember { mutableStateOf(false) }
@@ -571,14 +572,14 @@ fun HomeScreen(
                         StatCard(
                             title = stringResource(R.string.home_stat_unique),
                             tag = "unique",
-                            value = QuranMetaConstants.STATS_UNIQUE_WORDS,
+                            value = QuranStats.STATS_UNIQUE_WORDS,
                             icon = "📝",
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             title = stringResource(R.string.home_stat_verified),
                             tag = "verified",
-                            value = QuranMetaConstants.STATS_VERIFIED_ROOTS,
+                            value = QuranStats.STATS_VERIFIED_ROOTS,
                             icon = "🌿",
                             modifier = Modifier.weight(1f)
                         )
@@ -590,14 +591,14 @@ fun HomeScreen(
                         StatCard(
                             title = stringResource(R.string.home_stat_masadir),
                             tag = "masadir",
-                            value = QuranMetaConstants.STATS_MASADIR,
+                            value = QuranStats.STATS_MASADIR,
                             icon = "📚",
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             title = stringResource(R.string.home_stat_derivatives),
                             tag = "derivatives",
-                            value = QuranMetaConstants.STATS_DERIVATIVES,
+                            value = QuranStats.STATS_DERIVATIVES,
                             icon = "✨",
                             modifier = Modifier.weight(1f)
                         )
@@ -609,14 +610,14 @@ fun HomeScreen(
                         StatCard(
                             title = stringResource(R.string.home_stat_positions),
                             tag = "positions",
-                            value = QuranMetaConstants.STATS_WORD_POSITIONS,
+                            value = QuranStats.STATS_WORD_POSITIONS,
                             icon = "📍",
                             modifier = Modifier.weight(1f)
                         )
                         StatCard(
                             title = stringResource(R.string.home_stat_ayat),
                             tag = "ayat",
-                            value = QuranMetaConstants.STATS_AYAT,
+                            value = QuranStats.STATS_AYAT,
                             icon = "۝",
                             modifier = Modifier.weight(1f)
                         )

@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.core.util.BookmarkRef
-import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
+import io.github.ahmedsaadi0.quranwords.core.util.SurahMetadata
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
 
@@ -183,7 +183,7 @@ private fun SurahBookmarkCard(
     modifier: Modifier = Modifier
 ) {
     val surahId = ref.surahId
-    val meta = QuranMetaConstants.SURAHS.firstOrNull { it.id == surahId }
+    val meta = SurahMetadata.SURAHS.firstOrNull { it.id == surahId }
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -257,7 +257,7 @@ private fun AyahBookmarkCard(
 ) {
     val surahId = ref.surahId
     val ayahNum = ref.ayah ?: 0
-    val meta = QuranMetaConstants.SURAHS.firstOrNull { it.id == surahId }
+    val meta = SurahMetadata.SURAHS.firstOrNull { it.id == surahId }
     Card(
         modifier = modifier
             .fillMaxWidth()

@@ -2,7 +2,7 @@
 
 > Sub-roadmap of `AGENTS.md §22`. Scope: `ui/screens/`, `ui/viewmodel/`, `ui/navigation/`, `ui/components/`.
 > Reference pattern: `ui/roots/detail/` — the completed RootDetail refactor (see `REFACTOR_PLAN.md`).
-> Status: **Phase 1–4 ✅ verified, Phase 5–7 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
+> Status: **Phase 1–7 ✅ verified, Phase 8 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
 
 ---
 
@@ -157,8 +157,10 @@
 - [x] `BookmarksRoute` + stateless `BookmarksScreen` split into `SurahBookmarkCard`/`AyahBookmarkCard`; ❌ remove IconButtons → `Icons.Outlined.Close` + `contentDescription` (`cd_remove_bookmark` en/ar); ⭐ empty-state → `Icons.Outlined.Star`; ALL testTags preserved (`bookmarks_screen`, `bookmark_surah_*`, `remove_bookmark_surah_*`, `bookmark_ayah_*`, `remove_bookmark_ayah_*`, `back_button`); `ui/screens/BookmarksScreen.kt` deleted.
 - [x] ViewModels.kt **810 → 577 lines** (Main, Home, SurahDetail, DatabaseSetup, DbUpdate remain); AppNavigation switched to 3 new Routes.
 
-### Phase 8 — MorphologyGuide (trivial)
-- [ ] `QuranMetaConstants` morphology maps → `core/util/MorphologyMaps.kt` (AGENTS §14); drop unused imports; locale branch → resource qualifier. (No VM.)
+### Phase 8 — MorphologyGuide (trivial) — ✅ implemented
+- [x] **`data/util/QuranMetaConstants.kt` (390 L) deleted** and split into `core/util/` per AGENTS §14: `SurahMetadata` (SurahMeta/JuzMeta + SURAHS + JUZ_LIST), `MorphologyMaps` (MorphologyTerm + POS/FORMS/ASPECT/MOOD/VOICE/CASE/STATE/DERIVATION AR+EN maps + FORM_ORDINAL_AR + MORPHOLOGY_TERMS), `QuranStats` extended with the 6 corpus STATS_ constants.
+- [x] All 7 consumers migrated atomically (QuranRepositoryImpl, HomeScreen, BookmarksScreen, SurahIndexScreen, MorphologyGuideScreen, RevelationType + its test) — `data.util` package **no longer exists**; grep-verified.
+- [x] MorphologyGuideScreen moved → `ui/guide/` (package update, unused `Emerald700`/`QuranGold` dropped); AppNavigation import updated. Locale AR/EN map selection kept in the screen (documented deviation: dictionary reference data with explicit AR/EN variants, not UI strings — converting to resources would add churn with no user-visible gain; revisit at closure if desired). No VM needed (static screen).
 
 ### Phase 9 — Home + Settings (big but low interaction risk)
 - [ ] Split → `HomeScreen` (<200) + `HomeHeader`, `DbBanner`, `QuickNavRow`, `StatsGrid`, `FeaturedRoots`; **extract `HomeViewModel` → `ui/home/`**, `DbUpdateViewModel` → `ui/appstate/`; `ThemeChooserDialog` + theme/language setters → `ui/settings/SettingsDialog` + `SettingsViewModel`; ⚙️🎨🌓🔖⭐💾📖 → vectors; 40dp → 48dp; HomeScreen drops MainViewModel.

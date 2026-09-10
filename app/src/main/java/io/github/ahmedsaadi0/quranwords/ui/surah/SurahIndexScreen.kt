@@ -57,7 +57,7 @@ import androidx.compose.ui.unit.sp
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.core.util.QuranStats
 import io.github.ahmedsaadi0.quranwords.core.util.RevelationFilter
-import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
+import io.github.ahmedsaadi0.quranwords.core.util.SurahMetadata
 import io.github.ahmedsaadi0.quranwords.ui.components.SurahItemCard
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -301,7 +301,7 @@ private fun JuzTab(onNavigateToSurahDetail: (Int) -> Unit) {
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        items(QuranMetaConstants.JUZ_LIST, key = { it.id }) { juz ->
+        items(SurahMetadata.JUZ_LIST, key = { it.id }) { juz ->
             Card(
                 modifier = Modifier
                     .fillMaxWidth()

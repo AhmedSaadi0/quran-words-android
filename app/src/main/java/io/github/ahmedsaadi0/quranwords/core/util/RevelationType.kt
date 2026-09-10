@@ -1,6 +1,6 @@
 package io.github.ahmedsaadi0.quranwords.core.util
 
-import io.github.ahmedsaadi0.quranwords.data.util.SurahMeta
+import io.github.ahmedsaadi0.quranwords.core.util.SurahMeta
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 
 /**

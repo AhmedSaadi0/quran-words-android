@@ -42,7 +42,7 @@ import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.word.WordAyatRoute
 import io.github.ahmedsaadi0.quranwords.ui.screens.DatabaseSetupScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.HomeScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.MorphologyGuideScreen
+import io.github.ahmedsaadi0.quranwords.ui.guide.MorphologyGuideScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahDetailScreen
 import io.github.ahmedsaadi0.quranwords.ui.search.SearchRoute
 import io.github.ahmedsaadi0.quranwords.ui.surah.SurahIndexRoute
