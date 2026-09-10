@@ -1,8 +1,7 @@
-package io.github.ahmedsaadi0.quranwords.ui.screens
+package io.github.ahmedsaadi0.quranwords.ui.roots
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -19,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -30,50 +30,33 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.ahmedsaadi0.quranwords.R
-import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.ui.components.RootItemCard
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RootsListScreen(
+    uiState: RootsListUiState,
+    onEvent: (RootsListEvent) -> Unit,
     onNavigateBack: () -> Unit,
-    onNavigateToRootDetail: (Int) -> Unit,
-    rootViewModel: RootViewModel
+    onNavigateToRootDetail: (Int) -> Unit
 ) {
-    val roots by rootViewModel.roots.collectAsStateWithLifecycle()
-    val isLoading by rootViewModel.isLoading.collectAsStateWithLifecycle()
-    val query by rootViewModel.query.collectAsStateWithLifecycle()
-
-    val filteredRoots = remember(roots, query) {
-        val q = ArabicNormalizer.normalizeAr(query)
-        if (q.isBlank()) roots else {
-            roots.filter {
-                ArabicNormalizer.normalizeAr(it.root).contains(q) ||
-                (it.glossAr != null && ArabicNormalizer.normalizeAr(it.glossAr).contains(q))
-            }
-        }
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "${stringResource(R.string.roots_title)} (${pluralStringResource(R.plurals.roots_count, roots.size, roots.size)})",
+                        text = "${stringResource(R.string.roots_title)} (${pluralStringResource(R.plurals.roots_count, uiState.totalCount, uiState.totalCount)})",
                         fontWeight = FontWeight.Bold
                     )
                 },
@@ -104,15 +87,15 @@ fun RootsListScreen(
         ) {
             // Search box - M3 small shape 12dp for input chips
             OutlinedTextField(
-                value = query,
-                onValueChange = { rootViewModel.setQuery(it) },
+                value = uiState.query,
+                onValueChange = { query -> onEvent(RootsListEvent.QueryChanged(query)) },
                 placeholder = { Text(stringResource(R.string.roots_search_hint)) },
                 leadingIcon = {
                     Icon(imageVector = Icons.Default.Search, contentDescription = null)
                 },
                 trailingIcon = {
-                    if (query.isNotBlank()) {
-                        IconButton(onClick = { rootViewModel.setQuery("") }) {
+                    if (uiState.query.isNotBlank()) {
+                        IconButton(onClick = { onEvent(RootsListEvent.QueryChanged("")) }) {
                             Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.cd_clear))
                         }
                     }
@@ -125,38 +108,87 @@ fun RootsListScreen(
                     .testTag("root_search_input")
             )
 
-            if (isLoading && roots.isEmpty()) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                }
-            } else {
-                // Search filtering animation - Crossfade for query changes
-                Crossfade(
-                    targetState = query,
-                    animationSpec = tween(durationMillis = AppMotion.DurationMedium),
-                    label = "rootsSearchCrossfade"
-                ) { _ ->
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(filteredRoots, key = { it.id }) { rootItem ->
-                            RootItemCard(
-                                rootItem = rootItem,
-                                onClick = { onNavigateToRootDetail(rootItem.id) },
-                                modifier = Modifier.animateItem()
-                            )
-                        }
-                        item {
-                            Spacer(modifier = Modifier.height(24.dp))
-                        }
-                    }
-                }
+            val loadError = uiState.error
+            when {
+                uiState.isLoading && uiState.totalCount == 0 -> RootsListLoading()
+                loadError != null -> RootsListError(
+                    message = loadError,
+                    onRetry = { onEvent(RootsListEvent.Retry) }
+                )
+                !uiState.isLoading && uiState.totalCount == 0 -> RootsListError(
+                    message = stringResource(R.string.roots_error_load),
+                    onRetry = { onEvent(RootsListEvent.Retry) }
+                )
+                uiState.filteredRoots.isEmpty() -> EmptyTabNotice(
+                    text = stringResource(R.string.roots_empty_results)
+                )
+                else -> RootsListContent(
+                    uiState = uiState,
+                    onNavigateToRootDetail = onNavigateToRootDetail
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RootsListLoading() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+@Composable
+private fun RootsListError(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(onClick = onRetry, modifier = Modifier.testTag("roots_retry_btn")) {
+            Text(stringResource(R.string.common_retry))
+        }
+    }
+}
+
+@Composable
+private fun RootsListContent(
+    uiState: RootsListUiState,
+    onNavigateToRootDetail: (Int) -> Unit
+) {
+    // Search filtering animation - Crossfade for query changes
+    Crossfade(
+        targetState = uiState.query,
+        animationSpec = tween(durationMillis = AppMotion.DurationMedium),
+        label = "rootsSearchCrossfade"
+    ) { _ ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            items(uiState.filteredRoots, key = { it.id }) { rootItem ->
+                RootItemCard(
+                    rootItem = rootItem,
+                    onClick = { onNavigateToRootDetail(rootItem.id) },
+                    modifier = Modifier.animateItem()
+                )
+            }
+            item {
+                Spacer(modifier = Modifier.height(24.dp))
             }
         }
     }

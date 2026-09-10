@@ -48,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.CopyAllActionBar
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.AyahOccurrenceCard
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.WordAyatViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -218,7 +220,7 @@ fun WordAyatScreen(
                                 .padding(horizontal = 16.dp, vertical = 5.dp)
                                 .animateItem()
                         ) {
-                            AyahOccurrenceCard(
+                            AyahOccurrenceCard (
                                 occ = occ,
                                 onClick = { onNavigateToSurahDetail(occ.surahId, occ.ayahNum) }
                             )

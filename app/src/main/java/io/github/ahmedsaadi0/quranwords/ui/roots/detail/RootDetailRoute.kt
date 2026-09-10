@@ -12,12 +12,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.core.util.QuranCopyFormatter
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.util.rememberShareHandler
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
 import kotlinx.coroutines.launch
 
 /**
  * Stateful entry point: the ONLY layer aware of the ViewModel, coroutine
- * scope and platform context. Collects [RootViewModel.uiState] once,
+ * scope and platform context. Collects [RootDetailViewModel.uiState] once,
  * routes [RootDetailEvent] (state → VM, platform → ShareHandler) and
  * delegates one-shot [RootDetailEffect] navigation.
  */
@@ -27,20 +26,20 @@ fun RootDetailRoute(
     onNavigateBack: () -> Unit,
     onNavigateToSurahDetail: (Int, Int) -> Unit,
     onNavigateToWordAyat: (Int, Int) -> Unit = { _, _ -> },
-    rootViewModel: RootViewModel = hiltViewModel(),
+    viewModel: RootDetailViewModel = hiltViewModel(),
 ) {
-    val uiState by rootViewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val shareHandler = rememberShareHandler(snackbarHostState, scope)
     val context = LocalContext.current
 
     LaunchedEffect(rootId) {
-        rootViewModel.onEvent(RootDetailEvent.Load(rootId))
+        viewModel.onEvent(RootDetailEvent.Load(rootId))
     }
 
-    LaunchedEffect(rootViewModel) {
-        rootViewModel.effect.collect { effect ->
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
             when (effect) {
                 is RootDetailEffect.NavigateToSurah ->
                     onNavigateToSurahDetail(effect.surahId, effect.ayahNum)
@@ -53,7 +52,7 @@ fun RootDetailRoute(
     RootDetailScreen(
         uiState = uiState,
         rootId = rootId,
-        onEvent = { event -> handleRootDetailEvent(event, uiState, rootViewModel, shareHandler, context, scope) },
+        onEvent = { event -> handleRootDetailEvent(event, uiState, viewModel, shareHandler, context, scope) },
         onNavigateBack = onNavigateBack,
         snackbarHostState = snackbarHostState
     )
@@ -62,7 +61,7 @@ fun RootDetailRoute(
 private fun handleRootDetailEvent(
     event: RootDetailEvent,
     uiState: RootDetailUiState,
-    viewModel: RootViewModel,
+    viewModel: RootDetailViewModel,
     shareHandler: io.github.ahmedsaadi0.quranwords.ui.roots.detail.util.ShareHandler,
     context: android.content.Context,
     scope: kotlinx.coroutines.CoroutineScope,

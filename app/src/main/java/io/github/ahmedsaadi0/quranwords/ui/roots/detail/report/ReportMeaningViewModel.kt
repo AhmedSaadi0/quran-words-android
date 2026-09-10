@@ -1,16 +1,16 @@
-package io.github.ahmedsaadi0.quranwords.ui.viewmodel
+package io.github.ahmedsaadi0.quranwords.ui.roots.detail.report
 
-import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.github.ahmedsaadi0.quranwords.BuildConfig
+import io.github.ahmedsaadi0.quranwords.core.util.BuildInfo
+import io.github.ahmedsaadi0.quranwords.core.util.Result
+import io.github.ahmedsaadi0.quranwords.core.util.runCatchingResult
 import io.github.ahmedsaadi0.quranwords.domain.repository.DbUpdateRepository
 import io.github.ahmedsaadi0.quranwords.util.MeaningReportContent
 import io.github.ahmedsaadi0.quranwords.util.MeaningReportType
 import io.github.ahmedsaadi0.quranwords.util.ReportAyahSample
 import io.github.ahmedsaadi0.quranwords.util.validateMeaningReport
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,10 +21,12 @@ import kotlinx.coroutines.launch
  * نموذج البلاغ عن الملخص الذكي: حالة خفيفة لحوار واحد (نوع + نصوص).
  * الهدف ثابت دائمًا: المعنى المكتوب بالذكاء الاصطناعي.
  * التحقق وبناء المحتوى دوال خالصة في util لتبقى قابلة للاختبار دون إطار أندرويد.
+ * Platform facts come from injected [BuildInfo] — testable without Android.
  */
 @HiltViewModel
 class ReportMeaningViewModel @Inject constructor(
-    private val dbUpdateRepository: DbUpdateRepository
+    private val dbUpdateRepository: DbUpdateRepository,
+    private val buildInfo: BuildInfo
 ) : ViewModel() {
 
     companion object {
@@ -48,11 +50,13 @@ class ReportMeaningViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            try {
-                val installed = dbUpdateRepository.getInstalledVersion()
-                _dbVersionName.value = installed.versionName
-                _dbVersionCode.value = installed.versionCode
-            } catch (_: Exception) {
+            when (val result = runCatchingResult { dbUpdateRepository.getInstalledVersion() }) {
+                is Result.Success -> {
+                    _dbVersionName.value = result.data.versionName
+                    _dbVersionCode.value = result.data.versionCode
+                }
+                // Unknown DB version degrades to empty defaults; not a report blocker.
+                is Result.Error -> Unit
             }
         }
     }
@@ -92,15 +96,11 @@ class ReportMeaningViewModel @Inject constructor(
             description = _description.value.trim(),
             suggestion = _suggestion.value.trim(),
             samples = samples,
-            appVersion = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            appVersion = buildInfo.appVersion,
             dbVersionName = _dbVersionName.value,
             dbVersionCode = _dbVersionCode.value,
-            androidRelease = Build.VERSION.RELEASE ?: "",
-            locale = try {
-                Locale.getDefault().toLanguageTag()
-            } catch (_: Exception) {
-                ""
-            }
+            androidRelease = buildInfo.androidRelease,
+            locale = buildInfo.locale
         )
     }
 }

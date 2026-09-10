@@ -2,7 +2,7 @@
 
 > Sub-roadmap of `AGENTS.md §22`. Scope: `ui/screens/`, `ui/viewmodel/`, `ui/navigation/`, `ui/components/`.
 > Reference pattern: `ui/roots/detail/` — the completed RootDetail refactor (see `REFACTOR_PLAN.md`).
-> Status: **Phase 1 ✅ verified, Phase 2 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
+> Status: **Phase 1–2 ✅ verified, Phase 3 implemented (awaiting verification).** Execute phases in order; one phase per PR; user verifies between phases.
 
 ---
 
@@ -128,11 +128,14 @@
 
 ---
 
-### Phase 3 — Roots feature (cards split + RootsList + RootDetail VM extraction)
-- [ ] Split `RootDetailCards.kt` (422 L) → `ui/roots/detail/components/cards/` (5 cards ~80 L each); `buildHighlightedAyahText` → `core/util/AyahHighlighter.kt` + unit tests.
-- [ ] **Extract `RootViewModel` → `ui/roots/`**; adopt `SelectionState`; Result mapping for loadRoots/loadRootWords; split RootsList concerns from detail if clean.
-- [ ] RootsList: filtering/normalization → VM; **add empty + error states**; add missing testTags (`masdar_item_*`, `derivative_item_*`, `occurrence_item_*`).
-- [ ] **Extract `ReportMeaningViewModel` → `ui/roots/detail/report/`**; fix silent init catch; injectable `BuildInfo`.
+### Phase 3 — Roots feature (cards split + RootsList + RootDetail VM extraction) — ✅ implemented
+- [x] Split `RootDetailCards.kt` (422 L) → `ui/roots/detail/components/cards/` (6 files: EmptyTabNotice, MeaningCard, MasdarCard, DerivativeCard, WordCard, AyahOccurrenceCard); `buildHighlightedAyahText` → pure `core/util/AyahHighlighter.matchRanges` + 7 unit tests (Compose-free); new testTags `masdar_item_*`, `derivative_item_*`, `occurrence_item_<surah>_<ayah>`.
+- [x] **Extracted `RootDetailViewModel` → `ui/roots/detail/`** (from `RootViewModel`): `SelectionState` adopted for word + meaning selection (kills 2 duplicated blocks); loadRootWords Result-mapped; detail/words failures surface via `RootDetailUiState.error`; pagination/SavedStateHandle/copy flows ported 1:1. `RootDetailRoute` now owns its VM (no nav-level passing).
+- [x] **RootsList atomic migration**: `RootsListContract` + `RootsListViewModel` (Arabic-normalized filtering moved from composable `remember{}` into VM via combine; Result-mapped load; `Retry` event) + `RootsListRoute` + stateless `RootsListScreen` with **new empty + error/retry states** (`roots_empty_results`, `roots_error_load` en/ar); legacy testTags preserved (`back_button`, `roots_list_screen`, `root_search_input`); `ui/screens/RootsListScreen.kt` deleted.
+- [x] **`ReportMeaningViewModel` → `ui/roots/detail/report/`**: silent init catch → `runCatchingResult` with explicit degradation comment; `BuildInfo` injected via `core/di/BuildInfoModule` (BuildConfig/Build/Locale out of the VM); existing test updated.
+- [x] Tests migrated: `RootMeaningsTest`/`RootWordsTest` → `RootDetailViewModel` via `onEvent` UDF path + `SelectionState`; obsolete string-route test replaced with typed-route default (`SurahDetail.ayah == 1`).
+
+### Phase 4 — WordAyat (worst platform offender)
 
 ### Phase 4 — WordAyat (worst platform offender)
 - [ ] **Extract `WordAyatViewModel` → `ui/roots/word/`**; Contract + Route; **reuse `ShareHandler`** (kills clipboard/Intent/ActivityNotFound/context.getString in composable); pagination → `snapshotFlow` trigger; error state.

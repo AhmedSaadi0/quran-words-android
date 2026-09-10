@@ -14,10 +14,11 @@ import androidx.compose.ui.unit.dp
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.domain.model.MasdarModel
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.PaddedPagerItem
-import io.github.ahmedsaadi0.quranwords.ui.screens.EmptyTabNotice
-import io.github.ahmedsaadi0.quranwords.ui.screens.MasdarCard
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.MasdarCard
 
 /**
  * Masadir tab content (Phase 4).

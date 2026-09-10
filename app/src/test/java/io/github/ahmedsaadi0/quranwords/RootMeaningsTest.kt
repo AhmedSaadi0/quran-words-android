@@ -12,7 +12,8 @@ import io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel
 import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailEvent
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -82,38 +83,38 @@ class RootMeaningsTest {
 
     @Test
     fun `meaning selection transitions mirror words`() = runTest {
-        val vm = RootViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
         advanceUntilIdle()
 
-        assertFalse(vm.isMeaningSelectionMode.value)
-        vm.enterMeaningSelectionMode(1)
-        assertTrue(vm.isMeaningSelectionMode.value)
-        assertEquals(setOf(1), vm.selectedMeaningIds.value)
+        assertFalse(vm.meaningSelection.value.isSelectionMode)
+        vm.onEvent(RootDetailEvent.EnterMeaningSelection(1))
+        assertTrue(vm.meaningSelection.value.isSelectionMode)
+        assertEquals(setOf(1), vm.meaningSelection.value.selectedIds)
 
-        vm.toggleMeaningSelection(2)
-        assertEquals(setOf(1, 2), vm.selectedMeaningIds.value)
+        vm.onEvent(RootDetailEvent.ToggleMeaning(2))
+        assertEquals(setOf(1, 2), vm.meaningSelection.value.selectedIds)
 
-        vm.toggleMeaningSelection(1)
-        assertEquals(setOf(2), vm.selectedMeaningIds.value)
+        vm.onEvent(RootDetailEvent.ToggleMeaning(1))
+        assertEquals(setOf(2), vm.meaningSelection.value.selectedIds)
 
-        vm.clearMeaningSelection()
-        assertTrue(vm.selectedMeaningIds.value.isEmpty())
-        assertFalse(vm.isMeaningSelectionMode.value)
+        vm.onEvent(RootDetailEvent.ClearMeaningSelection)
+        assertTrue(vm.meaningSelection.value.selectedIds.isEmpty())
+        assertFalse(vm.meaningSelection.value.isSelectionMode)
     }
 
     @Test
     fun `selectAllMeanings selects every loaded meaning`() = runTest {
-        val vm = RootViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
-        vm.selectAllMeanings()
-        assertEquals(setOf(1, 2, 3), vm.selectedMeaningIds.value)
-        assertTrue(vm.isMeaningSelectionMode.value)
+        vm.onEvent(RootDetailEvent.SelectAllMeanings)
+        assertEquals(setOf(1, 2, 3), vm.meaningSelection.value.selectedIds)
+        assertTrue(vm.meaningSelection.value.isSelectionMode)
     }
 
     @Test
     fun `getAllMeaningsFormatted covers every meaning`() = runTest {
-        val vm = RootViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
         val formatted = vm.getAllMeaningsFormatted()
@@ -125,10 +126,10 @@ class RootMeaningsTest {
 
     @Test
     fun `getSelectedMeaningsFormatted filters by selection`() = runTest {
-        val vm = RootViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
-        vm.enterMeaningSelectionMode(2)
+        vm.onEvent(RootDetailEvent.EnterMeaningSelection(2))
         val formatted = vm.getSelectedMeaningsFormatted()
         assertTrue(formatted.contains("▪ الصحاح"))
         assertFalse(formatted.contains("▪ لسان العرب"))
@@ -137,7 +138,7 @@ class RootMeaningsTest {
 
     @Test
     fun `empty selection returns empty`() = runTest {
-        val vm = RootViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
         assertEquals("", vm.getSelectedMeaningsFormatted())

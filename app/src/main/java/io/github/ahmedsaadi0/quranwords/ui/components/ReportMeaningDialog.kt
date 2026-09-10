@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.ahmedsaadi0.quranwords.R
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.ReportMeaningViewModel
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.report.ReportMeaningViewModel
 import io.github.ahmedsaadi0.quranwords.util.MeaningReportLimits
 import io.github.ahmedsaadi0.quranwords.util.MeaningReportType
 import io.github.ahmedsaadi0.quranwords.util.ReportAyahSample

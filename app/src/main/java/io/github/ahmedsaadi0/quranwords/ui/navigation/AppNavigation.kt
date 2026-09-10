@@ -36,12 +36,12 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.ui.roots.RootsListRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailRoute
 import io.github.ahmedsaadi0.quranwords.ui.screens.BookmarksScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.DatabaseSetupScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.HomeScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.MorphologyGuideScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.RootsListScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SearchScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahDetailScreen
 import io.github.ahmedsaadi0.quranwords.ui.screens.SurahIndexScreen
@@ -50,7 +50,6 @@ import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.DatabaseSetupViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.HomeViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SearchViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahDetailViewModel
 import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahViewModel
@@ -193,12 +192,11 @@ fun AppNavigation(
             }
 
             composable<Roots> {
-                RootsListScreen(
+                RootsListRoute(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToRootDetail = { rootId ->
                         navController.navigate(RootDetail(rootId))
-                    },
-                    rootViewModel = hiltViewModel<RootViewModel>()
+                    }
                 )
             }
 
@@ -212,8 +210,7 @@ fun AppNavigation(
                     },
                     onNavigateToWordAyat = { rId, wId ->
                         navController.navigate(WordAyat(rId, wId))
-                    },
-                    rootViewModel = hiltViewModel<RootViewModel>()
+                    }
                 )
             }
 
