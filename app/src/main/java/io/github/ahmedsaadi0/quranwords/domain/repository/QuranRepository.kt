@@ -34,6 +34,8 @@ interface QuranRepository {
     suspend fun searchDerivativesPaged(query: String, limit: Int, offset: Int): List<DerivativeModel>
     suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah>
     suspend fun getPagesForSurah(surahId: Int): List<Int>
+    suspend fun getAyatByPage(page: Int): List<Ayah>
+    suspend fun getMushafPageCount(): Int
     fun isDatabaseReady(): Boolean
     fun closeDb()
 }

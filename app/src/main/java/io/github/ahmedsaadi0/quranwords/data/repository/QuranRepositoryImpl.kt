@@ -3,9 +3,11 @@ package io.github.ahmedsaadi0.quranwords.data.repository
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
+import androidx.annotation.VisibleForTesting
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
 import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.core.util.MorphologyMaps
+import io.github.ahmedsaadi0.quranwords.core.util.MushafConstants
 import io.github.ahmedsaadi0.quranwords.core.util.SurahMetadata
 import io.github.ahmedsaadi0.quranwords.core.di.IoDispatcher
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
@@ -43,9 +45,16 @@ class QuranRepositoryImpl @Inject constructor(
     @Volatile
     private var lastDbLength: Long = -1L
 
+    /**
+     * Minimum database file size accepted by [getDb]. Lowered in tests only so
+     * a minimal fixture database can be opened; production default unchanged.
+     */
+    @VisibleForTesting
+    internal var minDbFileSizeBytes: Long = 10_000_000L
+
     private fun getDb(): SQLiteDatabase? {
         val file = downloadManager.getDatabaseFile()
-        if (!file.exists() || file.length() < 10_000_000L) {
+        if (!file.exists() || file.length() < minDbFileSizeBytes) {
             return null
         }
         val modified = file.lastModified()
@@ -1055,6 +1064,59 @@ class QuranRepositoryImpl @Inject constructor(
         } catch (_: Exception) {
             return@withContext emptyList()
         }
+    }
+
+    override suspend fun getAyatByPage(page: Int): List<Ayah> = withContext(ioDispatcher) {
+        if (page <= 0) return@withContext emptyList()
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<Ayah>()
+        try {
+            val cursor = db.rawQuery(
+                "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE page_number = ? ORDER BY surah ASC, ayah ASC",
+                arrayOf(page.toString())
+            )
+            cursor.use { c ->
+                while (c.moveToNext()) {
+                    val ayahId = c.getInt(0)
+                    val surahId = c.getInt(1)
+                    val ayahNum = c.getInt(2)
+                    val words = loadWordsForAyah(db, ayahId)
+                    list.add(
+                        Ayah(
+                            id = ayahId,
+                            surah = surahId,
+                            ayah = ayahNum,
+                            textUthmani = c.getString(3) ?: "",
+                            textUthmaniPlain = c.getString(4) ?: "",
+                            textImlaei = c.getString(5) ?: "",
+                            wordCount = c.getInt(6),
+                            words = words,
+                            juz = if (c.isNull(7)) null else c.getInt(7),
+                            hizb = if (c.isNull(8)) null else c.getInt(8),
+                            rubElHizb = if (c.isNull(9)) null else c.getInt(9),
+                            pageNumber = if (c.isNull(10)) null else c.getInt(10)
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {
+        }
+        return@withContext list
+    }
+
+    override suspend fun getMushafPageCount(): Int = withContext(ioDispatcher) {
+        val db = getDb() ?: return@withContext MushafConstants.TOTAL_PAGES_FALLBACK
+        try {
+            val cursor = db.rawQuery("SELECT MAX(page_number) FROM ayat", null)
+            cursor.use {
+                if (it.moveToNext() && !it.isNull(0)) {
+                    val max = it.getInt(0)
+                    if (max > 0) return@withContext max
+                }
+            }
+        } catch (_: Exception) {
+        }
+        return@withContext MushafConstants.TOTAL_PAGES_FALLBACK
     }
 
     // Seed Data Providers for offline preview / fallback

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Icon
@@ -61,7 +62,8 @@ fun SurahDetailHeader(
     onNavigateBack: () -> Unit,
     onToggleBookmark: () -> Unit,
     onFontSizeChange: (Float) -> Unit,
-    onPageClick: (Int) -> Unit
+    onPageClick: (Int) -> Unit,
+    onOpenMushaf: (() -> Unit)? = null
 ) {
     Column(
         modifier = Modifier
@@ -115,16 +117,32 @@ fun SurahDetailHeader(
                 }
             }
 
-            IconButton(
-                onClick = onToggleBookmark,
-                modifier = Modifier.testTag("bookmark_button")
+            Row(
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = stringResource(R.string.cd_save_surah),
-                    tint = if (isBookmarked) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                if (onOpenMushaf != null) {
+                    IconButton(
+                        onClick = onOpenMushaf,
+                        modifier = Modifier.testTag("open_mushaf_reader")
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = stringResource(R.string.cd_open_mushaf),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                IconButton(
+                    onClick = onToggleBookmark,
+                    modifier = Modifier.testTag("bookmark_button")
+                ) {
+                    Icon(
+                        imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                        contentDescription = stringResource(R.string.cd_save_surah),
+                        tint = if (isBookmarked) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 

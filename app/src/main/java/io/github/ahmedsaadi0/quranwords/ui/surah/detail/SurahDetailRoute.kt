@@ -24,6 +24,7 @@ fun SurahDetailRoute(
     targetAyah: Int,
     onNavigateBack: () -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
+    onNavigateToMushaf: (surahId: Int, ayah: Int) -> Unit,
     viewModel: SurahDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.screenState.collectAsStateWithLifecycle()
@@ -68,6 +69,7 @@ fun SurahDetailRoute(
         onEvent = ::onEvent,
         onNavigateBack = onNavigateBack,
         onNavigateToRootDetail = onNavigateToRootDetail,
+        onOpenMushaf = { ayah -> onNavigateToMushaf(surahId, ayah) },
         snackbarHostState = snackbarHostState
     )
 }

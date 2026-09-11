@@ -103,6 +103,13 @@
     <string name="quarter_label">Quarter %1$d</string>
     <string name="page_label">Page %1$d</string>
 
+    <!-- Mushaf reader (Eastern-Arabic args %1$s current, %2$s total) -->
+    <string name="mushaf_page_counter">Page %1$s / %2$s</string>
+    <string name="mushaf_title">Mushaf</string>
+    <string name="cd_open_mushaf">Open Mushaf reader</string>
+    <string name="mushaf_page_unavailable">Page unavailable</string>
+    <string name="mushaf_retry">Retry</string>
+
     <!-- Morphology sheet -->
     <string name="morpho_ayah">Ayah %1$d</string>
     <string name="morpho_root">Root</string>

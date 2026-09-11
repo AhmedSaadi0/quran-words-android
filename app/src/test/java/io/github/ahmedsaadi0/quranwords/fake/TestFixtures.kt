@@ -93,14 +93,19 @@ class FakeQuranRepository(
     val searchResult: SearchResult = SearchResult(),
     val searchPageSize: Int = 20,
     var failGetAllRoots: Boolean = false,
-    var failSearch: Boolean = false
+    var failSearch: Boolean = false,
+    val pages: Map<Int, List<Ayah>> = emptyMap(),
+    val mushafPageCount: Int = 604,
+    var failPageLoad: Boolean = false,
+    val rootDetail: RootDetail? = null
 ) : QuranRepository {
 
     override fun getSurahs(): Flow<List<Surah>> = flowOf(emptyList())
     override suspend fun getSurahById(id: Int): Surah? = null
     override fun getAyatBySurah(surahId: Int): Flow<List<Ayah>> = flowOf(emptyList())
     override suspend fun getAyatBySurahPaged(surahId: Int, limit: Int, offset: Int): List<Ayah> = emptyList()
-    override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? = null
+    override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? =
+        pages.values.flatten().firstOrNull { it.surah == surahId && it.ayah == ayahNum }
 
     override suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem> =
         roots.drop(offset).take(limit)
@@ -110,7 +115,7 @@ class FakeQuranRepository(
         return roots
     }
 
-    override suspend fun getRootDetail(rootId: Int): RootDetail? = null
+    override suspend fun getRootDetail(rootId: Int): RootDetail? = rootDetail
     override suspend fun getRootByText(rootText: String): RootDetail? = null
     override suspend fun getRootOccurrencesPaged(rootId: Int, limit: Int, offset: Int): List<AyahOccurrenceModel> = emptyList()
     override suspend fun getAllRootOccurrences(rootId: Int): List<AyahOccurrenceModel> = emptyList()
@@ -146,6 +151,11 @@ class FakeQuranRepository(
     }
 
     override suspend fun getPagesForSurah(surahId: Int): List<Int> = emptyList()
+    override suspend fun getAyatByPage(page: Int): List<Ayah> {
+        if (failPageLoad) throw IllegalStateException("page load failed")
+        return pages[page] ?: emptyList()
+    }
+    override suspend fun getMushafPageCount(): Int = mushafPageCount
     override fun isDatabaseReady(): Boolean = true
     override fun closeDb() = Unit
 }

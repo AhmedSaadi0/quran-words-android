@@ -67,6 +67,8 @@ private class FakeQuranRepository(
     override suspend fun searchDerivativesPaged(query: String, limit: Int, offset: Int): List<io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel> = emptyList()
     override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah> = emptyList()
     override suspend fun getPagesForSurah(surahId: Int): List<Int> = emptyList()
+    override suspend fun getAyatByPage(page: Int): List<Ayah> = emptyList()
+    override suspend fun getMushafPageCount(): Int = 0
     override fun isDatabaseReady(): Boolean = true
     override fun closeDb() = Unit
 

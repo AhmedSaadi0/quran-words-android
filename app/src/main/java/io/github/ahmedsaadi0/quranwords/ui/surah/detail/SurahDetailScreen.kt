@@ -54,6 +54,7 @@ fun SurahDetailScreen(
     onEvent: (SurahDetailEvent) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
+    onOpenMushaf: (Int) -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
     val listState = rememberSaveable(surahId, saver = androidx.compose.foundation.lazy.LazyListState.Saver) {
@@ -170,6 +171,11 @@ fun SurahDetailScreen(
                     onPageClick = { page ->
                         pendingPage = page
                         onEvent(SurahDetailEvent.EnsurePageLoaded(page))
+                    },
+                    onOpenMushaf = {
+                        val visibleIdx = (listState.firstVisibleItemIndex - if (hasBasmalah) 1 else 0)
+                            .coerceIn(0, (uiState.ayat.size - 1).coerceAtLeast(0))
+                        onOpenMushaf(uiState.ayat.getOrNull(visibleIdx)?.ayah ?: targetAyah)
                     }
                 )
             }

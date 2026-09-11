@@ -86,6 +86,12 @@
     <string name="quarter_label">ربع %1$d</string>
     <string name="page_label">صفحة %1$d</string>
 
+    <string name="mushaf_page_counter">صفحة %1$s / %2$s</string>
+    <string name="mushaf_title">المصحف</string>
+    <string name="cd_open_mushaf">فتح قارئ المصحف</string>
+    <string name="mushaf_page_unavailable">الصفحة غير متوفرة</string>
+    <string name="mushaf_retry">إعادة المحاولة</string>
+
     <string name="morpho_ayah">الآية %1$d</string>
     <string name="morpho_root">الجذر اللغوي</string>
     <string name="morpho_details">تفاصيل الجذر والمشتقات</string>

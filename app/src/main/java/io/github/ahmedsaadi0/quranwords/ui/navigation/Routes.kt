@@ -15,6 +15,13 @@ data object SurahIndex
 @Serializable
 data class SurahDetail(val surahId: Int, val ayah: Int = 1)
 
+/**
+ * Mushaf page reader. [page] wins when > 0, otherwise the reader resolves
+ * ([surahId], [ayah]) to its exact Mushaf page on open.
+ */
+@Serializable
+data class SurahMushaf(val page: Int = 0, val surahId: Int = 0, val ayah: Int = 1)
+
 @Serializable
 data object Roots
 

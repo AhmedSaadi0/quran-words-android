@@ -43,6 +43,7 @@ import io.github.ahmedsaadi0.quranwords.ui.setup.DatabaseSetupRoute
 import io.github.ahmedsaadi0.quranwords.ui.guide.MorphologyGuideScreen
 import io.github.ahmedsaadi0.quranwords.ui.home.HomeRoute
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.SurahDetailRoute
+import io.github.ahmedsaadi0.quranwords.ui.mushaf.MushafReaderRoute
 import io.github.ahmedsaadi0.quranwords.ui.search.SearchRoute
 import io.github.ahmedsaadi0.quranwords.ui.surah.SurahIndexRoute
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -168,6 +169,22 @@ fun AppNavigation() {
                 SurahDetailRoute(
                     surahId = route.surahId,
                     targetAyah = route.ayah,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToRootDetail = { rootId ->
+                        navController.navigate(RootDetail(rootId))
+                    },
+                    onNavigateToMushaf = { surahId, ayah ->
+                        navController.navigate(SurahMushaf(surahId = surahId, ayah = ayah))
+                    }
+                )
+            }
+
+            composable<SurahMushaf> { backStackEntry ->
+                val route: SurahMushaf = backStackEntry.toRoute()
+                MushafReaderRoute(
+                    page = route.page,
+                    surahId = route.surahId,
+                    ayah = route.ayah,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToRootDetail = { rootId ->
                         navController.navigate(RootDetail(rootId))
