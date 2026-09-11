@@ -7,7 +7,7 @@ import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
 import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
 import io.github.ahmedsaadi0.quranwords.core.util.MorphologyMaps
 import io.github.ahmedsaadi0.quranwords.core.util.SurahMetadata
-import io.github.ahmedsaadi0.quranwords.di.IoDispatcher
+import io.github.ahmedsaadi0.quranwords.core.di.IoDispatcher
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
