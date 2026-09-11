@@ -9,7 +9,7 @@ import io.github.ahmedsaadi0.quranwords.ui.roots.detail.util.RootDetailTab
 /**
  * UDF contract for RootDetail (Phase 3).
  *
- * [RootDetailUiState] is derived in [io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel]
+ * [RootDetailUiState] is derived in [io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailViewModel]
  * via `combine` of the existing granular flows — no repository change.
  * Old granular flows stay (deprecated) until the UI fully migrates.
  */

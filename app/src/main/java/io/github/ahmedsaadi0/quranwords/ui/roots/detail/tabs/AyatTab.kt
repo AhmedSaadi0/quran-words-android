@@ -32,8 +32,9 @@ import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.CopyAllActionBar
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.PaddedPagerItem
-import io.github.ahmedsaadi0.quranwords.ui.screens.AyahOccurrenceCard
-import io.github.ahmedsaadi0.quranwords.ui.screens.EmptyTabNotice
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.AyahOccurrenceCard
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
+
 
 /**
  * Ayat occurrences tab content (Phase 4).
@@ -114,7 +115,7 @@ fun AyatTab(
                 key = { _, occ -> "${occ.surahId}-${occ.ayahNum}" }
             ) { _, occ ->
                 PaddedPagerItem {
-                    AyahOccurrenceCard(
+                    AyahOccurrenceCard (
                         occ = occ,
                         onClick = { onOccurrenceClick(occ.surahId, occ.ayahNum) }
                     )

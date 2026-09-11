@@ -12,7 +12,8 @@ import io.github.ahmedsaadi0.quranwords.domain.model.DbReleaseInfo
 import io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState
 import io.github.ahmedsaadi0.quranwords.domain.repository.DbCheckResult
 import io.github.ahmedsaadi0.quranwords.domain.repository.DbUpdateRepository
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.ReportMeaningViewModel
+import io.github.ahmedsaadi0.quranwords.core.util.BuildInfo
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.report.ReportMeaningViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -178,7 +179,10 @@ class MeaningReportTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun `viewmodel gates submit and builds content`() = runTest {
-        val vm = ReportMeaningViewModel(FakeDbUpdateRepo())
+        val vm = ReportMeaningViewModel(
+            FakeDbUpdateRepo(),
+            BuildInfo(appVersion = "0.2.1 (3)", androidRelease = "14", locale = "ar")
+        )
         advanceUntilIdle()
 
         assertFalse(vm.canSubmit.value)

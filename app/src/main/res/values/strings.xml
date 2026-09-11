@@ -81,8 +81,12 @@
 
     <!-- Shared content descriptions -->
     <string name="cd_back">Back</string>
+    <string name="cd_open_settings">Open settings</string>
+    <string name="cd_toggle_dynamic_color">Toggle dynamic color</string>
+    <string name="cd_toggle_dark_mode">Toggle dark mode</string>
     <string name="cd_clear">Clear</string>
     <string name="cd_cancel">Cancel</string>
+    <string name="cd_remove_bookmark">Remove bookmark</string>
 
     <!-- Surah header: %1$s = Arabic surah name (data, never translated) -->
     <string name="surah_title_template">Surah %1$s</string>
@@ -122,6 +126,9 @@
     <!-- Roots list -->
     <string name="roots_title">Quranic Root Lexicon</string>
     <string name="roots_search_hint">Search roots (e.g. كتب، علم، رحم)…</string>
+    <string name="roots_empty_results">No roots match your search.</string>
+    <string name="roots_error_load">Could not load the roots lexicon.</string>
+    <string name="word_ayat_error">Could not load word occurrences.</string>
 
     <!-- Bookmarks -->
     <string name="bookmarks_empty_title">No bookmarks yet</string>
@@ -190,6 +197,7 @@
     <string name="attested_badge">Attested in revelation</string>
     <string name="quranic_badge">Quranic</string>
     <string name="select_all">Select all</string>
+    <string name="cd_copy_selection">Copy selected ayat</string>
     <string name="copying">Copying…</string>
     <string name="copy_ayat">Copy ayat</string>
     <string name="copy_all">Copy all</string>

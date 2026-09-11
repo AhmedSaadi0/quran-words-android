@@ -3,11 +3,14 @@ import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesS
 plugins {
   alias(libs.plugins.android.application)
   alias(libs.plugins.kotlin.compose)
+  alias(libs.plugins.kotlin.serialization)
   alias(libs.plugins.google.devtools.ksp)
   alias(libs.plugins.roborazzi)
   alias(libs.plugins.secrets)
   alias(libs.plugins.google.services)
   alias(libs.plugins.hilt)
+  alias(libs.plugins.detekt)
+  alias(libs.plugins.spotless)
 }
 
 android {
@@ -74,6 +77,26 @@ secrets {
 
 googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
 
+detekt {
+  buildUponDefaultConfig = true
+  config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+  baseline = file("$rootDir/config/detekt/baseline.xml")
+  parallel = true
+}
+
+spotless {
+  kotlin {
+    target("**/*.kt")
+    targetExclude("**/build/**", "app/schemas/**")
+    ktlint("1.5.0")
+  }
+  kotlinGradle {
+    target("**/*.gradle.kts")
+    targetExclude("**/build/**")
+    ktlint("1.5.0")
+  }
+}
+
 // The Quran Words app is 100% offline-first. Firebase is used only for Crashlytics.
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
@@ -101,6 +124,7 @@ dependencies {
   implementation(libs.converter.moshi)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
+  implementation(libs.kotlinx.serialization.json)
   implementation(libs.logging.interceptor)
   implementation(libs.moshi.kotlin)
   implementation(libs.okhttp)
@@ -110,6 +134,7 @@ dependencies {
   testImplementation(libs.androidx.junit)
   testImplementation(libs.junit)
   testImplementation(libs.kotlinx.coroutines.test)
+  testImplementation(libs.turbine)
   testImplementation(libs.robolectric)
   testImplementation(libs.roborazzi)
   testImplementation(libs.roborazzi.compose)

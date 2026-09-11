@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.core.util.cleanAiDate
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -189,8 +190,6 @@ private fun AiSummarySection(
     aiDate: String?,
     isLoading: Boolean
 ) {
-    val hasTried = true
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -222,8 +221,9 @@ private fun AiSummarySection(
                 }
             }
             !aiSummary.isNullOrBlank() -> {
+                val summaryText = aiSummary
                 Text(
-                    text = aiSummary!!,
+                    text = summaryText,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 22.sp
@@ -244,7 +244,7 @@ private fun AiSummarySection(
                                     .padding(horizontal = 8.dp, vertical = 6.dp)
                             ) {
                                 Text(
-                                    text = "🤖 $model",
+                                    text = model,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -252,10 +252,7 @@ private fun AiSummarySection(
                             }
                         }
                         aiDate?.let { rawDate ->
-                            val dateTimeFormatted = try {
-                                val cleaned = rawDate.replace("T", " ")
-                                if (cleaned.length >= 16) cleaned.substring(0, 16) else cleaned
-                            } catch (_: Exception) { rawDate }
+                            val dateTimeFormatted = cleanAiDate(rawDate)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -265,7 +262,7 @@ private fun AiSummarySection(
                                     .padding(horizontal = 8.dp, vertical = 6.dp)
                             ) {
                                 Text(
-                                    text = "🕒 $dateTimeFormatted",
+                                    text = dateTimeFormatted,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -275,7 +272,7 @@ private fun AiSummarySection(
                     }
                 }
             }
-            hasTried -> {
+            else -> {
                 Text(
                     text = if (word.rootId == null) stringResource(R.string.morpho_no_root)
                     else stringResource(R.string.morpho_no_summary),

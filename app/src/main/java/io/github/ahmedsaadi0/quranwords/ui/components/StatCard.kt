@@ -13,15 +13,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -41,7 +46,7 @@ import java.util.Locale
 fun StatCard(
     title: String,
     value: Int,
-    icon: String,
+    icon: ImageVector,
     modifier: Modifier = Modifier,
     // Stable identifier for testTag: title is localized, so callers pass a
     // locale-independent tag (defaults to title for backward compatibility).
@@ -78,9 +83,11 @@ fun StatCard(
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = icon,
-                    fontSize = 20.sp
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(22.dp)
                 )
             }
             Column(
@@ -173,10 +180,12 @@ fun SurahItemCard(
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                // Bookmark toggle if provided
+                // Bookmark toggle if provided (48dp minimum touch target via
+                // minimumInteractiveComponentSize — visual chip stays compact).
                 if (onBookmarkClick != null) {
                     Box(
                         modifier = Modifier
+                            .minimumInteractiveComponentSize()
                             .clip(ShapeSmall)
                             .background(
                                 if (isBookmarked) MaterialTheme.colorScheme.primaryContainer
@@ -187,11 +196,12 @@ fun SurahItemCard(
                             .padding(horizontal = 8.dp, vertical = 4.dp)
                             .testTag("bookmark_surah_${surah.id}")
                     ) {
-                        Text(
-                            text = if (isBookmarked) "🔖" else "☆",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        Icon(
+                            imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                            contentDescription = null,
+                            tint = if (isBookmarked) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }

@@ -1,7 +1,7 @@
 package io.github.ahmedsaadi0.quranwords.data.remote
 
 import io.github.ahmedsaadi0.quranwords.core.util.DatabaseConstants
-import io.github.ahmedsaadi0.quranwords.di.IoDispatcher
+import io.github.ahmedsaadi0.quranwords.core.di.IoDispatcher
 import io.github.ahmedsaadi0.quranwords.domain.model.DbReleaseInfo
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext

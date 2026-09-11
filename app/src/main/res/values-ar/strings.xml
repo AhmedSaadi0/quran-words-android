@@ -67,8 +67,12 @@
     <string name="nav_guide">الدليل</string>
 
     <string name="cd_back">رجوع</string>
+    <string name="cd_open_settings">فتح الإعدادات</string>
+    <string name="cd_toggle_dynamic_color">تبديل الألوان الديناميكية</string>
+    <string name="cd_toggle_dark_mode">تبديل الوضع الداكن</string>
     <string name="cd_clear">مسح</string>
     <string name="cd_cancel">إلغاء</string>
+    <string name="cd_remove_bookmark">إزالة العلامة</string>
 
     <string name="surah_title_template">سُورَةُ %1$s</string>
     <string name="surah_detail_loading">جاري التحميل...</string>
@@ -102,6 +106,9 @@
 
     <string name="roots_title">معجم الجذور القرآنية</string>
     <string name="roots_search_hint">ابحث عن جذر (مثال: كتب، علم، رحم)...</string>
+    <string name="roots_empty_results">لا توجد جذور مطابقة لبحثك.</string>
+    <string name="roots_error_load">تعذر تحميل معجم الجذور.</string>
+    <string name="word_ayat_error">تعذر تحميل مواضع الكلمة.</string>
 
     <string name="bookmarks_empty_title">لا توجد إشارات مرجعية بعد</string>
     <string name="bookmarks_empty_hint">استخدم أيقونة ☆ في صفحة السور والآيات لحفظ ما تريد الرجوع إليه</string>
@@ -163,6 +170,7 @@
     <string name="attested_badge">وارد في التنزيل</string>
     <string name="quranic_badge">قرآني</string>
     <string name="select_all">تحديد الكل</string>
+    <string name="cd_copy_selection">نسخ الآيات المحددة</string>
     <string name="copying">جاري النسخ...</string>
     <string name="copy_ayat">نسخ الآيات</string>
     <string name="copy_all">نسخ الكل</string>

@@ -17,8 +17,9 @@ import androidx.compose.ui.unit.dp
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.PaddedPagerItem
-import io.github.ahmedsaadi0.quranwords.ui.screens.DerivativeCard
-import io.github.ahmedsaadi0.quranwords.ui.screens.EmptyTabNotice
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.DerivativeCard
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
+
 
 /**
  * Derivatives tab content (Phase 4).

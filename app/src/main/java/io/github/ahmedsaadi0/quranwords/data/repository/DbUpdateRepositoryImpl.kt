@@ -7,6 +7,7 @@ import io.github.ahmedsaadi0.quranwords.domain.model.DbInstalledVersion
 import io.github.ahmedsaadi0.quranwords.domain.model.DbReleaseInfo
 import io.github.ahmedsaadi0.quranwords.domain.model.DbUpdateState
 import io.github.ahmedsaadi0.quranwords.domain.repository.DbCheckResult
+import io.github.ahmedsaadi0.quranwords.domain.repository.UserPreferencesRepository
 import io.github.ahmedsaadi0.quranwords.domain.repository.DbUpdateRepository
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject

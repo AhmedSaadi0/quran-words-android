@@ -6,32 +6,19 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.ahmedsaadi0.quranwords.core.di.IoDispatcher
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
 import io.github.ahmedsaadi0.quranwords.data.remote.ManifestRemoteDataSource
 import io.github.ahmedsaadi0.quranwords.data.repository.DbUpdateRepositoryImpl
 import io.github.ahmedsaadi0.quranwords.data.repository.QuranRepositoryImpl
-import io.github.ahmedsaadi0.quranwords.data.repository.UserPreferencesRepository
 import io.github.ahmedsaadi0.quranwords.domain.repository.DbUpdateRepository
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
+import io.github.ahmedsaadi0.quranwords.domain.repository.UserPreferencesRepository
 import io.github.ahmedsaadi0.quranwords.domain.usecase.CheckDbUpdateUseCase
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
-import javax.inject.Qualifier
 import javax.inject.Singleton
-
-@Retention(AnnotationRetention.BINARY)
-@Qualifier
-annotation class IoDispatcher
-
-@Retention(AnnotationRetention.BINARY)
-@Qualifier
-annotation class MainDispatcher
-
-@Retention(AnnotationRetention.BINARY)
-@Qualifier
-annotation class DefaultDispatcher
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -93,22 +80,4 @@ object AppModule {
     ): QuranRepository {
         return QuranRepositoryImpl(context, downloadManager, ioDispatcher)
     }
-
-    @Provides
-    @Singleton
-    fun provideUserPreferencesRepository(@ApplicationContext context: Context): UserPreferencesRepository {
-        return UserPreferencesRepository(context)
-    }
-
-    @IoDispatcher
-    @Provides
-    fun provideIoDispatcher(): CoroutineDispatcher = Dispatchers.IO
-
-    @MainDispatcher
-    @Provides
-    fun provideMainDispatcher(): CoroutineDispatcher = Dispatchers.Main
-
-    @DefaultDispatcher
-    @Provides
-    fun provideDefaultDispatcher(): CoroutineDispatcher = Dispatchers.Default
 }

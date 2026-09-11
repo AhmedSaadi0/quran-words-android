@@ -9,9 +9,10 @@ import io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel
 import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
-import io.github.ahmedsaadi0.quranwords.ui.navigation.Screen
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.WordAyatViewModel
+import io.github.ahmedsaadi0.quranwords.ui.navigation.SurahDetail
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailEvent
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailViewModel
+import io.github.ahmedsaadi0.quranwords.ui.roots.word.WordAyatViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -108,8 +109,9 @@ class RootWordsTest {
     }
 
     @Test
-    fun `WordAyat route format is correct`() {
-        assertEquals("word_ayat/3/10", Screen.WordAyat.createRoute(3, 10))
+    fun `typed SurahDetail route defaults ayah to one`() {
+        assertEquals(1, SurahDetail(surahId = 5).ayah)
+        assertEquals(5, SurahDetail(surahId = 5).surahId)
     }
 
     @Test
@@ -139,39 +141,39 @@ class RootWordsTest {
     }
 
     @Test
-    fun `RootViewModel word selection transitions`() = runTest {
-        val vm = RootViewModel(FakeQuranRepository(), SavedStateHandle())
+    fun `RootDetailViewModel word selection transitions`() = runTest {
+        val vm = RootDetailViewModel(FakeQuranRepository(), SavedStateHandle())
         advanceUntilIdle()
 
-        assertFalse(vm.isWordSelectionMode.value)
-        vm.enterWordSelectionMode(10)
-        assertTrue(vm.isWordSelectionMode.value)
-        assertEquals(setOf(10), vm.selectedWordIds.value)
+        assertFalse(vm.wordSelection.value.isSelectionMode)
+        vm.onEvent(RootDetailEvent.WordLongPressed(10))
+        assertTrue(vm.wordSelection.value.isSelectionMode)
+        assertEquals(setOf(10), vm.wordSelection.value.selectedIds)
 
-        vm.toggleWordSelection(11)
-        assertEquals(setOf(10, 11), vm.selectedWordIds.value)
+        vm.onEvent(RootDetailEvent.WordClicked(rootId = 1, wordId = 11))
+        assertEquals(setOf(10, 11), vm.wordSelection.value.selectedIds)
 
-        vm.toggleWordSelection(10)
-        assertEquals(setOf(11), vm.selectedWordIds.value)
+        vm.onEvent(RootDetailEvent.WordClicked(rootId = 1, wordId = 10))
+        assertEquals(setOf(11), vm.wordSelection.value.selectedIds)
 
         vm.clearWordSelection()
-        assertTrue(vm.selectedWordIds.value.isEmpty())
-        assertFalse(vm.isWordSelectionMode.value)
+        assertTrue(vm.wordSelection.value.selectedIds.isEmpty())
+        assertFalse(vm.wordSelection.value.isSelectionMode)
     }
 
     @Test
-    fun `RootViewModel selectAllWords selects every loaded word`() = runTest {
-        val vm = RootViewModel(FakeQuranRepository(), SavedStateHandle())
+    fun `RootDetailViewModel selectAllWords selects every loaded word`() = runTest {
+        val vm = RootDetailViewModel(FakeQuranRepository(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
-        vm.selectAllWords()
-        assertEquals(setOf(10, 11, 12), vm.selectedWordIds.value)
-        assertTrue(vm.isWordSelectionMode.value)
+        vm.onEvent(RootDetailEvent.SelectAllWords)
+        assertEquals(setOf(10, 11, 12), vm.wordSelection.value.selectedIds)
+        assertTrue(vm.wordSelection.value.isSelectionMode)
     }
 
     @Test
-    fun `RootViewModel loads words on detail load`() = runTest {
-        val vm = RootViewModel(FakeQuranRepository(), SavedStateHandle())
+    fun `RootDetailViewModel loads words on detail load`() = runTest {
+        val vm = RootDetailViewModel(FakeQuranRepository(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
         assertEquals(3, vm.rootWords.value.size)

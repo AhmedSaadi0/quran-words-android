@@ -20,8 +20,9 @@ import io.github.ahmedsaadi0.quranwords.domain.model.RootMeaningModel
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.CopyAllActionBar
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.PaddedPagerItem
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.SelectionActionBar
-import io.github.ahmedsaadi0.quranwords.ui.screens.EmptyTabNotice
-import io.github.ahmedsaadi0.quranwords.ui.screens.MeaningCard
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.MeaningCard
+
 
 /**
  * Meanings tab content (Phase 4).

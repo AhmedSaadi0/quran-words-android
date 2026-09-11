@@ -4,9 +4,10 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
-import io.github.ahmedsaadi0.quranwords.data.util.ArabicNormalizer
-import io.github.ahmedsaadi0.quranwords.data.util.QuranMetaConstants
-import io.github.ahmedsaadi0.quranwords.di.IoDispatcher
+import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
+import io.github.ahmedsaadi0.quranwords.core.util.MorphologyMaps
+import io.github.ahmedsaadi0.quranwords.core.util.SurahMetadata
+import io.github.ahmedsaadi0.quranwords.core.di.IoDispatcher
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
@@ -124,7 +125,7 @@ class QuranRepositoryImpl @Inject constructor(
         }
 
         // Fallback Surahs
-        val fallback = QuranMetaConstants.SURAHS.map {
+        val fallback = SurahMetadata.SURAHS.map {
             Surah(it.id, it.nameAr, it.nameEn, it.ayahCount, it.revelationType, it.juzStart)
         }
         emit(fallback)
@@ -154,7 +155,7 @@ class QuranRepositoryImpl @Inject constructor(
                 // fallback
             }
         }
-        QuranMetaConstants.SURAHS.firstOrNull { it.id == id }?.let {
+        SurahMetadata.SURAHS.firstOrNull { it.id == id }?.let {
             Surah(it.id, it.nameAr, it.nameEn, it.ayahCount, it.revelationType, it.juzStart)
         }
     }
@@ -291,8 +292,8 @@ class QuranRepositoryImpl @Inject constructor(
             while (c.moveToNext()) {
                 val posCode = c.getString(8)
                 val formCode = c.getString(9)
-                val posAr = QuranMetaConstants.POS_MAP[posCode] ?: posCode
-                val formAr = QuranMetaConstants.FORMS_MAP[formCode] ?: formCode
+                val posAr = MorphologyMaps.POS_MAP[posCode] ?: posCode
+                val formAr = MorphologyMaps.FORMS_MAP[formCode] ?: formCode
 
                 words.add(
                     WordToken(

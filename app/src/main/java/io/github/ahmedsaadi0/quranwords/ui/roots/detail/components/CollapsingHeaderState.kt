@@ -15,15 +15,14 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import kotlin.math.roundToInt
 
 /**
- * Isolated collapse state for RootDetail header (Quick-Return / Enter Always).
+ * Isolated collapse state for RootDetail header (reveal-only-at-top).
  *
  * - Finger drag up collapses the subtitle first (`onPreScroll`, `delta < 0`).
- * - Finger drag down re-expands it immediately anywhere in the page
- *   (`onPreScroll`, `delta > 0`, before the list consumes anything) —
- *   mirroring SurahDetailScreen's proven behavior.
- * - Offset clamped to `[-effectiveHeight, 0]` (natural height capped to
- *   40% of the viewport so tabs stay grabbable at any font scale),
- *   progress = `1 + offset / height` (for alpha).
+ * - Finger drag down re-expands it ONLY from leftover deltas in `onPostScroll`
+ *   (i.e. the active LazyColumn has exhausted its scroll at index 0 / offset 0).
+ *   Mid-list scroll-ups never reveal the header.
+ * - Offset clamped to `[-subtitleHeight, 0]` (full natural AI-summary height,
+ *   no viewport cap), progress = `1 + offset / height` (for alpha).
  * - While multi-selecting (words/meanings), offset consumption is disabled
  *   so the header can't abruptly expand under the user's taps.
  *
@@ -53,32 +52,16 @@ class CollapsingHeaderState(
     var isSelectionMode: Boolean by mutableStateOf(false)
         internal set
 
-    /**
-     * Viewport cap in px, reported by the header's `BoxWithConstraints`
-     * (40% of the Scaffold content height). Transient layout data like
-     * [isSelectionMode] — deliberately NOT part of [Saver].
-     */
-    var maxHeightPx: Int by mutableIntStateOf(Int.MAX_VALUE)
-        internal set
-
-    /** Visible height budget: the natural height capped to the viewport share. */
-    val effectiveHeightPx: Int
-        get() = minOf(subtitleHeightPx, maxHeightPx)
-
-    /** True when the summary overflows the cap and is clipped. */
-    val isCapped: Boolean
-        get() = subtitleHeightPx > effectiveHeightPx && effectiveHeightPx > 0
-
     val collapseProgress: Float
-        get() = if (effectiveHeightPx > 0) {
-            (1f + (headerOffsetPx / effectiveHeightPx.toFloat())).coerceIn(0f, 1f)
+        get() = if (subtitleHeightPx > 0) {
+            (1f + (headerOffsetPx / subtitleHeightPx.toFloat())).coerceIn(0f, 1f)
         } else {
             1f
         }
 
     val currentHeightPx: Int
-        get() = if (effectiveHeightPx > 0) {
-            (effectiveHeightPx + headerOffsetPx.roundToInt()).coerceIn(0, effectiveHeightPx)
+        get() = if (subtitleHeightPx > 0) {
+            (subtitleHeightPx + headerOffsetPx.roundToInt()).coerceIn(0, subtitleHeightPx)
         } else {
             0
         }
@@ -94,14 +77,7 @@ class CollapsingHeaderState(
     fun onNaturalHeightMeasured(measuredPx: Int) {
         if (measuredPx > 0 && measuredPx != subtitleHeightPx) {
             subtitleHeightPx = measuredPx
-            headerOffsetPx = headerOffsetPx.coerceIn(-effectiveHeightPx.toFloat(), 0f)
-        }
-    }
-
-    fun onViewportCapChanged(capPx: Int) {
-        if (capPx > 0 && capPx != maxHeightPx) {
-            maxHeightPx = capPx
-            headerOffsetPx = headerOffsetPx.coerceIn(-effectiveHeightPx.toFloat(), 0f)
+            headerOffsetPx = headerOffsetPx.coerceIn(-subtitleHeightPx.toFloat(), 0f)
         }
     }
 
@@ -113,7 +89,7 @@ class CollapsingHeaderState(
      */
     fun onHandledDrag(delta: Float) {
         if (isSelectionMode || subtitleHeightPx <= 0) return
-        headerOffsetPx = (headerOffsetPx + delta).coerceIn(-effectiveHeightPx.toFloat(), 0f)
+        headerOffsetPx = (headerOffsetPx + delta).coerceIn(-subtitleHeightPx.toFloat(), 0f)
     }
 
     val nestedScrollConnection: NestedScrollConnection = HeaderNestedScrollConnection()
@@ -124,23 +100,34 @@ class CollapsingHeaderState(
             // can't abruptly expand under the user's taps and cause miss-clicks.
             if (isSelectionMode) return Offset.Zero
             val delta = available.y
-            if (effectiveHeightPx > 0) {
-                // Quick-Return (Enter Always), cf. SurahDetailScreen:
-                // collapse on drag-up, re-expand on drag-down anywhere in the
-                // page — consumed here in pre-scroll, before the list sees it.
-                if ((delta < 0f && headerOffsetPx > -effectiveHeightPx) ||
-                    (delta > 0f && headerOffsetPx < 0f)
-                ) {
-                    val prev = headerOffsetPx
-                    headerOffsetPx = (headerOffsetPx + delta).coerceIn(-effectiveHeightPx.toFloat(), 0f)
-                    return Offset(0f, headerOffsetPx - prev)
-                }
+            // Collapse only: consume upward drags before the list sees them.
+            if (delta < 0f && subtitleHeightPx > 0 && headerOffsetPx > -subtitleHeightPx) {
+                val prev = headerOffsetPx
+                headerOffsetPx = (headerOffsetPx + delta).coerceIn(-subtitleHeightPx.toFloat(), 0f)
+                return Offset(0f, headerOffsetPx - prev)
             }
             return Offset.Zero
         }
-        // NOTE: onPostScroll intentionally deleted — with both directions
-        // handled in pre-scroll (proven by SurahDetailScreen), a post handler
-        // would double-consume upward drags.
+
+        override fun onPostScroll(
+            consumed: Offset,
+            available: Offset,
+            source: NestedScrollSource,
+        ): Offset {
+            if (isSelectionMode) return Offset.Zero
+            // Expand only from leftover: the active LazyColumn consumed
+            // everything it could, so a remaining downward delta means the
+            // list is at index 0 / offset 0. Works across all pager tabs with
+            // zero LazyListState reads (no recomposition overhead) and handles
+            // flings that reach the top mid-gesture in the same motion.
+            val delta = available.y
+            if (delta > 0f && subtitleHeightPx > 0 && headerOffsetPx < 0f) {
+                val prev = headerOffsetPx
+                headerOffsetPx = (headerOffsetPx + delta).coerceIn(-subtitleHeightPx.toFloat(), 0f)
+                return Offset(0f, headerOffsetPx - prev)
+            }
+            return Offset.Zero
+        }
     }
 
     companion object {

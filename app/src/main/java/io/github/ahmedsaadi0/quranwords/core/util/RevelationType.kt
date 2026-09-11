@@ -1,6 +1,6 @@
 package io.github.ahmedsaadi0.quranwords.core.util
 
-import io.github.ahmedsaadi0.quranwords.data.util.SurahMeta
+import io.github.ahmedsaadi0.quranwords.core.util.SurahMeta
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 
 /**
@@ -15,3 +15,10 @@ val Surah.isMeccan: Boolean
 
 val SurahMeta.isMeccan: Boolean
     get() = revelationType == "مكية"
+
+/** Surah-index filter chips (Phase 6) — replaces the raw `"all"/"meccan"/"medinan"` strings. */
+enum class RevelationFilter {
+    ALL,
+    MECCAN,
+    MEDINAN
+}

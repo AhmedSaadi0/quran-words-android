@@ -25,8 +25,9 @@ import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.PaddedPagerItem
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.SelectionActionBar
-import io.github.ahmedsaadi0.quranwords.ui.screens.EmptyTabNotice
-import io.github.ahmedsaadi0.quranwords.ui.screens.WordCard
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
+import io.github.ahmedsaadi0.quranwords.ui.roots.detail.components.cards.WordCard
+
 
 /**
  * Words tab content (Phase 4).
@@ -105,7 +106,7 @@ fun WordsTab(
                 }
                 items(words, key = { it.wordId }) { word ->
                     PaddedPagerItem {
-                        WordCard(
+                        WordCard (
                             word = word,
                             isSelected = selectedIds.contains(word.wordId),
                             isSelectionMode = isSelectionMode,

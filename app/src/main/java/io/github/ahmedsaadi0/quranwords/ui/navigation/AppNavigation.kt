@@ -3,7 +3,14 @@ package io.github.ahmedsaadi0.quranwords.ui.navigation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Architecture
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -14,62 +21,57 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavType
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.toRoute
 import io.github.ahmedsaadi0.quranwords.R
-import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.screens.BookmarksScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.DatabaseSetupScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.HomeScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.MorphologyGuideScreen
+import io.github.ahmedsaadi0.quranwords.ui.bookmarks.BookmarksRoute
+import io.github.ahmedsaadi0.quranwords.ui.roots.RootsListRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailRoute
-import io.github.ahmedsaadi0.quranwords.ui.screens.RootsListScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.SearchScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.SurahDetailScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.SurahIndexScreen
-import io.github.ahmedsaadi0.quranwords.ui.screens.WordAyatScreen
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.DatabaseSetupViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.HomeViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.MainViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.RootViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SearchViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahDetailViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.SurahViewModel
-import io.github.ahmedsaadi0.quranwords.ui.viewmodel.WordAyatViewModel
+import io.github.ahmedsaadi0.quranwords.ui.roots.word.WordAyatRoute
+import io.github.ahmedsaadi0.quranwords.ui.setup.DatabaseSetupRoute
+import io.github.ahmedsaadi0.quranwords.ui.guide.MorphologyGuideScreen
+import io.github.ahmedsaadi0.quranwords.ui.home.HomeRoute
+import io.github.ahmedsaadi0.quranwords.ui.surah.detail.SurahDetailRoute
+import io.github.ahmedsaadi0.quranwords.ui.search.SearchRoute
+import io.github.ahmedsaadi0.quranwords.ui.surah.SurahIndexRoute
+import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 
 data class BottomNavItem(
-    val route: String,
-    val title: String,
-    val iconEmoji: String
+    val route: Any,
+    val labelRes: Int,
+    val icon: ImageVector,
+    val testTag: String
 )
 
+private val bottomNavItems = listOf(
+    BottomNavItem(Home, R.string.nav_home, Icons.Filled.Home, "nav_home"),
+    BottomNavItem(SurahIndex, R.string.nav_surahs, Icons.AutoMirrored.Filled.MenuBook, "nav_surahs"),
+    BottomNavItem(Roots, R.string.nav_roots, Icons.Filled.Eco, "nav_roots"),
+    BottomNavItem(Search, R.string.nav_search, Icons.Filled.Search, "nav_search"),
+    BottomNavItem(Guide, R.string.nav_guide, Icons.Filled.Architecture, "nav_guide")
+)
+
+private fun NavDestination?.isTopLevelDestination(item: BottomNavItem): Boolean =
+    this?.hasRoute(item.route::class) == true
+
 @Composable
-fun AppNavigation(
-    mainViewModel: MainViewModel
-) {
+fun AppNavigation() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val currentDestination = navBackStackEntry?.destination
 
-    val bottomNavItems = listOf(
-        BottomNavItem(Screen.Home.route, stringResource(R.string.nav_home), "🏠"),
-        BottomNavItem(Screen.SurahIndex.route, stringResource(R.string.nav_surahs), "📖"),
-        BottomNavItem(Screen.Roots.route, stringResource(R.string.nav_roots), "🌿"),
-        BottomNavItem(Screen.Search.route, stringResource(R.string.nav_search), "🔍"),
-        BottomNavItem(Screen.Guide.route, stringResource(R.string.nav_guide), "📐")
-    )
-
-    val showBottomBar = bottomNavItems.any { it.route == currentRoute }
+    val showBottomBar = bottomNavItems.any { currentDestination.isTopLevelDestination(it) }
 
     Scaffold(
         bottomBar = {
@@ -84,13 +86,13 @@ fun AppNavigation(
                     modifier = Modifier.testTag("main_bottom_nav")
                 ) {
                     bottomNavItems.forEach { item ->
-                        val selected = currentRoute == item.route
+                        val selected = currentDestination.isTopLevelDestination(item)
                         NavigationBarItem(
                             selected = selected,
                             onClick = {
-                                if (currentRoute != item.route) {
+                                if (!selected) {
                                     navController.navigate(item.route) {
-                                        popUpTo(Screen.Home.route) {
+                                        popUpTo(Home::class) {
                                             saveState = true
                                         }
                                         launchSingleTop = true
@@ -99,11 +101,14 @@ fun AppNavigation(
                                 }
                             },
                             icon = {
-                                Text(item.iconEmoji, fontSize = 20.sp)
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = stringResource(item.labelRes)
+                                )
                             },
                             label = {
                                 Text(
-                                    text = item.title,
+                                    text = stringResource(item.labelRes),
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                                     fontSize = 12.sp
                                 )
@@ -115,209 +120,125 @@ fun AppNavigation(
                                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                 unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                             ),
-                            modifier = Modifier.testTag("nav_${item.route}")
+                            modifier = Modifier.testTag(item.testTag)
                         )
                     }
                 }
             }
         },
-        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0)
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Home.route,
+            startDestination = Home,
             modifier = Modifier.padding(innerPadding),
             enterTransition = { AppMotion.navEnterTransition() },
             exitTransition = { AppMotion.navExitTransition() },
             popEnterTransition = { AppMotion.navPopEnterTransition() },
             popExitTransition = { AppMotion.navPopExitTransition() }
         ) {
-            composable(
-                Screen.Home.route,
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) {
-                HomeScreen(
-                    mainViewModel = mainViewModel,
-                    homeViewModel = hiltViewModel<HomeViewModel>(),
-                    onNavigateToSurahIndex = { navController.navigate(Screen.SurahIndex.route) },
+            composable<Home> {
+                HomeRoute(
+                    onNavigateToSurahIndex = { navController.navigate(SurahIndex) },
                     onNavigateToSurahDetail = { surahId, ayah ->
-                        navController.navigate(Screen.SurahDetail.createRoute(surahId, ayah))
+                        navController.navigate(SurahDetail(surahId, ayah))
                     },
-                    onNavigateToRoots = { navController.navigate(Screen.Roots.route) },
+                    onNavigateToRoots = { navController.navigate(Roots) },
                     onNavigateToRootDetail = { rootId ->
-                        navController.navigate(Screen.RootDetail.createRoute(rootId))
+                        navController.navigate(RootDetail(rootId))
                     },
-                    onNavigateToSearch = { navController.navigate(Screen.Search.route) },
-                    onNavigateToGuide = { navController.navigate(Screen.Guide.route) },
-                    onNavigateToSetup = { navController.navigate(Screen.DatabaseSetup.route) },
-                    onNavigateToBookmarks = { navController.navigate(Screen.Bookmarks.route) }
+                    onNavigateToSearch = { navController.navigate(Search) },
+                    onNavigateToGuide = { navController.navigate(Guide) },
+                    onNavigateToSetup = { navController.navigate(Setup) },
+                    onNavigateToBookmarks = { navController.navigate(Bookmarks) }
                 )
             }
 
-            composable(
-                Screen.SurahIndex.route,
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) {
-                SurahIndexScreen(
+            composable<SurahIndex> {
+                SurahIndexRoute(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId ->
-                        navController.navigate(Screen.SurahDetail.createRoute(surahId))
-                    },
-                    mainViewModel = mainViewModel,
-                    surahViewModel = hiltViewModel<SurahViewModel>()
-                )
-            }
-
-            composable(
-                route = Screen.SurahDetail.route,
-                arguments = listOf(
-                    navArgument("surahId") { type = NavType.IntType },
-                    navArgument("ayah") { type = NavType.IntType; defaultValue = 1 }
-                ),
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) { backStackEntry ->
-                val surahId = backStackEntry.arguments?.getInt("surahId") ?: 1
-                val targetAyah = backStackEntry.arguments?.getInt("ayah") ?: 1
-                SurahDetailScreen(
-                    surahId = surahId,
-                    targetAyah = targetAyah,
-                    mainViewModel = mainViewModel,
-                    surahDetailViewModel = hiltViewModel<SurahDetailViewModel>(),
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToRootDetail = { rootId ->
-                        navController.navigate(Screen.RootDetail.createRoute(rootId))
+                        navController.navigate(SurahDetail(surahId))
                     }
                 )
             }
 
-            composable(
-                Screen.Roots.route,
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) {
-                RootsListScreen(
+            composable<SurahDetail> { backStackEntry ->
+                val route: SurahDetail = backStackEntry.toRoute()
+                SurahDetailRoute(
+                    surahId = route.surahId,
+                    targetAyah = route.ayah,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToRootDetail = { rootId ->
-                        navController.navigate(Screen.RootDetail.createRoute(rootId))
-                    },
-                    rootViewModel = hiltViewModel<RootViewModel>()
+                        navController.navigate(RootDetail(rootId))
+                    }
                 )
             }
 
-            composable(
-                route = Screen.RootDetail.route,
-                arguments = listOf(navArgument("rootId") { type = NavType.IntType }),
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) { backStackEntry ->
-                val rootId = backStackEntry.arguments?.getInt("rootId") ?: 1
+            composable<Roots> {
+                RootsListRoute(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToRootDetail = { rootId ->
+                        navController.navigate(RootDetail(rootId))
+                    }
+                )
+            }
+
+            composable<RootDetail> { backStackEntry ->
+                val route: RootDetail = backStackEntry.toRoute()
                 RootDetailRoute(
-                    rootId = rootId,
+                    rootId = route.rootId,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId, ayahNum ->
-                        navController.navigate(Screen.SurahDetail.createRoute(surahId, ayahNum))
+                        navController.navigate(SurahDetail(surahId, ayahNum))
                     },
                     onNavigateToWordAyat = { rId, wId ->
-                        navController.navigate(Screen.WordAyat.createRoute(rId, wId))
-                    },
-                    rootViewModel = hiltViewModel<RootViewModel>()
+                        navController.navigate(WordAyat(rId, wId))
+                    }
                 )
             }
 
-            composable(
-                route = Screen.WordAyat.route,
-                arguments = listOf(
-                    navArgument("rootId") { type = NavType.IntType },
-                    navArgument("wordId") { type = NavType.IntType }
-                ),
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) { backStackEntry ->
-                val rootId = backStackEntry.arguments?.getInt("rootId") ?: 1
-                val wordId = backStackEntry.arguments?.getInt("wordId") ?: 0
-                WordAyatScreen(
-                    rootId = rootId,
-                    wordId = wordId,
+            composable<WordAyat> { backStackEntry ->
+                val route: WordAyat = backStackEntry.toRoute()
+                WordAyatRoute(
+                    rootId = route.rootId,
+                    wordId = route.wordId,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId, ayahNum ->
-                        navController.navigate(Screen.SurahDetail.createRoute(surahId, ayahNum))
-                    },
-                    viewModel = hiltViewModel<WordAyatViewModel>()
+                        navController.navigate(SurahDetail(surahId, ayahNum))
+                    }
                 )
             }
 
-            composable(
-                Screen.Search.route,
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) {
-                SearchScreen(
+            composable<Search> {
+                SearchRoute(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToRootDetail = { rootId ->
-                        navController.navigate(Screen.RootDetail.createRoute(rootId))
+                        navController.navigate(RootDetail(rootId))
                     },
                     onNavigateToSurahDetail = { surahId, ayahNum ->
-                        navController.navigate(Screen.SurahDetail.createRoute(surahId, ayahNum))
-                    },
-                    searchViewModel = hiltViewModel<SearchViewModel>()
+                        navController.navigate(SurahDetail(surahId, ayahNum))
+                    }
                 )
             }
 
-            composable(
-                Screen.Guide.route,
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) {
+            composable<Guide> {
                 MorphologyGuideScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
 
-            composable(
-                Screen.DatabaseSetup.route,
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) {
-                DatabaseSetupScreen(
-                    mainViewModel = mainViewModel,
-                    onNavigateBack = { navController.popBackStack() },
-                    setupViewModel = hiltViewModel<DatabaseSetupViewModel>()
+            composable<Setup> {
+                DatabaseSetupRoute(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 
-            composable(
-                Screen.Bookmarks.route,
-                enterTransition = { AppMotion.navEnterTransition() },
-                exitTransition = { AppMotion.navExitTransition() },
-                popEnterTransition = { AppMotion.navPopEnterTransition() },
-                popExitTransition = { AppMotion.navPopExitTransition() }
-            ) {
-                BookmarksScreen(
-                    mainViewModel = mainViewModel,
+            composable<Bookmarks> {
+                BookmarksRoute(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId, ayah ->
-                        navController.navigate(Screen.SurahDetail.createRoute(surahId, ayah))
+                        navController.navigate(SurahDetail(surahId, ayah))
                     }
                 )
             }
