@@ -17,14 +17,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.ReportProblem
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -33,19 +30,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -58,12 +48,16 @@ import io.github.ahmedsaadi0.quranwords.ui.roots.detail.util.RootDetailTab
 import kotlin.math.roundToInt
 
 /**
- * Collapsing header for RootDetail (Phase 5a).
+ * Collapsing header for RootDetail (reveal-only-at-top, full-height summary).
  *
  * Owns ONLY layout/draw reads of [CollapsingHeaderState]:
  * - natural height via `onSizeChanged` (no state-write inside `layout`),
- * - collapse via fixed height + `offset` + `graphicsLayer(alpha)`,
- * - same pixel physics as legacy (`offset` clamped, progress for alpha).
+ * - collapse via fixed height + `offset` + `graphicsLayer(alpha)`.
+ *
+ * The AI summary wraps its full natural height (no viewport cap, no dialog);
+ * collapse in `onPreScroll`, expand in `onPostScroll` (leftover deltas only,
+ * i.e. list at top). Direct `draggable` on the header is the fail-safe for
+ * over-viewport summaries.
  *
  * All text is precomputed by the ViewModel ([RootDetailUiState.subtitleText],
  * [RootDetailUiState.aiMetaLine]) — no date cleaning or string building here.
@@ -94,16 +88,6 @@ fun RootDetailHeader(
     val density = LocalDensity.current
     val currentHeightDp = with(density) {
         state.currentHeightPx.toDp()
-    }
-
-    var showFullSummary by remember { mutableStateOf(false) }
-
-    // 40% viewport cap so tabs + list head stay grabbable at any font scale.
-    // Screen height approximates the Scaffold content (no bottom bar on detail
-    // routes); recomputed automatically on rotation via LocalConfiguration.
-    val capDp = LocalConfiguration.current.screenHeightDp.dp * 0.4f
-    SideEffect {
-        state.onViewportCapChanged(with(density) { capDp.roundToPx() })
     }
 
     Column(
@@ -155,17 +139,17 @@ fun RootDetailHeader(
             }
         }
 
-        // Collapsible subtitle: fixed-height clip + offset (no layout-write).
-        // Capped to 40% of the viewport so tabs stay grabbable at any font
-        // scale; direct draggable drive fixes touch starvation when the
-        // summary fills the screen (plain Columns dispatch no nested scroll).
+        // Collapsible subtitle: full natural height + offset (no layout-write).
+        // No viewport cap — the AI summary always shows in full. Direct
+        // draggable drive fixes touch starvation when the summary fills the
+        // screen (plain Columns dispatch no nested scroll).
         if (hasSubtitle || hasAiMeta) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .then(
                         if (state.subtitleHeightPx > 0) {
-                            Modifier.height(minOf(currentHeightDp, capDp))
+                            Modifier.height(currentHeightDp)
                         } else {
                             Modifier
                         }
@@ -204,9 +188,7 @@ fun RootDetailHeader(
                         Text(
                             text = aiMetaLine,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     if (hasSubtitle) {
@@ -242,18 +224,6 @@ fun RootDetailHeader(
                             }
                         }
                     }
-                    if (state.isCapped && hasSubtitle) {
-                        TextButton(
-                            onClick = { showFullSummary = true },
-                            modifier = Modifier.testTag("read_more_summary_btn")
-                        ) {
-                            Text(
-                                text = stringResource(R.string.read_more),
-                                style = MaterialTheme.typography.labelMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                 }
             }
         }
@@ -265,42 +235,6 @@ fun RootDetailHeader(
             selectedTabIndex = selectedTabIndex,
             onTabClick = onTabClick
         )
-
-        if (showFullSummary && hasSubtitle) {
-            AlertDialog(
-                onDismissRequest = { showFullSummary = false },
-                title = {
-                    Text(
-                        text = stringResource(R.string.root_title_template, rootText),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                text = {
-                    Column(
-                        modifier = Modifier.verticalScroll(rememberScrollState())
-                    ) {
-                        Text(
-                            text = subtitleText ?: "",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        if (hasAiMeta && !aiMetaLine.isNullOrBlank()) {
-                            Text(
-                                text = aiMetaLine,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { showFullSummary = false }) {
-                        Text(stringResource(R.string.common_close))
-                    }
-                }
-            )
-        }
     }
 }
 

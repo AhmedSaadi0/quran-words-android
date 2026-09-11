@@ -27,7 +27,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -45,9 +44,11 @@ import kotlin.math.roundToInt
 
 /**
  * Surah header: pinned top bar (title + back + bookmark) above the
- * collapsible area (font controls + page chips). Collapse physics are
- * preserved 1:1 from the legacy implementation (quick-return / enter-always,
- * no layout-write on the parent).
+ * collapsible area (font controls + page chips). Collapse physics live in
+ * [rememberNestedScrollCollapse], which the caller must attach via
+ * `Modifier.nestedScroll(...)` to the common ancestor of this header and the
+ * scrollable ayat list — attaching it here would never receive deltas because
+ * this header has no scrollable child.
  */
 @Composable
 fun SurahDetailHeader(
@@ -57,20 +58,16 @@ fun SurahDetailHeader(
     surahPages: List<Int>,
     currentPage: Int?,
     collapseState: SurahCollapsingHeaderState,
-    isSelectionActive: Boolean,
     onNavigateBack: () -> Unit,
     onToggleBookmark: () -> Unit,
     onFontSizeChange: (Float) -> Unit,
     onPageClick: (Int) -> Unit
 ) {
-    val nestedScrollConnection = rememberNestedScrollCollapse(collapseState, isSelectionActive)
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .windowInsetsPadding(WindowInsets.statusBars)
-            .nestedScroll(nestedScrollConnection)
     ) {
         // Pinned Top Bar Row (dedicated to title + back + bookmark)
         Row(
@@ -187,9 +184,13 @@ fun SurahDetailHeader(
     }
 }
 
-/** Quick-return / enter-always collapse connection — physics preserved 1:1. */
+/**
+ * Quick-return / enter-always collapse connection — physics preserved 1:1.
+ * Must be hoisted by the screen and attached to the common ancestor of the
+ * header and the scrollable list so scroll deltas reach [onPreScroll].
+ */
 @Composable
-private fun rememberNestedScrollCollapse(
+fun rememberNestedScrollCollapse(
     state: SurahCollapsingHeaderState,
     isSelectionActive: Boolean
 ): NestedScrollConnection = androidx.compose.runtime.remember(isSelectionActive) {

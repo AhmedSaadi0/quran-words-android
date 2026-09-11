@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +38,7 @@ import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SelectionTopB
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahAyatList
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahCollapsingHeaderState
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahDetailHeader
+import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.rememberNestedScrollCollapse
 
 /**
  * Stateless surah detail screen. Collapse state is saveable; pagination,
@@ -64,6 +66,10 @@ fun SurahDetailScreen(
     // Pending page-chip click: scroll once the requested page becomes loaded
     // (replaces the legacy delay(100) + VM-state peek hack).
     var pendingPage by remember { mutableStateOf<Int?>(null) }
+
+    // Quick-return connection on the common ancestor of header + list so list
+    // scroll deltas reach onPreScroll. Disabled while selection is active.
+    val nestedScrollConnection = rememberNestedScrollCollapse(collapseState, uiState.isSelectionMode)
 
     // Load surah only if not already loaded for this surahId
     LaunchedEffect(surahId) {
@@ -140,6 +146,7 @@ fun SurahDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .nestedScroll(nestedScrollConnection)
         ) {
             if (uiState.isSelectionMode) {
                 SelectionTopBar(
@@ -157,7 +164,6 @@ fun SurahDetailScreen(
                     surahPages = uiState.surahPages,
                     currentPage = currentPageFor(uiState, listState, hasBasmalah),
                     collapseState = collapseState,
-                    isSelectionActive = uiState.isSelectionMode,
                     onNavigateBack = onNavigateBack,
                     onToggleBookmark = { onEvent(SurahDetailEvent.ToggleSurahBookmark(surahId)) },
                     onFontSizeChange = { onEvent(SurahDetailEvent.SetFontSize(it)) },
