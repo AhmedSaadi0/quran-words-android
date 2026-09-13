@@ -4,11 +4,13 @@ import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
 import io.github.ahmedsaadi0.quranwords.domain.model.MasdarModel
+import io.github.ahmedsaadi0.quranwords.domain.model.MushafPage
 import io.github.ahmedsaadi0.quranwords.domain.model.RootDetail
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
 import io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel
 import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
+import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.domain.repository.UserPreferencesRepository
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
 import kotlinx.coroutines.flow.Flow
@@ -93,7 +95,10 @@ class FakeQuranRepository(
     val searchResult: SearchResult = SearchResult(),
     val searchPageSize: Int = 20,
     var failGetAllRoots: Boolean = false,
-    var failSearch: Boolean = false
+    var failSearch: Boolean = false,
+    val mushafPages: Map<Int, MushafPage> = emptyMap(),
+    var failMushaf: Boolean = false,
+    var dbReady: Boolean = true
 ) : QuranRepository {
 
     override fun getSurahs(): Flow<List<Surah>> = flowOf(emptyList())
@@ -146,6 +151,11 @@ class FakeQuranRepository(
     }
 
     override suspend fun getPagesForSurah(surahId: Int): List<Int> = emptyList()
-    override fun isDatabaseReady(): Boolean = true
+    override suspend fun getMushafPage(page: Int): MushafPage? {
+        if (failMushaf) throw IllegalStateException("mushaf failed")
+        return mushafPages[page]
+    }
+    override suspend fun getWordTokenByWordAyahId(wordAyahId: Int): Pair<WordToken, Ayah>? = null
+    override fun isDatabaseReady(): Boolean = dbReady
     override fun closeDb() = Unit
 }

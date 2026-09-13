@@ -29,6 +29,7 @@ fun HomeRoute(
     onNavigateToGuide: () -> Unit,
     onNavigateToSetup: () -> Unit,
     onNavigateToBookmarks: () -> Unit = {},
+    onNavigateToMushaf: (Int) -> Unit = {},
     homeViewModel: HomeViewModel = hiltViewModel(),
     dbUpdateViewModel: DbUpdateViewModel = hiltViewModel(),
     settingsViewModel: SettingsViewModel = hiltViewModel()
@@ -64,6 +65,7 @@ fun HomeRoute(
         onNavigateToGuide = onNavigateToGuide,
         onNavigateToSetup = onNavigateToSetup,
         onNavigateToBookmarks = onNavigateToBookmarks,
+        onNavigateToMushaf = onNavigateToMushaf,
         onDismissUpdate = { available ->
             when (available) {
                 is DbUpdateState.UpdateAvailable -> dbUpdateViewModel.dismiss(available.info)

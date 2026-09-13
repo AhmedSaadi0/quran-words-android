@@ -36,6 +36,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.bookmarks.BookmarksRoute
+import io.github.ahmedsaadi0.quranwords.ui.mushaf.MushafRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.RootsListRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailRoute
 import io.github.ahmedsaadi0.quranwords.ui.roots.word.WordAyatRoute
@@ -150,7 +151,10 @@ fun AppNavigation() {
                     onNavigateToSearch = { navController.navigate(Search) },
                     onNavigateToGuide = { navController.navigate(Guide) },
                     onNavigateToSetup = { navController.navigate(Setup) },
-                    onNavigateToBookmarks = { navController.navigate(Bookmarks) }
+                    onNavigateToBookmarks = { navController.navigate(Bookmarks) },
+                    onNavigateToMushaf = { page ->
+                        navController.navigate(MushafReader(page))
+                    }
                 )
             }
 
@@ -239,6 +243,17 @@ fun AppNavigation() {
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToSurahDetail = { surahId, ayah ->
                         navController.navigate(SurahDetail(surahId, ayah))
+                    }
+                )
+            }
+
+            composable<MushafReader> { backStackEntry ->
+                val route: MushafReader = backStackEntry.toRoute()
+                MushafRoute(
+                    initialPage = route.page,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToRootDetail = { rootId ->
+                        navController.navigate(RootDetail(rootId))
                     }
                 )
             }

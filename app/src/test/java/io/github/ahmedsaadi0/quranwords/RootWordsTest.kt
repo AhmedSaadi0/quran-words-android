@@ -3,11 +3,13 @@ package io.github.ahmedsaadi0.quranwords
 import androidx.lifecycle.SavedStateHandle
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
+import io.github.ahmedsaadi0.quranwords.domain.model.MushafPage
 import io.github.ahmedsaadi0.quranwords.domain.model.RootDetail
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
 import io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel
 import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
+import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
 import io.github.ahmedsaadi0.quranwords.ui.navigation.SurahDetail
 import io.github.ahmedsaadi0.quranwords.ui.roots.detail.RootDetailEvent
@@ -67,6 +69,8 @@ private class FakeQuranRepository(
     override suspend fun searchDerivativesPaged(query: String, limit: Int, offset: Int): List<io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel> = emptyList()
     override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah> = emptyList()
     override suspend fun getPagesForSurah(surahId: Int): List<Int> = emptyList()
+    override suspend fun getMushafPage(page: Int): MushafPage? = null
+    override suspend fun getWordTokenByWordAyahId(wordAyahId: Int): Pair<WordToken, Ayah>? = null
     override fun isDatabaseReady(): Boolean = true
     override fun closeDb() = Unit
 

@@ -22,6 +22,7 @@ import io.github.ahmedsaadi0.quranwords.ui.home.components.DbSetupBanner
 import io.github.ahmedsaadi0.quranwords.ui.home.components.FeaturedRootsSection
 import io.github.ahmedsaadi0.quranwords.ui.home.components.HomeHeader
 import io.github.ahmedsaadi0.quranwords.ui.home.components.HomeUpdateBanner
+import io.github.ahmedsaadi0.quranwords.ui.home.components.MushafPreviewCard
 import io.github.ahmedsaadi0.quranwords.ui.home.components.QuickNavRow
 import io.github.ahmedsaadi0.quranwords.ui.home.components.StatsGrid
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
@@ -45,6 +46,7 @@ fun HomeScreen(
     onNavigateToGuide: () -> Unit,
     onNavigateToSetup: () -> Unit,
     onNavigateToBookmarks: () -> Unit,
+    onNavigateToMushaf: (Int) -> Unit,
     onDismissUpdate: (DbUpdateState.UpdateAvailable) -> Unit
 ) {
     Scaffold(
@@ -94,6 +96,13 @@ fun HomeScreen(
                     onNavigateToSurahIndex = onNavigateToSurahIndex,
                     onNavigateToRoots = onNavigateToRoots,
                     onNavigateToGuide = onNavigateToGuide,
+                    modifier = Modifier.animateItem(placementSpec = placementSpec())
+                )
+            }
+
+            item(key = "home_mushaf_preview") {
+                MushafPreviewCard(
+                    onNavigateToMushaf = { onNavigateToMushaf(1) },
                     modifier = Modifier.animateItem(placementSpec = placementSpec())
                 )
             }

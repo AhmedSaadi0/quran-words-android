@@ -174,3 +174,52 @@ data class RootAiSummaryEntity(
     val model: String?,
     @ColumnInfo(name = "generated_at") val generatedAt: String?
 )
+
+/**
+ * QPC layout tables (supplementary — reference corpus tables untouched).
+ * Runtime reads go through raw queries in `QuranRepositoryImpl`; these
+ * entities keep the Room schema declaration in sync with `quran_words.db`.
+ */
+@Entity(
+    tableName = "mushaf_word_location",
+    indices = [
+        Index(value = ["page_number", "line_number", "pos_in_line"]),
+        Index(value = ["word_ayah_id"]),
+        Index(value = ["surah", "ayah"])
+    ]
+)
+data class MushafWordLocationEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @ColumnInfo(name = "word_ayah_id") val wordAyahId: Int?,
+    @ColumnInfo(name = "page_number") val pageNumber: Int,
+    @ColumnInfo(name = "line_number") val lineNumber: Int,
+    @ColumnInfo(name = "pos_in_line") val posInLine: Int,
+    @ColumnInfo(name = "code_v2") val codeV2: String,
+    @ColumnInfo(name = "char_type") val charType: String,
+    val surah: Int,
+    val ayah: Int,
+    val position: Int
+)
+
+@Entity(
+    tableName = "mushaf_special_lines",
+    primaryKeys = ["page_number", "line_number"]
+)
+data class MushafSpecialLineEntity(
+    @ColumnInfo(name = "page_number") val pageNumber: Int,
+    @ColumnInfo(name = "line_number") val lineNumber: Int,
+    @ColumnInfo(name = "line_type") val lineType: String,
+    @ColumnInfo(name = "surah_id") val surahId: Int
+)
+
+@Entity(tableName = "mushaf_page_meta")
+data class MushafPageMetaEntity(
+    @PrimaryKey @ColumnInfo(name = "page_number") val pageNumber: Int,
+    @ColumnInfo(name = "surah_start") val surahStart: Int,
+    @ColumnInfo(name = "ayah_start") val ayahStart: Int,
+    @ColumnInfo(name = "surah_end") val surahEnd: Int,
+    @ColumnInfo(name = "ayah_end") val ayahEnd: Int,
+    @ColumnInfo(name = "juz_number") val juzNumber: Int?,
+    @ColumnInfo(name = "min_line") val minLine: Int,
+    @ColumnInfo(name = "max_line") val maxLine: Int
+)

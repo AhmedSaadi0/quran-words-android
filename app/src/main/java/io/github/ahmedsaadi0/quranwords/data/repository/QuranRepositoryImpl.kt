@@ -12,6 +12,10 @@ import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
 import io.github.ahmedsaadi0.quranwords.domain.model.MasdarModel
+import io.github.ahmedsaadi0.quranwords.domain.model.MushafPage
+import io.github.ahmedsaadi0.quranwords.domain.model.MushafPageMetaRow
+import io.github.ahmedsaadi0.quranwords.domain.model.MushafSpecialRow
+import io.github.ahmedsaadi0.quranwords.domain.model.MushafWordRow
 import io.github.ahmedsaadi0.quranwords.domain.model.RootDetail
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
 import io.github.ahmedsaadi0.quranwords.domain.model.RootMeaningModel
@@ -19,6 +23,7 @@ import io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel
 import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
+import io.github.ahmedsaadi0.quranwords.domain.mushaf.MushafPageAssembler
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -83,6 +88,11 @@ class QuranRepositoryImpl @Inject constructor(
             } catch (_: Exception) {
             }
             sqliteDb = null
+            try {
+                previewDb?.close()
+            } catch (_: Exception) {
+            }
+            previewDb = null
         }
         try {
             io.github.ahmedsaadi0.quranwords.data.local.QuranDatabase.closeIfNeeded()
@@ -1056,6 +1066,201 @@ class QuranRepositoryImpl @Inject constructor(
             return@withContext emptyList()
         }
     }
+
+    override suspend fun getMushafPage(page: Int): MushafPage? = withContext(ioDispatcher) {
+        loadMushafPage(getDb(), page) ?: loadMushafPage(getPreviewDb(), page)
+    }
+
+    /**
+     * Spike fallback chain (preview): the sidecar `mushaf_preview.db` serves
+     * demo pages until the full 604-page ingest lands in the main database.
+     * Delete [getPreviewDb] once `mushaf_page_meta` ships in `quran_words.db`.
+     */
+    private fun loadMushafPage(db: SQLiteDatabase?, page: Int): MushafPage? {
+        if (db == null) return null
+        return try {
+            val meta = db.rawQuery(
+                "SELECT page_number, surah_start, ayah_start, surah_end, ayah_end, juz_number, min_line, max_line" +
+                    " FROM mushaf_page_meta WHERE page_number = ? LIMIT 1",
+                arrayOf(page.toString())
+            ).use { c ->
+                if (!c.moveToNext()) return null
+                MushafPageMetaRow(
+                    pageNumber = c.getInt(0),
+                    surahStart = c.getInt(1),
+                    ayahStart = c.getInt(2),
+                    surahEnd = c.getInt(3),
+                    ayahEnd = c.getInt(4),
+                    juzNumber = if (c.isNull(5)) null else c.getInt(5),
+                    minLine = c.getInt(6),
+                    maxLine = c.getInt(7)
+                )
+            }
+            val words = mutableListOf<MushafWordRow>()
+            db.rawQuery(
+                "SELECT word_ayah_id, page_number, line_number, pos_in_line, code_v2, char_type, surah, ayah, position" +
+                    " FROM mushaf_word_location WHERE page_number = ? ORDER BY line_number ASC, pos_in_line ASC",
+                arrayOf(page.toString())
+            ).use { c ->
+                while (c.moveToNext()) {
+                    words.add(
+                        MushafWordRow(
+                            wordAyahId = if (c.isNull(0)) null else c.getInt(0),
+                            pageNumber = c.getInt(1),
+                            lineNumber = c.getInt(2),
+                            posInLine = c.getInt(3),
+                            codeV2 = c.getString(4) ?: "",
+                            charType = c.getString(5) ?: "",
+                            surah = c.getInt(6),
+                            ayah = c.getInt(7),
+                            position = c.getInt(8)
+                        )
+                    )
+                }
+            }
+            if (words.isEmpty()) return null
+            val specials = mutableListOf<MushafSpecialRow>()
+            db.rawQuery(
+                "SELECT page_number, line_number, line_type, surah_id FROM mushaf_special_lines" +
+                    " WHERE page_number = ? ORDER BY line_number ASC",
+                arrayOf(page.toString())
+            ).use { c ->
+                while (c.moveToNext()) {
+                    specials.add(
+                        MushafSpecialRow(
+                            pageNumber = c.getInt(0),
+                            lineNumber = c.getInt(1),
+                            lineType = c.getString(2) ?: "",
+                            surahId = c.getInt(3)
+                        )
+                    )
+                }
+            }
+            MushafPageAssembler.assemble(meta, words, specials)
+                .let { it.copy(surahNames = loadSurahNames(db, it)) }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun loadSurahNames(db: SQLiteDatabase, page: MushafPage): Map<Int, String> {
+        val ids = (
+            page.lines.mapNotNull { it.surahId } +
+                page.lines.flatMap { line -> line.words.map { it.surah } } +
+                listOf(page.surahStart, page.surahEnd)
+            ).toSet()
+        if (ids.isEmpty()) return emptyMap()
+        val names = mutableMapOf<Int, String>()
+        try {
+            val placeholders = ids.joinToString(",") { "?" }
+            db.rawQuery(
+                "SELECT id, name_ar FROM surahs WHERE id IN ($placeholders)",
+                ids.map { it.toString() }.toTypedArray()
+            ).use { c ->
+                while (c.moveToNext()) {
+                    names[c.getInt(0)] = c.getString(1) ?: ""
+                }
+            }
+        } catch (_: Exception) {
+        }
+        return names
+    }
+
+    @Volatile
+    private var previewDb: SQLiteDatabase? = null
+
+    /** Opens the bundled preview sidecar (first use copies it from assets). */
+    private fun getPreviewDb(): SQLiteDatabase? {
+        previewDb?.let { if (it.isOpen) return it }
+        return synchronized(this) {
+            previewDb?.let { if (it.isOpen) return it }
+            try {
+                val file = context.getDatabasePath(PREVIEW_DB_NAME)
+                if (!file.exists()) {
+                    file.parentFile?.mkdirs()
+                    context.assets.open(PREVIEW_DB_NAME).use { input ->
+                        file.outputStream().use { output -> input.copyTo(output) }
+                    }
+                }
+                previewDb = SQLiteDatabase.openDatabase(
+                    file.absolutePath,
+                    null,
+                    SQLiteDatabase.OPEN_READONLY or SQLiteDatabase.NO_LOCALIZED_COLLATORS
+                )
+                previewDb
+            } catch (_: Exception) {
+                null
+            }
+        }
+    }
+
+    companion object {
+        private const val PREVIEW_DB_NAME = "mushaf_preview.db"
+    }
+
+    override suspend fun getWordTokenByWordAyahId(wordAyahId: Int): Pair<WordToken, Ayah>? =
+        withContext(ioDispatcher) {
+            val db = getDb() ?: return@withContext null
+            try {
+                val ayahId = db.rawQuery(
+                    "SELECT ayah_id FROM word_ayah WHERE id = ? LIMIT 1",
+                    arrayOf(wordAyahId.toString())
+                ).use { c -> if (c.moveToNext()) c.getInt(0) else null }
+                    ?: return@withContext null
+                data class AyahRow(
+                    val id: Int,
+                    val surah: Int,
+                    val ayah: Int,
+                    val textUthmani: String,
+                    val textUthmaniPlain: String,
+                    val textImlaei: String,
+                    val wordCount: Int,
+                    val juz: Int?,
+                    val hizb: Int?,
+                    val rubElHizb: Int?,
+                    val pageNumber: Int?
+                )
+                val row = db.rawQuery(
+                    "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count," +
+                        " juz, hizb, rub_el_hizb, page_number FROM ayat WHERE id = ? LIMIT 1",
+                    arrayOf(ayahId.toString())
+                ).use { c ->
+                    if (!c.moveToNext()) null else AyahRow(
+                        id = c.getInt(0),
+                        surah = c.getInt(1),
+                        ayah = c.getInt(2),
+                        textUthmani = c.getString(3) ?: "",
+                        textUthmaniPlain = c.getString(4) ?: "",
+                        textImlaei = c.getString(5) ?: "",
+                        wordCount = c.getInt(6),
+                        juz = if (c.isNull(7)) null else c.getInt(7),
+                        hizb = if (c.isNull(8)) null else c.getInt(8),
+                        rubElHizb = if (c.isNull(9)) null else c.getInt(9),
+                        pageNumber = if (c.isNull(10)) null else c.getInt(10)
+                    )
+                } ?: return@withContext null
+                val words = loadWordsForAyah(db, ayahId)
+                val token = words.firstOrNull { it.wordAyahId == wordAyahId }
+                    ?: return@withContext null
+                val ayah = Ayah(
+                    id = row.id,
+                    surah = row.surah,
+                    ayah = row.ayah,
+                    textUthmani = row.textUthmani,
+                    textUthmaniPlain = row.textUthmaniPlain,
+                    textImlaei = row.textImlaei,
+                    wordCount = row.wordCount,
+                    words = words,
+                    juz = row.juz,
+                    hizb = row.hizb,
+                    rubElHizb = row.rubElHizb,
+                    pageNumber = row.pageNumber
+                )
+                token to ayah
+            } catch (_: Exception) {
+                null
+            }
+        }
 
     // Seed Data Providers for offline preview / fallback
     private fun getSeedAyat(surahId: Int): List<Ayah> {

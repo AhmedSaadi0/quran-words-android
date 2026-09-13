@@ -4,11 +4,13 @@ import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.AyahOccurrenceModel
 import io.github.ahmedsaadi0.quranwords.domain.model.DerivativeModel
 import io.github.ahmedsaadi0.quranwords.domain.model.MasdarModel
+import io.github.ahmedsaadi0.quranwords.domain.model.MushafPage
 import io.github.ahmedsaadi0.quranwords.domain.model.RootDetail
 import io.github.ahmedsaadi0.quranwords.domain.model.RootItem
 import io.github.ahmedsaadi0.quranwords.domain.model.RootWordModel
 import io.github.ahmedsaadi0.quranwords.domain.model.SearchResult
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
+import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import kotlinx.coroutines.flow.Flow
 
 interface QuranRepository {
@@ -34,6 +36,10 @@ interface QuranRepository {
     suspend fun searchDerivativesPaged(query: String, limit: Int, offset: Int): List<DerivativeModel>
     suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah>
     suspend fun getPagesForSurah(surahId: Int): List<Int>
+    /** QPC page layout, or null when the installed DB predates the mushaf tables. */
+    suspend fun getMushafPage(page: Int): MushafPage?
+    /** Resolves a tapped mushaf glyph to its morphology token + ayah context. */
+    suspend fun getWordTokenByWordAyahId(wordAyahId: Int): Pair<WordToken, Ayah>?
     fun isDatabaseReady(): Boolean
     fun closeDb()
 }

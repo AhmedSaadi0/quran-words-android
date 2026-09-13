@@ -18,6 +18,19 @@
     <string name="home_nav_roots_subtitle">%1$d Roots</string>
     <string name="home_nav_guide_title">Morphology Guide</string>
     <string name="home_nav_guide_subtitle">Patterns &amp; forms</string>
+    <string name="home_mushaf_title">Mushaf Reader (Preview)</string>
+    <string name="home_mushaf_subtitle">Authentic Madinah pages 1, 2, 3, 531, 602</string>
+
+    <!-- Mushaf preview reader -->
+    <string name="mushaf_preview_title">Mushaf Preview</string>
+    <string name="mushaf_page_label">Page %1$s</string>
+    <string name="mushaf_loading">Loading page %1$s…</string>
+    <string name="mushaf_retry">Retry</string>
+    <string name="mushaf_basmalah">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</string>
+    <string name="mushaf_surah_frame">سورة %1$s</string>
+    <string name="mushaf_line_desc">Line %1$d, %2$d words</string>
+    <string name="mushaf_word_needs_db">Word analysis needs the full database — download it from Home</string>
+    <string name="mushaf_press_back_again">Press back again to exit the reader</string>
 
     <!-- Home continue reading: %1$s = surah name (Arabic data, never translated) -->
     <string name="home_continue_title">Continue recitation &amp; analysis</string>

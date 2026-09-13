@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import io.github.ahmedsaadi0.quranwords.data.local.dao.AyahDao
 import io.github.ahmedsaadi0.quranwords.data.local.dao.DerivativeDao
 import io.github.ahmedsaadi0.quranwords.data.local.dao.MasdarDao
+import io.github.ahmedsaadi0.quranwords.data.local.dao.MushafDao
 import io.github.ahmedsaadi0.quranwords.data.local.dao.RootDao
 import io.github.ahmedsaadi0.quranwords.data.local.dao.SurahDao
 import io.github.ahmedsaadi0.quranwords.data.local.dao.WordDao
@@ -14,6 +15,9 @@ import io.github.ahmedsaadi0.quranwords.data.local.entities.AyahEntity
 import io.github.ahmedsaadi0.quranwords.data.local.entities.DerivativeEntity
 import io.github.ahmedsaadi0.quranwords.data.local.entities.MasdarEntity
 import io.github.ahmedsaadi0.quranwords.data.local.entities.MorphologyEntity
+import io.github.ahmedsaadi0.quranwords.data.local.entities.MushafPageMetaEntity
+import io.github.ahmedsaadi0.quranwords.data.local.entities.MushafSpecialLineEntity
+import io.github.ahmedsaadi0.quranwords.data.local.entities.MushafWordLocationEntity
 import io.github.ahmedsaadi0.quranwords.data.local.entities.RootAiSummaryEntity
 import io.github.ahmedsaadi0.quranwords.data.local.entities.RootEntity
 import io.github.ahmedsaadi0.quranwords.data.local.entities.RootGlossEntity
@@ -34,9 +38,12 @@ import io.github.ahmedsaadi0.quranwords.data.local.entities.WordEntity
         DerivativeEntity::class,
         RootMeaningEntity::class,
         RootGlossEntity::class,
-        RootAiSummaryEntity::class
+        RootAiSummaryEntity::class,
+        MushafWordLocationEntity::class,
+        MushafSpecialLineEntity::class,
+        MushafPageMetaEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class QuranDatabase : RoomDatabase() {
@@ -46,6 +53,7 @@ abstract class QuranDatabase : RoomDatabase() {
     abstract fun rootDao(): RootDao
     abstract fun masdarDao(): MasdarDao
     abstract fun derivativeDao(): DerivativeDao
+    abstract fun mushafDao(): MushafDao
 
     companion object {
         @Volatile

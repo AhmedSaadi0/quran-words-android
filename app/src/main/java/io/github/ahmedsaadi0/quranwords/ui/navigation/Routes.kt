@@ -35,3 +35,6 @@ data object Setup
 
 @Serializable
 data object Bookmarks
+
+@Serializable
+data class MushafReader(val page: Int = 1)

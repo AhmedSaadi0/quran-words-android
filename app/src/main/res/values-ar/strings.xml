@@ -13,6 +13,18 @@
     <string name="home_nav_roots_subtitle">%1$d جذر</string>
     <string name="home_nav_guide_title">دليل الصرف</string>
     <string name="home_nav_guide_subtitle">أوزان وأبواب</string>
+    <string name="home_mushaf_title">المصحف (معاينة)</string>
+    <string name="home_mushaf_subtitle">صفحات المدينة الأصلية ١، ٢، ٣، ٥٣١، ٦٠٢</string>
+
+    <string name="mushaf_preview_title">معاينة المصحف</string>
+    <string name="mushaf_page_label">صفحة %1$s</string>
+    <string name="mushaf_loading">جارٍ تحميل الصفحة %1$s…</string>
+    <string name="mushaf_retry">إعادة المحاولة</string>
+    <string name="mushaf_basmalah">بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ</string>
+    <string name="mushaf_surah_frame">سورة %1$s</string>
+    <string name="mushaf_line_desc">السطر %1$d، %2$d كلمات</string>
+    <string name="mushaf_word_needs_db">التحليل الصرفي يحتاج قاعدة البيانات الكاملة — نزّلها من الرئيسية</string>
+    <string name="mushaf_press_back_again">اضغط رجوع مرة أخرى للخروج من المصحف</string>
 
     <string name="home_continue_title">متابعة التلاوة والتحليل</string>
     <string name="home_continue_template">سورة %1$s • الآية %2$d</string>
