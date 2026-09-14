@@ -4,8 +4,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,33 +21,28 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
-import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
-import io.github.ahmedsaadi0.quranwords.ui.components.AyahItemCard
 import io.github.ahmedsaadi0.quranwords.ui.components.JuzHizbSeparator
 import io.github.ahmedsaadi0.quranwords.ui.components.PageSeparator
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
-import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
 
 /**
- * Ayat list: Basmalah item, page/juz separators, staggered ayat cards and the
- * loading-more / end slots. Item appearance animation preserved 1:1.
+ * Ayat list: Basmalah item, page/juz separators, continuous-flow Mushaf
+ * blocks (one Text per page group) and the loading-more / end slots. Item
+ * appearance animation preserved 1:1.
  */
 @Composable
 fun SurahAyatList(
     ayat: List<Ayah>,
-    surah: Surah?,
     fontSize: Float,
-    bookmarkedAyat: Set<String>,
-    surahId: Int,
     hasBasmalah: Boolean,
     isSelectionMode: Boolean,
     selectedAyahs: Set<Int>,
@@ -57,9 +50,11 @@ fun SurahAyatList(
     listState: LazyListState,
     onWordClick: (WordToken, Ayah) -> Unit,
     onToggleSelection: (Int) -> Unit,
-    onEnterSelection: (Int) -> Unit,
-    onBookmarkClick: (Int) -> Unit
+    onEnterSelection: (Int) -> Unit
 ) {
+    // Single source of truth for grouping — the screen derives its
+    // scroll-index mapping from the same pure function.
+    val groups = remember(ayat) { groupAyatByPage(ayat) }
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
@@ -69,44 +64,33 @@ fun SurahAyatList(
             top = 12.dp,
             bottom = 24.dp
         ),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (hasBasmalah) {
             item(key = "basmalah") {
-                Box(
+                Text(
+                    text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(ShapeMedium)
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant,
-                            ShapeMedium
-                        )
                         .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
-                        fontSize = 24.sp,
-                        lineHeight = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center
-                    )
-                }
+                    fontSize = 24.sp,
+                    lineHeight = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
             }
         }
 
-        itemsIndexed(ayat, key = { _, ayah -> ayah.ayah }) { index, ayah ->
-            val isAyahBookmarked = bookmarkedAyat.contains("$surahId:${ayah.ayah}")
-            val prevAyah = ayat.getOrNull(index - 1)
-            val isJuzStart = prevAyah?.juz != ayah.juz
-            val isHizbStart = prevAyah?.hizb != ayah.hizb
-            val isRubStart = prevAyah?.rubElHizb != ayah.rubElHizb
-            val isPageStart = prevAyah?.pageNumber != ayah.pageNumber
-            val showJuzHizb = index == 0 || isJuzStart || isHizbStart || isRubStart
-            val showPage = isPageStart && ayah.pageNumber != null
+        itemsIndexed(groups, key = { _, group -> "mushaf_${group.key}" }) { groupIndex, group ->
+            val first = group.ayat.first()
+            val prevAyah = ayat.getOrNull(group.firstAyahIndex - 1)
+            val isJuzStart = prevAyah?.juz != first.juz
+            val isHizbStart = prevAyah?.hizb != first.hizb
+            val isRubStart = prevAyah?.rubElHizb != first.rubElHizb
+            val isPageStart = prevAyah?.pageNumber != first.pageNumber
+            val showJuzHizb = group.firstAyahIndex == 0 || isJuzStart || isHizbStart || isRubStart
+            val showPage = isPageStart && first.pageNumber != null
 
             Column(
                 modifier = Modifier.animateItem(
@@ -119,17 +103,17 @@ fun SurahAyatList(
             ) {
                 if (showPage) {
                     PageSeparator(
-                        pageNumber = ayah.pageNumber!!,
+                        pageNumber = first.pageNumber!!,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 4.dp)
                     )
                 }
-                if (showJuzHizb && ayah.juz != null) {
+                if (showJuzHizb && first.juz != null) {
                     JuzHizbSeparator(
-                        juz = ayah.juz,
-                        hizb = ayah.hizb,
-                        rubElHizb = ayah.rubElHizb,
+                        juz = first.juz,
+                        hizb = first.hizb,
+                        rubElHizb = first.rubElHizb,
                         isJuzStart = isJuzStart,
                         isHizbStart = isHizbStart,
                         modifier = Modifier
@@ -143,29 +127,26 @@ fun SurahAyatList(
                     enter = fadeIn(
                         animationSpec = tween(
                             durationMillis = 280,
-                            delayMillis = (index % 20) * 18,
+                            delayMillis = (groupIndex % 20) * 18,
                             easing = AppMotion.EasingStandard
                         )
                     ) + slideInVertically(
                         initialOffsetY = { it / 5 },
                         animationSpec = tween(
                             durationMillis = 280,
-                            delayMillis = (index % 20) * 15,
+                            delayMillis = (groupIndex % 20) * 15,
                             easing = AppMotion.EasingEmphasized
                         )
                     )
                 ) {
-                    AyahItemCard(
-                        ayah = ayah,
+                    MushafFlowBlock(
+                        group = group,
                         fontSize = fontSize,
-                        isBookmarked = isAyahBookmarked,
-                        onBookmarkClick = { onBookmarkClick(ayah.ayah) },
-                        onWordClick = { word -> onWordClick(word, ayah) },
-                        surah = surah,
-                        isSelected = selectedAyahs.contains(ayah.ayah),
                         isSelectionMode = isSelectionMode,
-                        onToggleSelection = { onToggleSelection(ayah.ayah) },
-                        onEnterSelectionMode = { onEnterSelection(ayah.ayah) }
+                        selectedAyahs = selectedAyahs,
+                        onWordClick = onWordClick,
+                        onToggleSelection = onToggleSelection,
+                        onEnterSelection = onEnterSelection
                     )
                 }
             }

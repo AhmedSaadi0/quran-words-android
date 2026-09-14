@@ -34,8 +34,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.components.MorphologyBottomSheet
+import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.AyahFlowGroup
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SelectionTopBar
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahAyatList
+import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.groupAyatByPage
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahCollapsingHeaderState
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahDetailHeader
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.rememberNestedScrollCollapse
@@ -60,6 +62,29 @@ fun SurahDetailScreen(
         androidx.compose.foundation.lazy.LazyListState()
     }
     val hasBasmalah = surahId != 9 && surahId != 1
+    val listOffset = if (hasBasmalah) 1 else 0
+
+    // Continuous-flow grouping — same pure function as SurahAyatList renders.
+    // Lazy indices address blocks now, not ayat: an ayah can start mid-line,
+    // so deep-link/last-read granularity is block-level by architecture.
+    val flowGroups = remember(uiState.ayat) { groupAyatByPage(uiState.ayat) }
+    // Ayah number -> lazy item index of its owning block.
+    val blockIndexOfAyah = remember(flowGroups, listOffset) {
+        buildMap {
+            flowGroups.forEachIndexed { groupIndex, group ->
+                val lazyIndex = groupIndex + listOffset
+                group.ayat.forEach { ayah -> put(ayah.ayah, lazyIndex) }
+            }
+        }
+    }
+    // Lazy item index -> source-list index of the block's last ayah (pagination).
+    val blockLastAyahListIndex = remember(flowGroups, listOffset) {
+        buildMap {
+            flowGroups.forEachIndexed { groupIndex, group ->
+                put(groupIndex + listOffset, group.firstAyahIndex + group.ayat.size - 1)
+            }
+        }
+    }
     val sheetState = rememberModalBottomSheetState (skipPartiallyExpanded = true)
     var hasHandledInitialScroll by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
 
@@ -80,18 +105,17 @@ fun SurahDetailScreen(
         }
     }
 
-    // Initial scroll to the target ayah, then record last-read
+    // Initial scroll to the block owning the target ayah, then record last-read
     LaunchedEffect(uiState.ayat, uiState.surah, hasHandledInitialScroll) {
         if (hasHandledInitialScroll) return@LaunchedEffect
         val currentSurah = uiState.surah
         if (uiState.ayat.isEmpty() || currentSurah == null) return@LaunchedEffect
-        val idx = uiState.ayat.indexOfFirst { it.ayah == targetAyah }
-        if (idx == -1 && uiState.ayat.size < currentSurah.ayahCount) {
+        val scrollIndex = blockIndexOfAyah[targetAyah]
+        if (scrollIndex == null && uiState.ayat.size < currentSurah.ayahCount) {
             onEvent(SurahDetailEvent.EnsureAyahLoaded(targetAyah))
             return@LaunchedEffect
         }
-        if (idx != -1) {
-            val scrollIndex = idx + if (hasBasmalah) 1 else 0
+        if (scrollIndex != null) {
             if (kotlin.math.abs(listState.firstVisibleItemIndex - scrollIndex) > 20) {
                 listState.scrollToItem(scrollIndex)
             } else {
@@ -104,35 +128,35 @@ fun SurahDetailScreen(
         }
     }
 
-    // Track the first visible ayah for last-read updates
+    // Track the first visible block's first ayah for last-read updates
     LaunchedEffect(listState, uiState.ayat) {
         snapshotFlow { listState.firstVisibleItemIndex }
             .collect { firstIdx ->
-                val ayat = uiState.ayat
-                if (ayat.isNotEmpty()) {
-                    val ayatIdx = firstIdx - if (hasBasmalah) 1 else 0
-                    if (ayatIdx in ayat.indices) {
-                        onEvent(SurahDetailEvent.AyahVisible(ayat[ayatIdx].ayah))
-                    }
+                val group = flowGroups.getOrNull(firstIdx - listOffset)
+                if (group != null) {
+                    onEvent(SurahDetailEvent.AyahVisible(group.ayat.first().ayah))
                 }
             }
     }
 
-    // Pagination trigger
-    LaunchedEffect(listState) {
+    // Pagination trigger (keyed on loaded size: trailing spacer indices resolve
+    // to size - 1, so the effect must see fresh sizes)
+    LaunchedEffect(listState, uiState.ayat.size) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
             .collect { lastIdx ->
-                val ayatLastIdx = lastIdx - if (hasBasmalah) 1 else 0
+                val ayatLastIdx = blockLastAyahListIndex[lastIdx]
+                    ?: if (lastIdx < listOffset) -1 else uiState.ayat.size - 1
                 onEvent(SurahDetailEvent.NearingEnd(ayatLastIdx))
             }
     }
 
-    // Scroll to a pending page chip once its page is loaded
+    // Scroll to a pending page chip once its page block is loaded
+    // (page chips map 1:1 to page groups).
     LaunchedEffect(uiState.ayat, pendingPage) {
         val page = pendingPage ?: return@LaunchedEffect
-        val idx = uiState.ayat.indexOfFirst { it.pageNumber == page }
-        if (idx != -1) {
-            listState.animateScrollToItem(idx + if (hasBasmalah) 1 else 0)
+        val groupIndex = flowGroups.indexOfFirst { it.pageNumber == page }
+        if (groupIndex != -1) {
+            listState.animateScrollToItem(groupIndex + listOffset)
             pendingPage = null
         }
     }
@@ -153,6 +177,7 @@ fun SurahDetailScreen(
                     selectedCount = uiState.selectedAyahs.size,
                     onDismiss = { onEvent(SurahDetailEvent.ClearSelection) },
                     onSelectAll = { onEvent(SurahDetailEvent.SelectAllAyahs) },
+                    onBookmark = { onEvent(SurahDetailEvent.BookmarkSelection) },
                     onCopy = { onEvent(SurahDetailEvent.CopySelection) },
                     onShare = { onEvent(SurahDetailEvent.ShareSelection) }
                 )
@@ -162,7 +187,7 @@ fun SurahDetailScreen(
                     isBookmarked = uiState.isSurahBookmarked,
                     fontSize = uiState.fontSize,
                     surahPages = uiState.surahPages,
-                    currentPage = currentPageFor(uiState, listState, hasBasmalah),
+                    currentPage = currentPageFor(flowGroups, listState, hasBasmalah),
                     collapseState = collapseState,
                     onNavigateBack = onNavigateBack,
                     onToggleBookmark = { onEvent(SurahDetailEvent.ToggleSurahBookmark(surahId)) },
@@ -217,10 +242,7 @@ fun SurahDetailScreen(
                     else -> {
                         SurahAyatList(
                             ayat = uiState.ayat,
-                            surah = uiState.surah,
                             fontSize = uiState.fontSize,
-                            bookmarkedAyat = uiState.bookmarkedAyat,
-                            surahId = surahId,
                             hasBasmalah = hasBasmalah,
                             isSelectionMode = uiState.isSelectionMode,
                             selectedAyahs = uiState.selectedAyahs,
@@ -232,8 +254,7 @@ fun SurahDetailScreen(
                                 }
                             },
                             onToggleSelection = { onEvent(SurahDetailEvent.ToggleAyahSelection(it)) },
-                            onEnterSelection = { onEvent(SurahDetailEvent.EnterSelection(it)) },
-                            onBookmarkClick = { onEvent(SurahDetailEvent.ToggleAyahBookmark(surahId, it)) }
+                            onEnterSelection = { onEvent(SurahDetailEvent.EnterSelection(it)) }
                         )
                     }
                 }
@@ -260,12 +281,14 @@ fun SurahDetailScreen(
 }
 
 private fun currentPageFor(
-    uiState: SurahDetailUiState,
+    groups: List<AyahFlowGroup>,
     listState: androidx.compose.foundation.lazy.LazyListState,
     hasBasmalah: Boolean
 ): Int? {
-    if (uiState.ayat.isEmpty()) return null
-    val visibleIdx = (listState.firstVisibleItemIndex - if (hasBasmalah) 1 else 0)
-        .coerceIn(0, uiState.ayat.size - 1)
-    return uiState.ayat.getOrNull(visibleIdx)?.pageNumber
+    if (groups.isEmpty()) return null
+    val groupIndex = (listState.firstVisibleItemIndex - if (hasBasmalah) 1 else 0)
+        .coerceIn(0, groups.size - 1)
+    return groups[groupIndex].pageNumber
+        // Unpaged fallback chunk: report the nearest preceding page.
+        ?: groups.take(groupIndex + 1).lastOrNull { it.pageNumber != null }?.pageNumber
 }

@@ -44,6 +44,7 @@ sealed interface SurahDetailEvent {
     data class ToggleAyahSelection(val ayah: Int) : SurahDetailEvent
     data object SelectAllAyahs : SurahDetailEvent
     data object ClearSelection : SurahDetailEvent
+    data object BookmarkSelection : SurahDetailEvent
 
     // Platform events intercepted by the Route (owns ShareHandler).
     data object CopySelection : SurahDetailEvent

@@ -5,6 +5,7 @@ import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import io.github.ahmedsaadi0.quranwords.data.remote.DatabaseDownloadManager
 import io.github.ahmedsaadi0.quranwords.core.util.ArabicNormalizer
+import io.github.ahmedsaadi0.quranwords.core.util.sanitizeUthmanicText
 import io.github.ahmedsaadi0.quranwords.core.util.MorphologyMaps
 import io.github.ahmedsaadi0.quranwords.core.util.SurahMetadata
 import io.github.ahmedsaadi0.quranwords.core.di.IoDispatcher
@@ -173,7 +174,7 @@ class QuranRepositoryImpl @Inject constructor(
                     while (c.moveToNext()) {
                         val ayahId = c.getInt(0)
                         val ayahNum = c.getInt(2)
-                        val textUth = c.getString(3) ?: ""
+                        val textUth = sanitizeUthmanicText(c.getString(3) ?: "")
                         val textUthPlain = c.getString(4) ?: ""
                         val textIml = c.getString(5) ?: ""
                         val wCount = c.getInt(6)
@@ -226,7 +227,7 @@ class QuranRepositoryImpl @Inject constructor(
                 while (c.moveToNext()) {
                     val ayahId = c.getInt(0)
                     val ayahNum = c.getInt(2)
-                    val textUth = c.getString(3) ?: ""
+                    val textUth = sanitizeUthmanicText(c.getString(3) ?: "")
                     val textUthPlain = c.getString(4) ?: ""
                     val textIml = c.getString(5) ?: ""
                     val wCount = c.getInt(6)
@@ -300,8 +301,8 @@ class QuranRepositoryImpl @Inject constructor(
                         wordId = c.getInt(0),
                         wordAyahId = c.getInt(1),
                         position = c.getInt(2),
-                        text = c.getString(3) ?: "",
-                        textClean = c.getString(4) ?: "",
+                        text = sanitizeUthmanicText(c.getString(3) ?: ""),
+                        textClean = sanitizeUthmanicText(c.getString(4) ?: ""),
                         translation = c.getString(5) ?: "",
                         rootId = if (c.isNull(6)) null else c.getInt(6),
                         rootText = c.getString(7),
@@ -343,7 +344,7 @@ class QuranRepositoryImpl @Inject constructor(
                             id = ayahId,
                             surah = surahId,
                             ayah = ayahNum,
-                            textUthmani = c.getString(3) ?: "",
+                            textUthmani = sanitizeUthmanicText(c.getString(3) ?: ""),
                             textUthmaniPlain = c.getString(4) ?: "",
                             textImlaei = c.getString(5) ?: "",
                             wordCount = c.getInt(6),
@@ -574,8 +575,8 @@ class QuranRepositoryImpl @Inject constructor(
                                     surahId = it.getInt(0),
                                     surahNameAr = it.getString(1) ?: "",
                                     ayahNum = it.getInt(2),
-                                    textUthmani = it.getString(3) ?: "",
-                                    matchedWordText = it.getString(4) ?: ""
+                                    textUthmani = sanitizeUthmanicText(it.getString(3) ?: ""),
+                                    matchedWordText = sanitizeUthmanicText(it.getString(4) ?: "")
                                 )
                             )
                         }
@@ -646,8 +647,8 @@ class QuranRepositoryImpl @Inject constructor(
                             surahId = it.getInt(0),
                             surahNameAr = it.getString(1) ?: "",
                             ayahNum = it.getInt(2),
-                            textUthmani = it.getString(3) ?: "",
-                            matchedWordText = it.getString(4) ?: ""
+                            textUthmani = sanitizeUthmanicText(it.getString(3) ?: ""),
+                            matchedWordText = sanitizeUthmanicText(it.getString(4) ?: "")
                         )
                     )
                 }
@@ -679,8 +680,8 @@ class QuranRepositoryImpl @Inject constructor(
                             surahId = it.getInt(0),
                             surahNameAr = it.getString(1) ?: "",
                             ayahNum = it.getInt(2),
-                            textUthmani = it.getString(3) ?: "",
-                            matchedWordText = it.getString(4) ?: ""
+                            textUthmani = sanitizeUthmanicText(it.getString(3) ?: ""),
+                            matchedWordText = sanitizeUthmanicText(it.getString(4) ?: "")
                         )
                     )
                 }
@@ -728,7 +729,7 @@ class QuranRepositoryImpl @Inject constructor(
                     list.add(
                         RootWordModel(
                             wordId = it.getInt(0),
-                            text = it.getString(1) ?: "",
+                            text = sanitizeUthmanicText(it.getString(1) ?: ""),
                             occurrencesCount = it.getInt(2),
                             wordIds = ids.ifEmpty { listOf(it.getInt(0)) }
                         )
@@ -769,8 +770,8 @@ class QuranRepositoryImpl @Inject constructor(
                             surahId = it.getInt(0),
                             surahNameAr = it.getString(1) ?: "",
                             ayahNum = it.getInt(2),
-                            textUthmani = it.getString(3) ?: "",
-                            matchedWordText = it.getString(4) ?: ""
+                            textUthmani = sanitizeUthmanicText(it.getString(3) ?: ""),
+                            matchedWordText = sanitizeUthmanicText(it.getString(4) ?: "")
                         )
                     )
                 }
@@ -807,8 +808,8 @@ class QuranRepositoryImpl @Inject constructor(
                             surahId = it.getInt(0),
                             surahNameAr = it.getString(1) ?: "",
                             ayahNum = it.getInt(2),
-                            textUthmani = it.getString(3) ?: "",
-                            matchedWordText = it.getString(4) ?: ""
+                            textUthmani = sanitizeUthmanicText(it.getString(3) ?: ""),
+                            matchedWordText = sanitizeUthmanicText(it.getString(4) ?: "")
                         )
                     )
                 }
@@ -843,8 +844,8 @@ class QuranRepositoryImpl @Inject constructor(
                             surahId = it.getInt(0),
                             surahNameAr = it.getString(1) ?: "",
                             ayahNum = it.getInt(2),
-                            textUthmani = it.getString(3) ?: "",
-                            matchedWordText = it.getString(4) ?: ""
+                            textUthmani = sanitizeUthmanicText(it.getString(3) ?: ""),
+                            matchedWordText = sanitizeUthmanicText(it.getString(4) ?: "")
                         )
                     )
                 }
@@ -1015,7 +1016,7 @@ class QuranRepositoryImpl @Inject constructor(
                                 id = it.getInt(0),
                                 surah = it.getInt(1),
                                 ayah = it.getInt(2),
-                                textUthmani = it.getString(3) ?: "",
+                                textUthmani = sanitizeUthmanicText(it.getString(3) ?: ""),
                                 textUthmaniPlain = it.getString(4) ?: "",
                                 textImlaei = it.getString(5) ?: "",
                                 wordCount = it.getInt(6),

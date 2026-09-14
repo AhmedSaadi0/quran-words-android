@@ -150,8 +150,18 @@ class SurahDetailViewModel @Inject constructor(
                 it.selectAll(_ayat.value.map { ayah -> ayah.ayah })
             }
             SurahDetailEvent.ClearSelection -> _selection.update { it.clear() }
+            SurahDetailEvent.BookmarkSelection -> bookmarkSelection()
             // Platform events (copy/share selection) are handled by the Route.
             SurahDetailEvent.CopySelection, SurahDetailEvent.ShareSelection -> Unit
+        }
+    }
+
+    private fun bookmarkSelection() {
+        val surahId = currentSurahId
+        val selected = _selection.value.selectedIds
+        if (surahId <= 0 || selected.isEmpty()) return
+        viewModelScope.launch {
+            selected.forEach { ayahNum -> preferences.toggleAyahBookmark(surahId, ayahNum) }
         }
     }
 

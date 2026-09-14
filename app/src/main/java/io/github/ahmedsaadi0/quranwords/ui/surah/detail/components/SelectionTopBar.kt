@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Done
@@ -25,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import io.github.ahmedsaadi0.quranwords.R
 
 /**
- * Contextual selection TopAppBar (multi-ayah copy/share). Decision 13:
+ * Contextual selection TopAppBar (multi-ayah bookmark/copy/share). Decision 13:
  * ✓/📋/↗ emoji replaced with vectors; platform execution lives in the Route.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,6 +35,7 @@ fun SelectionTopBar(
     selectedCount: Int,
     onDismiss: () -> Unit,
     onSelectAll: () -> Unit,
+    onBookmark: () -> Unit,
     onCopy: () -> Unit,
     onShare: () -> Unit
 ) {
@@ -63,6 +65,15 @@ fun SelectionTopBar(
                 Icon(
                     imageVector = Icons.Filled.Done,
                     contentDescription = stringResource(R.string.select_all)
+                )
+            }
+            IconButton(
+                onClick = onBookmark,
+                modifier = Modifier.testTag("bookmark_selected_btn")
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.BookmarkBorder,
+                    contentDescription = stringResource(R.string.cd_bookmark_selection)
                 )
             }
             IconButton(
