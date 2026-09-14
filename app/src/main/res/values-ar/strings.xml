@@ -51,6 +51,9 @@
     <string name="lang_arabic">العربية</string>
     <string name="lang_english">الإنجليزية</string>
 
+    <string name="font_title">خط المصحف</string>
+    <string name="font_preview_sample">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</string>
+
     <string name="db_update_title">تحديث جديد لقاعدة البيانات %1$s</string>
     <string name="db_update_installed">المثبتة: %1$s • </string>
     <string name="db_update_download">التنزيل: %1$s</string>

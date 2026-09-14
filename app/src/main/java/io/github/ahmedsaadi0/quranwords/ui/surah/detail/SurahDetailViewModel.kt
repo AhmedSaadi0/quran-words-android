@@ -12,6 +12,7 @@ import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
+import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +65,7 @@ class SurahDetailViewModel @Inject constructor(
 
     // Preference slices kept as separate flows so the combine above stays readable.
     private val fontState = MutableStateFlow(24f)
+    private val quranFontState = MutableStateFlow(QuranFont.KFGQPC_HAFS_1441)
     private val bookmarkSurahState = MutableStateFlow<Set<String>>(emptySet())
     private val bookmarkAyahState = MutableStateFlow<Set<String>>(emptySet())
     private val dbReadyState = MutableStateFlow(repository.isDatabaseReady())
@@ -107,6 +109,9 @@ class SurahDetailViewModel @Inject constructor(
             preferences.fontSize.collectLatest { fontState.value = it }
         }
         viewModelScope.launch {
+            preferences.quranFontKey.collectLatest { quranFontState.value = QuranFont.fromKey(it) }
+        }
+        viewModelScope.launch {
             preferences.bookmarkedSurahs.collectLatest { bookmarkSurahState.value = it }
         }
         viewModelScope.launch {
@@ -119,13 +124,15 @@ class SurahDetailViewModel @Inject constructor(
      * (Route/Screen) collect only this.
      */
     val screenState: StateFlow<SurahDetailUiState> = combine(
-        uiState, fontState, bookmarkSurahState, bookmarkAyahState, dbReadyState
-    ) { base, fontSize, surahMarks, ayahMarks, dbReady ->
-        base.copy(
-            fontSize = fontSize,
-            bookmarkedSurahs = surahMarks,
-            bookmarkedAyat = ayahMarks,
-            isDbReady = dbReady
+        uiState, fontState, quranFontState, bookmarkSurahState, bookmarkAyahState, dbReadyState
+    ) { values ->
+        @Suppress("UNCHECKED_CAST")
+        (values[0] as SurahDetailUiState).copy(
+            fontSize = values[1] as Float,
+            quranFont = values[2] as QuranFont,
+            bookmarkedSurahs = values[3] as Set<String>,
+            bookmarkedAyat = values[4] as Set<String>,
+            isDbReady = values[5] as Boolean
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SurahDetailUiState())
 

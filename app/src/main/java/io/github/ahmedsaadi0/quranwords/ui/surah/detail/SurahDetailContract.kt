@@ -3,6 +3,7 @@ package io.github.ahmedsaadi0.quranwords.ui.surah.detail
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
+import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 
 data class SurahDetailUiState(
     val surah: Surah? = null,
@@ -16,6 +17,7 @@ data class SurahDetailUiState(
     val aiGeneratedAt: String? = null,
     val isAiLoading: Boolean = false,
     val fontSize: Float = 24f,
+    val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
     val bookmarkedSurahs: Set<String> = emptySet(),
     val bookmarkedAyat: Set<String> = emptySet(),
     val isDbReady: Boolean = false,

@@ -33,6 +33,7 @@ import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.ui.components.JuzHizbSeparator
 import io.github.ahmedsaadi0.quranwords.ui.components.PageSeparator
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
+import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 
 /**
  * Ayat list: Basmalah item, page/juz separators, continuous-flow Mushaf
@@ -43,6 +44,7 @@ import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 fun SurahAyatList(
     ayat: List<Ayah>,
     fontSize: Float,
+    quranFont: QuranFont,
     hasBasmalah: Boolean,
     isSelectionMode: Boolean,
     selectedAyahs: Set<Int>,
@@ -75,6 +77,7 @@ fun SurahAyatList(
                         .padding(vertical = 16.dp),
                     fontSize = 24.sp,
                     lineHeight = 36.sp,
+                    fontFamily = quranFont.fontFamily,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center
@@ -142,6 +145,7 @@ fun SurahAyatList(
                     MushafFlowBlock(
                         group = group,
                         fontSize = fontSize,
+                        quranFont = quranFont,
                         isSelectionMode = isSelectionMode,
                         selectedAyahs = selectedAyahs,
                         onWordClick = onWordClick,

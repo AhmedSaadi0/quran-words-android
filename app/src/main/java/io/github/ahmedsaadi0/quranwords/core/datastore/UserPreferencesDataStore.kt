@@ -44,7 +44,17 @@ class UserPreferencesDataStore @Inject constructor(
         val KEY_DISMISSED_DB_VERSION = intPreferencesKey("dismissed_db_version_code")
         val KEY_LAST_DB_CHECK_AT = longPreferencesKey("last_db_check_at")
         val KEY_LANGUAGE = stringPreferencesKey("app_language") // system|ar|en
+        val KEY_QURAN_FONT = stringPreferencesKey("quran_font_key")
     }
+
+    /** Mirrors ui.theme.QuranFont keys; unknown stored values fall back to default. */
+    private val KNOWN_QURAN_FONT_KEYS = setOf(
+        "kfgqpc_hafs_1441",
+        "amiri_quran",
+        "scheherazade_new",
+        "noto_naskh_arabic"
+    )
+    private val DEFAULT_QURAN_FONT_KEY = "kfgqpc_hafs_1441"
 
     override val language: Flow<String> = context.preferencesDataStore.data.map { preferences ->
         (preferences[KEY_LANGUAGE] ?: "system").takeIf { it in setOf("system", "ar", "en") } ?: "system"
@@ -52,6 +62,11 @@ class UserPreferencesDataStore @Inject constructor(
 
     override val fontSize: Flow<Float> = context.preferencesDataStore.data.map { preferences ->
         (preferences[KEY_FONT_SIZE] ?: 24f).coerceIn(1f, 48f)
+    }
+
+    override val quranFontKey: Flow<String> = context.preferencesDataStore.data.map { preferences ->
+        (preferences[KEY_QURAN_FONT] ?: DEFAULT_QURAN_FONT_KEY)
+            .takeIf { it in KNOWN_QURAN_FONT_KEYS } ?: DEFAULT_QURAN_FONT_KEY
     }
 
     override val darkModeSetting: Flow<Int> = context.preferencesDataStore.data.map { preferences ->
@@ -103,6 +118,11 @@ class UserPreferencesDataStore @Inject constructor(
 
     override suspend fun setFontSize(size: Float) {
         context.preferencesDataStore.edit { it[KEY_FONT_SIZE] = size.coerceIn(1f, 48f) }
+    }
+
+    override suspend fun setQuranFontKey(key: String) {
+        val normalized = key.takeIf { it in KNOWN_QURAN_FONT_KEYS } ?: DEFAULT_QURAN_FONT_KEY
+        context.preferencesDataStore.edit { it[KEY_QURAN_FONT] = normalized }
     }
 
     override suspend fun setDarkModeSetting(mode: Int) {

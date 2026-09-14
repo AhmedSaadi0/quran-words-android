@@ -243,6 +243,7 @@ fun SurahDetailScreen(
                         SurahAyatList(
                             ayat = uiState.ayat,
                             fontSize = uiState.fontSize,
+                            quranFont = uiState.quranFont,
                             hasBasmalah = hasBasmalah,
                             isSelectionMode = uiState.isSelectionMode,
                             selectedAyahs = uiState.selectedAyahs,

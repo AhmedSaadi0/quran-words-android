@@ -44,7 +44,7 @@ import io.github.ahmedsaadi0.quranwords.core.util.sanitizeUthmanicText
 import io.github.ahmedsaadi0.quranwords.core.util.toEasternArabicDigits
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
-import io.github.ahmedsaadi0.quranwords.ui.theme.UthmanicHafs1441
+import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 
 private const val FLOW_WORD_TAG = "word_id"
 private const val FLOW_AYAH_TAG = "ayah_num"
@@ -59,6 +59,7 @@ private const val LAST_LINE_EPS_PX = 0.5f
 fun MushafFlowBlock(
     group: AyahFlowGroup,
     fontSize: Float,
+    quranFont: QuranFont,
     isSelectionMode: Boolean,
     selectedAyahs: Set<Int>,
     onWordClick: (WordToken, Ayah) -> Unit,
@@ -73,7 +74,7 @@ fun MushafFlowBlock(
 
     val ayahByNumber = remember(group) { group.ayat.associateBy { it.ayah } }
 
-    val annotated = remember(group, selectedAyahs, fontSize, endMarkerColor, selectionBg) {
+    val annotated = remember(group, selectedAyahs, fontSize, endMarkerColor, selectionBg, quranFont) {
         buildAnnotatedString {
             group.ayat.forEachIndexed { ayahIndex, ayah ->
                 // Inter-ayah space belongs to neither range: highlights stay isolated.
@@ -189,8 +190,8 @@ fun MushafFlowBlock(
                         }
                     },
                 fontSize = fontSize.sp,
-                fontFamily = UthmanicHafs1441,
-                lineHeight = (fontSize * 2.2f).sp,
+                fontFamily = quranFont.fontFamily,
+                lineHeight = (fontSize * quranFont.lineHeightMultiplier).sp,
                 fontWeight = FontWeight.W600,
                 color = MaterialTheme.colorScheme.onSurface,
                 // 1. تفعيل المحاذاة المتساوية للأطراف

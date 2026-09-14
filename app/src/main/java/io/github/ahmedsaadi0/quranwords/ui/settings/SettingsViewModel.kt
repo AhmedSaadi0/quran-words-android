@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.ahmedsaadi0.quranwords.core.util.AppLanguage
 import io.github.ahmedsaadi0.quranwords.core.util.LanguageManager
 import io.github.ahmedsaadi0.quranwords.domain.repository.UserPreferencesRepository
+import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -28,16 +29,19 @@ class SettingsViewModel @Inject constructor(
     private val _darkModeSetting = MutableStateFlow(0)
     private val _dynamicColorEnabled = MutableStateFlow(false)
     private val _language = MutableStateFlow(AppLanguage.SYSTEM)
+    private val _quranFont = MutableStateFlow(QuranFont.KFGQPC_HAFS_1441)
 
     val uiState: StateFlow<SettingsUiState> = combine(
         _darkModeSetting,
         _dynamicColorEnabled,
-        _language
-    ) { darkModeSetting, dynamicColorEnabled, language ->
+        _language,
+        _quranFont
+    ) { darkModeSetting, dynamicColorEnabled, language, quranFont ->
         SettingsUiState(
             darkModeSetting = darkModeSetting,
             dynamicColorEnabled = dynamicColorEnabled,
-            language = language
+            language = language,
+            quranFont = quranFont
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState())
 
@@ -54,6 +58,9 @@ class SettingsViewModel @Inject constructor(
                 languageManager.apply(tag)
             }
         }
+        viewModelScope.launch {
+            preferences.quranFontKey.collect { _quranFont.value = QuranFont.fromKey(it) }
+        }
     }
 
     fun onEvent(event: SettingsEvent) {
@@ -61,6 +68,7 @@ class SettingsViewModel @Inject constructor(
             is SettingsEvent.DarkModeChanged -> setDarkMode(event.mode)
             is SettingsEvent.DynamicColorChanged -> setDynamicColor(event.enabled)
             is SettingsEvent.LanguageChanged -> setLanguage(event.tag)
+            is SettingsEvent.QuranFontChanged -> setQuranFont(event.key)
         }
     }
 
@@ -92,5 +100,9 @@ class SettingsViewModel @Inject constructor(
 
     private fun setLanguage(tag: String) {
         viewModelScope.launch { preferences.setLanguage(tag) }
+    }
+
+    private fun setQuranFont(key: String) {
+        viewModelScope.launch { preferences.setQuranFontKey(key) }
     }
 }

@@ -28,12 +28,14 @@ class FakeUserPreferences(
     val lastReadSurahState = MutableStateFlow(initialLastReadSurah)
     val lastReadAyahState = MutableStateFlow(initialLastReadAyah)
     val fontSizeState = MutableStateFlow(24f)
+    val quranFontKeyState = MutableStateFlow("kfgqpc_hafs_1441")
     val darkModeState = MutableStateFlow(0)
     val dynamicColorState = MutableStateFlow(false)
     val languageState = MutableStateFlow("system")
 
     override val language: Flow<String> = languageState
     override val fontSize: Flow<Float> = fontSizeState
+    override val quranFontKey: Flow<String> = quranFontKeyState
     override val darkModeSetting: Flow<Int> = darkModeState
     override val dynamicColorEnabled: Flow<Boolean> = dynamicColorState
     override val lastReadSurah: Flow<Int> = lastReadSurahState
@@ -50,6 +52,10 @@ class FakeUserPreferences(
 
     override suspend fun setFontSize(size: Float) {
         fontSizeState.value = size
+    }
+
+    override suspend fun setQuranFontKey(key: String) {
+        quranFontKeyState.value = key
     }
 
     override suspend fun setDarkModeSetting(mode: Int) {
