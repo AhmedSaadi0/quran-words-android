@@ -190,8 +190,8 @@ fun MushafFlowBlock(
                     },
                 fontSize = fontSize.sp,
                 fontFamily = UthmanicHafs1441,
-                lineHeight = (fontSize * 2.4f).sp,
-                fontWeight = FontWeight.Medium,
+                lineHeight = (fontSize * 2.2f).sp,
+                fontWeight = FontWeight.W600,
                 color = MaterialTheme.colorScheme.onSurface,
                 // 1. تفعيل المحاذاة المتساوية للأطراف
                 textAlign = TextAlign.Justify,
