@@ -192,7 +192,7 @@ fun MushafFlowBlock(
                 fontSize = fontSize.sp,
                 fontFamily = quranFont.fontFamily,
                 lineHeight = (fontSize * quranFont.lineHeightMultiplier).sp,
-                fontWeight = FontWeight.W600,
+                fontWeight = FontWeight.Normal,
                 color = MaterialTheme.colorScheme.onSurface,
                 // 1. تفعيل المحاذاة المتساوية للأطراف
                 textAlign = TextAlign.Justify,

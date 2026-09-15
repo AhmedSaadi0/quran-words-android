@@ -66,7 +66,7 @@ fun SurahIndexScreen(
     uiState: SurahIndexUiState,
     onEvent: (SurahIndexEvent) -> Unit,
     onNavigateBack: () -> Unit,
-    onNavigateToSurahDetail: (Int) -> Unit
+    onNavigateToSurahDetail: (Int, Int) -> Unit
 ) {
     var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -174,7 +174,7 @@ fun SurahIndexScreen(
 private fun SurahsTab(
     uiState: SurahIndexUiState,
     onEvent: (SurahIndexEvent) -> Unit,
-    onNavigateToSurahDetail: (Int) -> Unit
+    onNavigateToSurahDetail: (Int, Int) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -280,7 +280,7 @@ private fun SurahsTab(
                 val isBookmarked = uiState.bookmarkedSurahIds.contains(surah.id)
                 SurahItemCard(
                     surah = surah,
-                    onClick = { onNavigateToSurahDetail(surah.id) },
+                    onClick = { onNavigateToSurahDetail(surah.id, 1) },
                     isBookmarked = isBookmarked,
                     onBookmarkClick = { onEvent(SurahIndexEvent.ToggleBookmark(surah.id)) },
                     modifier = Modifier.animateItem()
@@ -294,7 +294,7 @@ private fun SurahsTab(
 }
 
 @Composable
-private fun JuzTab(onNavigateToSurahDetail: (Int) -> Unit) {
+private fun JuzTab(onNavigateToSurahDetail: (Int, Int) -> Unit) {
     // Juz Tab — no search, direct list
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -307,7 +307,7 @@ private fun JuzTab(onNavigateToSurahDetail: (Int) -> Unit) {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
                     .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp))
-                    .clickable { onNavigateToSurahDetail(juz.startSurahId) }
+                    .clickable { onNavigateToSurahDetail(juz.startSurahId, juz.startAyah) }
                     .animateItem()
                     .testTag("juz_item_${juz.id}"),
                 colors = CardDefaults.cardColors(

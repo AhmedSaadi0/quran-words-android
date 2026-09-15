@@ -62,6 +62,7 @@ class SurahDetailViewModel @Inject constructor(
     private var currentOffset: Int = 0
     private var hasMore: Boolean = true
     private val pageSize: Int = 20
+    private var lastWrittenLastRead: Pair<Int, Int>? = null
 
     // Preference slices kept as separate flows so the combine above stays readable.
     private val fontState = MutableStateFlow(24f)
@@ -298,6 +299,9 @@ class SurahDetailViewModel @Inject constructor(
 
     fun updateLastRead(surahId: Int, ayahNum: Int) {
         if (surahId <= 0) return
+        val key = surahId to ayahNum
+        if (lastWrittenLastRead == key) return
+        lastWrittenLastRead = key
         viewModelScope.launch { preferences.setLastRead(surahId, ayahNum) }
     }
 

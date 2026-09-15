@@ -12,7 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 @Composable
 fun SurahIndexRoute(
     onNavigateBack: () -> Unit,
-    onNavigateToSurahDetail: (Int) -> Unit,
+    onNavigateToSurahDetail: (Int, Int) -> Unit,
     viewModel: SurahIndexViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

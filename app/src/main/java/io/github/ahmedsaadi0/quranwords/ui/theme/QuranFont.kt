@@ -7,13 +7,13 @@ import io.github.ahmedsaadi0.quranwords.R
 
 private fun singleCutWithHafsFallback(resId: Int): FontFamily = FontFamily(
     Font(resId = resId, weight = FontWeight.Normal),
-    Font(resId = resId, weight = FontWeight.Medium),
-    Font(resId = resId, weight = FontWeight.Bold),
-    // Per-glyph fallback: rare Quranic marks missing from a cut render from
-    // the 1441H Hafs font instead of tofu boxes.
-    Font(resId = R.font.kfgqpc_hafs_1441, weight = FontWeight.Normal),
-    Font(resId = R.font.kfgqpc_hafs_1441, weight = FontWeight.Medium),
-    Font(resId = R.font.kfgqpc_hafs_1441, weight = FontWeight.Bold)
+//    Font(resId = resId, weight = FontWeight.Medium),
+//    Font(resId = resId, weight = FontWeight.Bold),
+//    // Per-glyph fallback: rare Quranic marks missing from a cut render from
+//    // the 1441H Hafs font instead of tofu boxes.
+//    Font(resId = R.font.kfgqpc_hafs_1441, weight = FontWeight.Normal),
+//    Font(resId = R.font.kfgqpc_hafs_1441, weight = FontWeight.Medium),
+//    Font(resId = R.font.kfgqpc_hafs_1441, weight = FontWeight.Bold)
 )
 
 /**

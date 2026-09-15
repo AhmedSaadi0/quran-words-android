@@ -32,6 +32,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.distinctUntilChanged
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.ui.components.MorphologyBottomSheet
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.AyahFlowGroup
@@ -128,10 +129,14 @@ fun SurahDetailScreen(
         }
     }
 
-    // Track the first visible block's first ayah for last-read updates
-    LaunchedEffect(listState, uiState.ayat) {
+    // Track the first visible block's first ayah for last-read updates.
+    // Gated until the initial deep-link scroll completes so opening at
+    // targetAyah never emits a spurious AyahVisible(1) first.
+    LaunchedEffect(listState, uiState.ayat, hasHandledInitialScroll) {
         snapshotFlow { listState.firstVisibleItemIndex }
+            .distinctUntilChanged()
             .collect { firstIdx ->
+                if (!hasHandledInitialScroll) return@collect
                 val group = flowGroups.getOrNull(firstIdx - listOffset)
                 if (group != null) {
                     onEvent(SurahDetailEvent.AyahVisible(group.ayat.first().ayah))

@@ -35,11 +35,6 @@ import io.github.ahmedsaadi0.quranwords.ui.components.PageSeparator
 import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 
-/**
- * Ayat list: Basmalah item, page/juz separators, continuous-flow Mushaf
- * blocks (one Text per page group) and the loading-more / end slots. Item
- * appearance animation preserved 1:1.
- */
 @Composable
 fun SurahAyatList(
     ayat: List<Ayah>,
@@ -52,14 +47,14 @@ fun SurahAyatList(
     listState: LazyListState,
     onWordClick: (WordToken, Ayah) -> Unit,
     onToggleSelection: (Int) -> Unit,
-    onEnterSelection: (Int) -> Unit
+    onEnterSelection: (Int) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    // Single source of truth for grouping — the screen derives its
-    // scroll-index mapping from the same pure function.
     val groups = remember(ayat) { groupAyatByPage(ayat) }
+
     LazyColumn(
         state = listState,
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(
             start = 16.dp,
             end = 16.dp,
@@ -75,9 +70,9 @@ fun SurahAyatList(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),
-                    fontSize = 24.sp,
-                    lineHeight = 36.sp,
                     fontFamily = quranFont.fontFamily,
+                    fontSize = 24.sp,
+                    lineHeight = (24f * quranFont.lineHeightMultiplier).sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     textAlign = TextAlign.Center
@@ -104,14 +99,7 @@ fun SurahAyatList(
                 ),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (showPage) {
-                    PageSeparator(
-                        pageNumber = first.pageNumber!!,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp)
-                    )
-                }
+                // 1. ترويسة الجزء والحزب في قمة الصفحة
                 if (showJuzHizb && first.juz != null) {
                     JuzHizbSeparator(
                         juz = first.juz,
@@ -125,6 +113,7 @@ fun SurahAyatList(
                     )
                 }
 
+                // 2. كتلة آيات الصفحة
                 AnimatedVisibility(
                     visible = true,
                     enter = fadeIn(
@@ -151,6 +140,16 @@ fun SurahAyatList(
                         onWordClick = onWordClick,
                         onToggleSelection = onToggleSelection,
                         onEnterSelection = onEnterSelection
+                    )
+                }
+
+                // 3. رقم الصفحة أسفل كتلة الآيات مباشرة
+                if (showPage) {
+                    PageSeparator(
+                        pageNumber = first.pageNumber!!,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 6.dp)
                     )
                 }
             }
