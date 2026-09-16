@@ -78,4 +78,46 @@ class AyahFlowGroupingTest {
         assertEquals("page_2", groups[2].key)
         assertEquals(4, groups[2].firstAyahIndex)
     }
+
+    @Test
+    fun `non-contiguous same page keeps LazyColumn keys unique`() {
+        // Regression for "mushaf_page_132 already used": a null-page gap splits
+        // the same mushaf page into two groups with identical group.key.
+        val ayat = listOf(
+            ayah(1, 132), ayah(2, 132),
+            ayah(3, null),
+            ayah(4, 132)
+        )
+        val groups = groupAyatByPage(ayat)
+        assertEquals(3, groups.size)
+        assertEquals(listOf("page_132", "unpaged_3", "page_132"), groups.map { it.key })
+        assertEquals(groups.size, groups.map { uiKey(it) }.toSet().size)
+    }
+
+    @Test
+    fun `duplicate paged append keeps LazyColumn keys unique and dedupes cleanly`() {
+        // Simulates a concurrent-pagination double append before ViewModel dedupe:
+        // a stale fetch appends older ayat at the end, so page_131 appears in two
+        // non-contiguous groups with identical group.key. Grouping alone must still
+        // produce unique UI keys, and distinctBy (the SurahDetailViewModel.appendAyat
+        // contract) must collapse it back to two groups.
+        val firstFetch = listOf(ayah(1, 131), ayah(2, 131), ayah(3, 132), ayah(4, 132))
+        val duplicated = firstFetch + firstFetch.take(2)
+        val groups = groupAyatByPage(duplicated)
+        assertEquals(3, groups.size)
+        assertEquals(listOf("page_131", "page_132", "page_131"), groups.map { it.key })
+        assertEquals(groups.size, groups.map { uiKey(it) }.toSet().size)
+
+        val deduped = duplicated.distinctBy { it.ayah }
+        assertEquals(listOf(1, 2, 3, 4), deduped.map { it.ayah })
+        val dedupedGroups = groupAyatByPage(deduped)
+        assertEquals(2, dedupedGroups.size)
+        assertEquals(listOf("page_131", "page_132"), dedupedGroups.map { it.key })
+    }
+
+    /**
+     * Mirrors the LazyColumn key formula in SurahAyatList
+     * (`mushaf_${group.key}_${group.firstAyahIndex}`) — keep in sync.
+     */
+    private fun uiKey(group: AyahFlowGroup) = "mushaf_${group.key}_${group.firstAyahIndex}"
 }

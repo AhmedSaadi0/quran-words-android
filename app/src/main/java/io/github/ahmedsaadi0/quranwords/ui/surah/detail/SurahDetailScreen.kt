@@ -1,5 +1,13 @@
 package io.github.ahmedsaadi0.quranwords.ui.surah.detail
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +36,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,6 +51,7 @@ import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.groupAyatByPa
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahCollapsingHeaderState
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.SurahDetailHeader
 import io.github.ahmedsaadi0.quranwords.ui.surah.detail.components.rememberNestedScrollCollapse
+import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 
 /**
  * Stateless surah detail screen. Collapse state is saveable; pagination,
@@ -93,9 +103,29 @@ fun SurahDetailScreen(
     // (replaces the legacy delay(100) + VM-state peek hack).
     var pendingPage by remember { mutableStateOf<Int?>(null) }
 
+    // Bookmarked ayah numbers for this surah: keys are "surahId:ayah".
+    // Parsed here so the flow block stays a pure renderer of Set<Int>.
+    val bookmarkedAyahNums = remember(uiState.bookmarkedAyat, surahId) {
+        uiState.bookmarkedAyat.mapNotNull { key ->
+            val parts = key.split(":")
+            if (parts.size == 2 && parts[0].toIntOrNull() == surahId) {
+                parts[1].toIntOrNull()
+            } else {
+                null
+            }
+        }.toSet()
+    }
+
     // Quick-return connection on the common ancestor of header + list so list
     // scroll deltas reach onPreScroll. Disabled while selection is active.
     val nestedScrollConnection = rememberNestedScrollCollapse(collapseState, uiState.isSelectionMode)
+
+    // System back dismisses an active ayah selection first instead of leaving
+    // the surah. Disabled while the morphology sheet is open so the sheet
+    // consumes the back press (it registers its handler later in this scope).
+    BackHandler(enabled = uiState.isSelectionMode && uiState.selectedWord == null) {
+        onEvent(SurahDetailEvent.ClearSelection)
+    }
 
     // Load surah only if not already loaded for this surahId
     LaunchedEffect(surahId) {
@@ -177,31 +207,49 @@ fun SurahDetailScreen(
                 .padding(innerPadding)
                 .nestedScroll(nestedScrollConnection)
         ) {
-            if (uiState.isSelectionMode) {
-                SelectionTopBar(
-                    selectedCount = uiState.selectedAyahs.size,
-                    onDismiss = { onEvent(SurahDetailEvent.ClearSelection) },
-                    onSelectAll = { onEvent(SurahDetailEvent.SelectAllAyahs) },
-                    onBookmark = { onEvent(SurahDetailEvent.BookmarkSelection) },
-                    onCopy = { onEvent(SurahDetailEvent.CopySelection) },
-                    onShare = { onEvent(SurahDetailEvent.ShareSelection) }
-                )
-            } else {
-                SurahDetailHeader(
-                    surah = uiState.surah,
-                    isBookmarked = uiState.isSurahBookmarked,
-                    fontSize = uiState.fontSize,
-                    surahPages = uiState.surahPages,
-                    currentPage = currentPageFor(flowGroups, listState, hasBasmalah),
-                    collapseState = collapseState,
-                    onNavigateBack = onNavigateBack,
-                    onToggleBookmark = { onEvent(SurahDetailEvent.ToggleSurahBookmark(surahId)) },
-                    onFontSizeChange = { onEvent(SurahDetailEvent.SetFontSize(it)) },
-                    onPageClick = { page ->
-                        pendingPage = page
-                        onEvent(SurahDetailEvent.EnsurePageLoaded(page))
-                    }
-                )
+            // Header ↔ selection bar swap: fade + subtle ±8dp slide on one small
+            // node only — no list/text relayout, safe for low-end devices.
+            val density = LocalDensity.current
+            val barSlidePx = with(density) { 8.dp.roundToPx() }
+            AnimatedContent(
+                targetState = uiState.isSelectionMode,
+                transitionSpec = {
+                    (fadeIn(tween(AppMotion.DurationShort, easing = AppMotion.EasingStandard)) +
+                        slideInVertically(
+                            tween(AppMotion.DurationShort, easing = AppMotion.EasingStandard)
+                        ) { -barSlidePx }) togetherWith
+                        (fadeOut(tween(AppMotion.DurationShort, easing = AppMotion.EasingExit)) +
+                            slideOutVertically(
+                                tween(AppMotion.DurationShort, easing = AppMotion.EasingExit)
+                            ) { -barSlidePx })
+                },
+                label = "headerSelectionSwap"
+            ) { inSelection ->
+                if (inSelection) {
+                    SelectionTopBar(
+                        selectedCount = uiState.selectedAyahs.size,
+                        onDismiss = { onEvent(SurahDetailEvent.ClearSelection) },
+                        onBookmark = { onEvent(SurahDetailEvent.BookmarkSelection) },
+                        onCopy = { onEvent(SurahDetailEvent.CopySelection) },
+                        onShare = { onEvent(SurahDetailEvent.ShareSelection) }
+                    )
+                } else {
+                    SurahDetailHeader(
+                        surah = uiState.surah,
+                        isBookmarked = uiState.isSurahBookmarked,
+                        fontSize = uiState.fontSize,
+                        surahPages = uiState.surahPages,
+                        currentPage = currentPageFor(flowGroups, listState, hasBasmalah),
+                        collapseState = collapseState,
+                        onNavigateBack = onNavigateBack,
+                        onToggleBookmark = { onEvent(SurahDetailEvent.ToggleSurahBookmark(surahId)) },
+                        onFontSizeChange = { onEvent(SurahDetailEvent.SetFontSize(it)) },
+                        onPageClick = { page ->
+                            pendingPage = page
+                            onEvent(SurahDetailEvent.EnsurePageLoaded(page))
+                        }
+                    )
+                }
             }
 
             Box(modifier = Modifier.fillMaxSize().weight(1f)) {
@@ -252,6 +300,7 @@ fun SurahDetailScreen(
                             hasBasmalah = hasBasmalah,
                             isSelectionMode = uiState.isSelectionMode,
                             selectedAyahs = uiState.selectedAyahs,
+                            bookmarkedAyahs = bookmarkedAyahNums,
                             isLoadingMore = uiState.isLoadingMore,
                             listState = listState,
                             onWordClick = { word, ayah ->
@@ -260,7 +309,15 @@ fun SurahDetailScreen(
                                 }
                             },
                             onToggleSelection = { onEvent(SurahDetailEvent.ToggleAyahSelection(it)) },
-                            onEnterSelection = { onEvent(SurahDetailEvent.EnterSelection(it)) }
+                            // Long-press: fresh anchor outside selection mode,
+                            // range extension from the anchor inside it.
+                            onEnterSelection = {
+                                if (uiState.isSelectionMode) {
+                                    onEvent(SurahDetailEvent.RangeSelect(it))
+                                } else {
+                                    onEvent(SurahDetailEvent.EnterSelection(it))
+                                }
+                            }
                         )
                     }
                 }

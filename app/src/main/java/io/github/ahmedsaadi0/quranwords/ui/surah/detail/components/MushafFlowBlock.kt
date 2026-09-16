@@ -65,21 +65,40 @@ fun MushafFlowBlock(
     onWordClick: (WordToken, Ayah) -> Unit,
     onToggleSelection: (Int) -> Unit,
     onEnterSelection: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bookmarkedAyahs: Set<Int> = emptySet()
 ) {
     val haptic = LocalHapticFeedback.current
     val endMarkerColor = MaterialTheme.colorScheme.primary
     val selectionBg = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+    // Bookmark wash: tertiary maps to the QuranGold/Amber family in both
+    // light (NaturalAmberContainer) and dark (NaturalAmberContainerDark)
+    // schemes (Theme.kt), so no new token is needed. Lower alpha than
+    // selectionBg keeps selection the dominant action signal.
+    val bookmarkBg = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
+    val bookmarkMarkerColor = MaterialTheme.colorScheme.tertiary
     var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
     val ayahByNumber = remember(group) { group.ayat.associateBy { it.ayah } }
 
-    val annotated = remember(group, selectedAyahs, fontSize, endMarkerColor, selectionBg, quranFont) {
+    val annotated = remember(
+        group,
+        selectedAyahs,
+        bookmarkedAyahs,
+        fontSize,
+        endMarkerColor,
+        selectionBg,
+        bookmarkBg,
+        bookmarkMarkerColor,
+        quranFont
+    ) {
         buildAnnotatedString {
             group.ayat.forEachIndexed { ayahIndex, ayah ->
                 // Inter-ayah space belongs to neither range: highlights stay isolated.
                 if (ayahIndex > 0) append(" ")
                 val ayahStart = length
+                val isSelected = ayah.ayah in selectedAyahs
+                val isBookmarked = ayah.ayah in bookmarkedAyahs
                 if (ayah.words.isNotEmpty()) {
                     ayah.words.forEachIndexed { wordIndex, word ->
                         if (wordIndex > 0) append(" ")
@@ -92,7 +111,9 @@ fun MushafFlowBlock(
                 }
                 withStyle(
                     SpanStyle(
-                        color = endMarkerColor,
+                        // Combined state: selection owns the body wash while the
+                        // end-marker carries the bookmark signal (no muddy blend).
+                        color = if (isBookmarked) bookmarkMarkerColor else endMarkerColor,
                         fontSize = (fontSize * 0.9f).sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -101,8 +122,10 @@ fun MushafFlowBlock(
                     append("\u00A0${ayah.ayah.toEasternArabicDigits()}")
                 }
                 addStringAnnotation(FLOW_AYAH_TAG, ayah.ayah.toString(), ayahStart, length)
-                if (ayah.ayah in selectedAyahs) {
+                if (isSelected) {
                     addStyle(SpanStyle(background = selectionBg), ayahStart, length)
+                } else if (isBookmarked) {
+                    addStyle(SpanStyle(background = bookmarkBg), ayahStart, length)
                 }
             }
         }
@@ -111,7 +134,7 @@ fun MushafFlowBlock(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .pointerInput(isSelectionMode, group.key) {
+            .pointerInput(isSelectionMode, group.key, group.firstAyahIndex) {
                 detectTapGestures(
                     onTap = { offset ->
                         val result = layoutResult ?: return@detectTapGestures
@@ -138,7 +161,7 @@ fun MushafFlowBlock(
                     }
                 )
             }
-            .testTag("mushaf_block_${group.key}")
+            .testTag("mushaf_block_${group.key}_${group.firstAyahIndex}")
             .semantics(mergeDescendants = true) {
                 val firstNum = group.ayat.firstOrNull()?.ayah?.toEasternArabicDigits().orEmpty()
                 val lastNum = group.ayat.lastOrNull()?.ayah?.toEasternArabicDigits().orEmpty()
@@ -148,11 +171,31 @@ fun MushafFlowBlock(
                 } else {
                     range
                 }
-                customActions = group.ayat.map { ayah ->
-                    CustomAccessibilityAction("الآية ${ayah.ayah.toEasternArabicDigits()}") {
+                customActions = group.ayat.flatMap { ayah ->
+                    val toggleLabel = if (ayah.ayah in bookmarkedAyahs) {
+                        "الآية ${ayah.ayah.toEasternArabicDigits()} (محفوظة)"
+                    } else {
+                        "الآية ${ayah.ayah.toEasternArabicDigits()}"
+                    }
+                    val toggle = CustomAccessibilityAction(toggleLabel) {
                         if (isSelectionMode) onToggleSelection(ayah.ayah)
                         else onEnterSelection(ayah.ayah)
                         true
+                    }
+                    // TalkBack has no long-press: expose range extension (the
+                    // Screen routes onEnterSelection to RangeSelect in this mode).
+                    if (isSelectionMode) {
+                        listOf(
+                            toggle,
+                            CustomAccessibilityAction(
+                                "تحديد المدى حتى الآية ${ayah.ayah.toEasternArabicDigits()}"
+                            ) {
+                                onEnterSelection(ayah.ayah)
+                                true
+                            }
+                        )
+                    } else {
+                        listOf(toggle)
                     }
                 }
             }

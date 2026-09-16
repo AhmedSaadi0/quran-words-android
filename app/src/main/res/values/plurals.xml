@@ -44,6 +44,10 @@
         <item quantity="one">%1$d ayah copied</item>
         <item quantity="other">%1$d ayat copied</item>
     </plurals>
+    <plurals name="bookmarked_ayat_count">
+        <item quantity="one">%1$d ayah bookmarked</item>
+        <item quantity="other">%1$d ayat bookmarked</item>
+    </plurals>
 
     <!-- Selected words count -->
     <plurals name="selected_words_count">

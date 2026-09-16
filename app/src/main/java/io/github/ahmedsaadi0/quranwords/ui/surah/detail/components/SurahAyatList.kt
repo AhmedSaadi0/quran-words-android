@@ -48,7 +48,8 @@ fun SurahAyatList(
     onWordClick: (WordToken, Ayah) -> Unit,
     onToggleSelection: (Int) -> Unit,
     onEnterSelection: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    bookmarkedAyahs: Set<Int> = emptySet()
 ) {
     val groups = remember(ayat) { groupAyatByPage(ayat) }
 
@@ -80,7 +81,7 @@ fun SurahAyatList(
             }
         }
 
-        itemsIndexed(groups, key = { _, group -> "mushaf_${group.key}" }) { groupIndex, group ->
+        itemsIndexed(groups, key = { _, group -> "mushaf_${group.key}_${group.firstAyahIndex}" }) { groupIndex, group ->
             val first = group.ayat.first()
             val prevAyah = ayat.getOrNull(group.firstAyahIndex - 1)
             val isJuzStart = prevAyah?.juz != first.juz
@@ -137,6 +138,7 @@ fun SurahAyatList(
                         quranFont = quranFont,
                         isSelectionMode = isSelectionMode,
                         selectedAyahs = selectedAyahs,
+                        bookmarkedAyahs = bookmarkedAyahs,
                         onWordClick = onWordClick,
                         onToggleSelection = onToggleSelection,
                         onEnterSelection = onEnterSelection

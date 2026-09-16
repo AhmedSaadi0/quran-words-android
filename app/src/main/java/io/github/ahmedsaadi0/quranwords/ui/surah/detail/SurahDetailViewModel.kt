@@ -154,9 +154,7 @@ class SurahDetailViewModel @Inject constructor(
                 viewModelScope.launch { preferences.setFontSize(event.size.coerceIn(1f, 48f)) }
             is SurahDetailEvent.EnterSelection -> _selection.update { it.enter(event.ayah) }
             is SurahDetailEvent.ToggleAyahSelection -> _selection.update { it.toggle(event.ayah) }
-            SurahDetailEvent.SelectAllAyahs -> _selection.update {
-                it.selectAll(_ayat.value.map { ayah -> ayah.ayah })
-            }
+            is SurahDetailEvent.RangeSelect -> rangeSelect(event.ayah)
             SurahDetailEvent.ClearSelection -> _selection.update { it.clear() }
             SurahDetailEvent.BookmarkSelection -> bookmarkSelection()
             // Platform events (copy/share selection) are handled by the Route.
@@ -164,10 +162,25 @@ class SurahDetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Extends the selection from the anchor to [ayah] (union). Selection ids
+     * apply instantly even beyond the loaded pages; the far end is then paged
+     * in behind so its wash renders as pages arrive.
+     */
+    private fun rangeSelect(ayah: Int) {
+        val anchor = _selection.value.anchorId
+        _selection.update { it.rangeTo(ayah) }
+        val farEnd = maxOf(anchor ?: ayah, ayah)
+        viewModelScope.launch { ensureAyahLoaded(farEnd) }
+    }
+
     private fun bookmarkSelection() {
         val surahId = currentSurahId
         val selected = _selection.value.selectedIds
         if (surahId <= 0 || selected.isEmpty()) return
+        // Optimistic clear: selection is UI state, persistence continues in
+        // the background — the bar dismisses instantly on tap.
+        _selection.update { it.clear() }
         viewModelScope.launch {
             selected.forEach { ayahNum -> preferences.toggleAyahBookmark(surahId, ayahNum) }
         }
@@ -237,8 +250,7 @@ class SurahDetailViewModel @Inject constructor(
                 is Result.Success -> {
                     val nextPage = result.data
                     if (nextPage.isNotEmpty()) {
-                        _ayat.value = _ayat.value + nextPage
-                        currentOffset += nextPage.size
+                        appendAyat(nextPage)
                         val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
                         hasMore = nextPage.size == pageSize && currentOffset < total
                     } else {
@@ -249,6 +261,21 @@ class SurahDetailViewModel @Inject constructor(
             }
             _isLoadingMore.value = false
         }
+    }
+
+    /**
+     * Appends paged ayat deduplicated by ayah number so concurrent
+     * [loadNextPage]/[ensureAyahLoaded]/[ensurePageLoaded] fetches at a stale
+     * offset can never duplicate rows (which previously produced duplicate
+     * `mushaf_page_*` LazyColumn keys). [currentOffset] advances only by the
+     * actually-added count so a duplicate fetch never skips verses.
+     */
+    private fun appendAyat(next: List<Ayah>) {
+        if (next.isEmpty()) return
+        val current = _ayat.value
+        val deduped = (current + next).distinctBy { it.ayah }
+        _ayat.value = deduped
+        currentOffset += deduped.size - current.size
     }
 
     suspend fun ensureAyahLoaded(targetAyah: Int) {
@@ -262,8 +289,7 @@ class SurahDetailViewModel @Inject constructor(
                 hasMore = false
                 break
             }
-            _ayat.value = _ayat.value + nextPage
-            currentOffset += nextPage.size
+            appendAyat(nextPage)
             val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
             hasMore = nextPage.size == pageSize && currentOffset < total
             // Small yield to not block UI
@@ -288,8 +314,7 @@ class SurahDetailViewModel @Inject constructor(
                 _isLoadingMore.value = false
                 break
             }
-            _ayat.value = _ayat.value + nextPage
-            currentOffset += nextPage.size
+            appendAyat(nextPage)
             val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
             hasMore = nextPage.size == pageSize && currentOffset < total
             _isLoadingMore.value = false

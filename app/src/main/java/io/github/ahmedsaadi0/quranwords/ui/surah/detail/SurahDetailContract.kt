@@ -41,10 +41,10 @@ sealed interface SurahDetailEvent {
     data class ToggleSurahBookmark(val surahId: Int) : SurahDetailEvent
     data class SetFontSize(val size: Float) : SurahDetailEvent
 
-    // Selection mode
+    // Selection mode (long-press in selection mode extends a range via RangeSelect)
     data class EnterSelection(val ayah: Int) : SurahDetailEvent
     data class ToggleAyahSelection(val ayah: Int) : SurahDetailEvent
-    data object SelectAllAyahs : SurahDetailEvent
+    data class RangeSelect(val ayah: Int) : SurahDetailEvent
     data object ClearSelection : SurahDetailEvent
     data object BookmarkSelection : SurahDetailEvent
 

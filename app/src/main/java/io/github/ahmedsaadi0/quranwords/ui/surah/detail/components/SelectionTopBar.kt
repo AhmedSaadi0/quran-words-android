@@ -1,5 +1,12 @@
 package io.github.ahmedsaadi0.quranwords.ui.surah.detail.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
@@ -8,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -24,6 +30,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import io.github.ahmedsaadi0.quranwords.R
+import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 
 /**
  * Contextual selection TopAppBar (multi-ayah bookmark/copy/share). Decision 13:
@@ -34,17 +41,32 @@ import io.github.ahmedsaadi0.quranwords.R
 fun SelectionTopBar(
     selectedCount: Int,
     onDismiss: () -> Unit,
-    onSelectAll: () -> Unit,
     onBookmark: () -> Unit,
     onCopy: () -> Unit,
     onShare: () -> Unit
 ) {
     TopAppBar(
         title = {
-            Text(
-                text = pluralStringResource(R.plurals.selected_ayat_count, selectedCount, selectedCount),
-                fontWeight = FontWeight.Bold
-            )
+            // Direction-aware count tick: slides up on increment, down on
+            // decrement. Single tiny node, 150ms — negligible cost.
+            AnimatedContent(
+                targetState = selectedCount,
+                transitionSpec = {
+                    val down = targetState < initialState
+                    val enterSlide = if (down) 1 else -1
+                    val exitSlide = if (down) -1 else 1
+                    (fadeIn(tween(150, easing = AppMotion.EasingStandard)) +
+                        slideInVertically(tween(150, easing = AppMotion.EasingStandard)) { enterSlide * it / 3 }) togetherWith
+                        (fadeOut(tween(150, easing = AppMotion.EasingExit)) +
+                            slideOutVertically(tween(150, easing = AppMotion.EasingExit)) { exitSlide * it / 3 })
+                },
+                label = "selectedCountTick"
+            ) { count ->
+                Text(
+                    text = pluralStringResource(R.plurals.selected_ayat_count, count, count),
+                    fontWeight = FontWeight.Bold
+                )
+            }
         },
         navigationIcon = {
             IconButton(
@@ -58,15 +80,6 @@ fun SelectionTopBar(
             }
         },
         actions = {
-            IconButton(
-                onClick = onSelectAll,
-                modifier = Modifier.testTag("select_all_btn")
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Done,
-                    contentDescription = stringResource(R.string.select_all)
-                )
-            }
             IconButton(
                 onClick = onBookmark,
                 modifier = Modifier.testTag("bookmark_selected_btn")
