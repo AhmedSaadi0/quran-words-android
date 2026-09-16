@@ -49,7 +49,9 @@ fun SurahAyatList(
     onToggleSelection: (Int) -> Unit,
     onEnterSelection: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    bookmarkedAyahs: Set<Int> = emptySet()
+    bookmarkedAyahs: Set<Int> = emptySet(),
+    pulseAyah: Int? = null,
+    onPulseDone: () -> Unit = {}
 ) {
     val groups = remember(ayat) { groupAyatByPage(ayat) }
 
@@ -139,6 +141,8 @@ fun SurahAyatList(
                         isSelectionMode = isSelectionMode,
                         selectedAyahs = selectedAyahs,
                         bookmarkedAyahs = bookmarkedAyahs,
+                        pulseAyah = pulseAyah,
+                        onPulseDone = onPulseDone,
                         onWordClick = onWordClick,
                         onToggleSelection = onToggleSelection,
                         onEnterSelection = onEnterSelection

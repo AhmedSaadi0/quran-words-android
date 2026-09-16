@@ -1,5 +1,7 @@
 package io.github.ahmedsaadi0.quranwords.ui.surah.detail.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,13 +11,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -40,10 +46,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import io.github.ahmedsaadi0.quranwords.core.util.sanitizeUthmanicText
 import io.github.ahmedsaadi0.quranwords.core.util.toEasternArabicDigits
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
+import io.github.ahmedsaadi0.quranwords.ui.theme.AppMotion
 import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 
 private const val FLOW_WORD_TAG = "word_id"
@@ -66,7 +74,9 @@ fun MushafFlowBlock(
     onToggleSelection: (Int) -> Unit,
     onEnterSelection: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    bookmarkedAyahs: Set<Int> = emptySet()
+    bookmarkedAyahs: Set<Int> = emptySet(),
+    pulseAyah: Int? = null,
+    onPulseDone: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
     val endMarkerColor = MaterialTheme.colorScheme.primary
@@ -77,6 +87,12 @@ fun MushafFlowBlock(
     // selectionBg keeps selection the dominant action signal.
     val bookmarkBg = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
     val bookmarkMarkerColor = MaterialTheme.colorScheme.tertiary
+    // Deep-link pulse base (alpha is animated, so no baked alpha here).
+    // Same hue family as selection but the motion — not a new color — is the
+    // "here you are" signal. Drawn as an overlay (see drawWithContent), so
+    // the AnnotatedString below stays static: zero text relayout per frame.
+    val pulseBase = MaterialTheme.colorScheme.primaryContainer
+    val pulseAlpha = remember { Animatable(0f) }
     var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
     val ayahByNumber = remember(group) { group.ayat.associateBy { it.ayah } }
@@ -129,6 +145,30 @@ fun MushafFlowBlock(
                 }
             }
         }
+    }
+
+    // Line bands covering the pulse target, split for the centered last line.
+    // Pure geometry over the static text: no span changes, no relayout.
+    val pulseGeo = remember(layoutResult, annotated, pulseAyah) {
+        val target = pulseAyah
+        val result = layoutResult
+        if (target == null || result == null) null
+        else result.pulseGeometry(annotated, target)
+    }
+
+    // Two soft fades (~1s total). Keys cover late layout delivery; the effect
+    // never touches its own keys, so no restart loop is possible. Blocks not
+    // owning the target return early without firing onPulseDone.
+    LaunchedEffect(pulseAyah, layoutResult) {
+        val geo = pulseGeo
+        if (pulseAyah == null || geo == null || geo.isEmpty) return@LaunchedEffect
+        repeat(2) {
+            pulseAlpha.animateTo(0.5f, tween(200, easing = AppMotion.EasingStandard))
+            delay(100)
+            pulseAlpha.animateTo(0.12f, tween(180, easing = AppMotion.EasingExit))
+        }
+        pulseAlpha.snapTo(0f)
+        onPulseDone()
     }
 
     Box(
@@ -207,6 +247,42 @@ fun MushafFlowBlock(
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp, vertical = 2.dp)
                     .drawWithContent {
+                        // Pulse overlay (behind text): per-line rounded bands over
+                        // the target ayah with GPU-animated alpha. Same two-pass
+                        // clip/translate split as the content below so the
+                        // centered last line stays aligned. Zero text relayout:
+                        // the AnnotatedString never changes during the pulse.
+                        // (If the ayah also carries a static span wash, that
+                        // opaque wash covers the overlay there — but such an
+                        // ayah is already marked, so no cue is lost.)
+                        val geo = pulseGeo
+                        val alpha = pulseAlpha.value
+                        if (geo != null && !geo.isEmpty && alpha > 0.01f) {
+                            val color = pulseBase.copy(alpha = alpha)
+                            val radius = CornerRadius(6.dp.toPx())
+                            val expandX = 3.dp.toPx()
+                            fun drawBand(rect: Rect) {
+                                drawRoundRect(
+                                    color = color,
+                                    topLeft = Offset(rect.left - expandX, rect.top),
+                                    size = Size(rect.width + expandX * 2f, rect.height),
+                                    cornerRadius = radius
+                                )
+                            }
+                            if (geo.centered) {
+                                clipRect(top = 0f, bottom = geo.lastLineTop) {
+                                    geo.above.forEach(::drawBand)
+                                }
+                                clipRect(top = geo.lastLineTop, bottom = size.height) {
+                                    translate(left = -geo.emptySpace / 2f) {
+                                        geo.lastLine.forEach(::drawBand)
+                                    }
+                                }
+                            } else {
+                                geo.above.forEach(::drawBand)
+                                geo.lastLine.forEach(::drawBand)
+                            }
+                        }
                         // Madinah Mushaf page effect: Compose has no
                         // `text-align-last: center`, so the last line is drawn
                         // shifted to the center while taps are re-mapped back
@@ -252,6 +328,68 @@ fun MushafFlowBlock(
             )
         }
     }
+}
+
+/**
+ * Overlay bands covering one ayah's characters, pre-split for the centered
+ * last-line two-pass drawing (mirrors the content clip/translate split).
+ */
+private data class PulseGeometry(
+    val above: List<Rect>,
+    val lastLine: List<Rect>,
+    val centered: Boolean,
+    val lastLineTop: Float,
+    val emptySpace: Float
+) {
+    val isEmpty: Boolean get() = above.isEmpty() && lastLine.isEmpty()
+}
+
+/**
+ * Layout-space line rects intersecting the given ayah's annotated range.
+ * Each band is clipped horizontally to the ayah's own characters on that
+ * line (not the full line width), so verses sharing a line never bleed into
+ * each other. Returns null when the layout is empty or the ayah is not in
+ * this block.
+ */
+private fun TextLayoutResult.pulseGeometry(text: AnnotatedString, ayahNum: Int): PulseGeometry? {
+    if (lineCount == 0 || text.isEmpty()) return null
+    val span = text.getStringAnnotations(FLOW_AYAH_TAG, 0, text.length)
+        .firstOrNull { it.item.toIntOrNull() == ayahNum } ?: return null
+    val lastLineIndex = lineCount - 1
+    val emptySpace = lastLineEmptySpace()
+    val centered = emptySpace > LAST_LINE_EPS_PX
+    val lastLineTop = getLineTop(lastLineIndex)
+    val above = mutableListOf<Rect>()
+    val lastLine = mutableListOf<Rect>()
+    for (line in 0 until lineCount) {
+        if (getLineEnd(line) <= span.start || getLineStart(line) >= span.end) continue
+        // Character-range intersection: the ayah may start/end mid-line.
+        // (segStart < segEnd is guaranteed by the filter above, so both box
+        // lookups below use valid character indices.)
+        val segStart = maxOf(getLineStart(line), span.start)
+        val segEnd = minOf(getLineEnd(line), span.end)
+        // Union of the segment's first/last glyph boxes. Glyph boxes — unlike
+        // zero-width cursor rects — are well-defined at line boundaries in
+        // RTL; min/max keeps this direction-correct.
+        val firstBox = getBoundingBox(segStart)
+        val lastBox = getBoundingBox(segEnd - 1)
+        val lineLeft = getLineLeft(line)
+        val lineRight = getLineRight(line)
+        val x1 = minOf(firstBox.left, lastBox.left)
+        val x2 = maxOf(firstBox.right, lastBox.right)
+        // Defensive fallback: a collapsed band would be invisible, so widen
+        // to the full line instead (the old acceptable behavior).
+        val left = if (x2 - x1 < 1f) lineLeft else x1.coerceIn(lineLeft, lineRight)
+        val right = if (x2 - x1 < 1f) lineRight else x2.coerceIn(lineLeft, lineRight)
+        val rect = Rect(
+            left = left,
+            top = getLineTop(line),
+            right = right,
+            bottom = getLineBottom(line)
+        )
+        if (centered && line == lastLineIndex) lastLine.add(rect) else above.add(rect)
+    }
+    return PulseGeometry(above, lastLine, centered, lastLineTop, emptySpace)
 }
 
 /**

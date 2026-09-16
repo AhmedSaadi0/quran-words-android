@@ -1,5 +1,6 @@
 package io.github.ahmedsaadi0.quranwords.ui.surah.detail
 
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -36,6 +37,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -99,6 +101,13 @@ fun SurahDetailScreen(
     val sheetState = rememberModalBottomSheetState (skipPartiallyExpanded = true)
     var hasHandledInitialScroll by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
 
+    // Deep-link pulse state: did the entry scroll actually move, and did the
+    // pulse run already (survives rotation so it never re-fires)?
+    var entryDidScroll by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
+    var pulseDone by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
+    var pulseAyah by remember { mutableStateOf<Int?>(null) }
+    val context = LocalContext.current
+
     // Pending page-chip click: scroll once the requested page becomes loaded
     // (replaces the legacy delay(100) + VM-state peek hack).
     var pendingPage by remember { mutableStateOf<Int?>(null) }
@@ -147,6 +156,8 @@ fun SurahDetailScreen(
             return@LaunchedEffect
         }
         if (scrollIndex != null) {
+            entryDidScroll = scrollIndex != listState.firstVisibleItemIndex ||
+                listState.firstVisibleItemScrollOffset != 0
             if (kotlin.math.abs(listState.firstVisibleItemIndex - scrollIndex) > 20) {
                 listState.scrollToItem(scrollIndex)
             } else {
@@ -157,6 +168,27 @@ fun SurahDetailScreen(
         if (targetAyah in 1..currentSurah.ayahCount) {
             onEvent(SurahDetailEvent.AyahVisible(targetAyah))
         }
+    }
+
+    // Target-ayah pulse trigger: fires once, only if the entry scroll actually
+    // moved the list. The owning MushafFlowBlock animates a GPU overlay itself
+    // (no text relayout) and reports back via onPulseDone. Skipped when the
+    // target is not loaded yet, and when the user disabled system animations
+    // (reduced motion).
+    val animatorScale = remember {
+        Settings.Global.getFloat(
+            context.contentResolver,
+            Settings.Global.ANIMATOR_DURATION_SCALE,
+            1f
+        )
+    }
+    LaunchedEffect(hasHandledInitialScroll, uiState.ayat) {
+        if (!hasHandledInitialScroll || pulseDone) return@LaunchedEffect
+        if (uiState.ayat.none { it.ayah == targetAyah }) return@LaunchedEffect
+        pulseDone = true
+        if (!entryDidScroll || animatorScale == 0f) return@LaunchedEffect
+        // The block animates the overlay itself and reports back via onPulseDone.
+        pulseAyah = targetAyah
     }
 
     // Track the first visible block's first ayah for last-read updates.
@@ -301,6 +333,8 @@ fun SurahDetailScreen(
                             isSelectionMode = uiState.isSelectionMode,
                             selectedAyahs = uiState.selectedAyahs,
                             bookmarkedAyahs = bookmarkedAyahNums,
+                            pulseAyah = pulseAyah,
+                            onPulseDone = { pulseAyah = null },
                             isLoadingMore = uiState.isLoadingMore,
                             listState = listState,
                             onWordClick = { word, ayah ->
