@@ -157,8 +157,8 @@ fun AppNavigation() {
             composable<SurahIndex> {
                 SurahIndexRoute(
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSurahDetail = { surahId ->
-                        navController.navigate(SurahDetail(surahId))
+                    onNavigateToSurahDetail = { surahId, ayah ->
+                        navController.navigate(SurahDetail(surahId, ayah))
                     }
                 )
             }

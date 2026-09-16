@@ -63,4 +63,54 @@ class SelectionStateTest {
     assertEquals(emptySet<Int>(), state.selectedIds)
     assertFalse(state.isSelectionMode)
   }
+
+  @Test
+  fun `enter sets the anchor to the initial id`() {
+    val state = SelectionState().enter(7)
+    assertEquals(7, state.anchorId)
+  }
+
+  @Test
+  fun `toggle keeps the anchor while selection is non-empty`() {
+    val state = SelectionState().enter(5).toggle(8).toggle(5)
+    assertEquals(setOf(8), state.selectedIds)
+    assertEquals(5, state.anchorId)
+    assertTrue(state.isSelectionMode)
+  }
+
+  @Test
+  fun `toggle to empty resets the anchor`() {
+    val state = SelectionState().enter(5).toggle(5)
+    assertEquals(null, state.anchorId)
+    assertFalse(state.isSelectionMode)
+  }
+
+  @Test
+  fun `rangeTo extends forward from the anchor with union`() {
+    val state = SelectionState().enter(5).toggle(8).rangeTo(10)
+    assertEquals(setOf(5, 8, 6, 7, 9, 10), state.selectedIds)
+    assertEquals(5, state.anchorId)
+    assertTrue(state.isSelectionMode)
+  }
+
+  @Test
+  fun `rangeTo extends backward from the anchor`() {
+    val state = SelectionState().enter(10).rangeTo(7)
+    assertEquals(setOf(7, 8, 9, 10), state.selectedIds)
+  }
+
+  @Test
+  fun `rangeTo without anchor behaves like enter`() {
+    val state = SelectionState().rangeTo(4)
+    assertEquals(setOf(4), state.selectedIds)
+    assertEquals(4, state.anchorId)
+    assertTrue(state.isSelectionMode)
+  }
+
+  @Test
+  fun `clear resets the anchor`() {
+    val state = SelectionState().enter(1).rangeTo(3).clear()
+    assertEquals(null, state.anchorId)
+    assertFalse(state.isSelectionMode)
+  }
 }

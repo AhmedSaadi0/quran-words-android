@@ -12,6 +12,7 @@ import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
 import io.github.ahmedsaadi0.quranwords.domain.repository.QuranRepository
+import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,9 +62,11 @@ class SurahDetailViewModel @Inject constructor(
     private var currentOffset: Int = 0
     private var hasMore: Boolean = true
     private val pageSize: Int = 20
+    private var lastWrittenLastRead: Pair<Int, Int>? = null
 
     // Preference slices kept as separate flows so the combine above stays readable.
     private val fontState = MutableStateFlow(24f)
+    private val quranFontState = MutableStateFlow(QuranFont.KFGQPC_HAFS_1441)
     private val bookmarkSurahState = MutableStateFlow<Set<String>>(emptySet())
     private val bookmarkAyahState = MutableStateFlow<Set<String>>(emptySet())
     private val dbReadyState = MutableStateFlow(repository.isDatabaseReady())
@@ -107,6 +110,9 @@ class SurahDetailViewModel @Inject constructor(
             preferences.fontSize.collectLatest { fontState.value = it }
         }
         viewModelScope.launch {
+            preferences.quranFontKey.collectLatest { quranFontState.value = QuranFont.fromKey(it) }
+        }
+        viewModelScope.launch {
             preferences.bookmarkedSurahs.collectLatest { bookmarkSurahState.value = it }
         }
         viewModelScope.launch {
@@ -119,13 +125,15 @@ class SurahDetailViewModel @Inject constructor(
      * (Route/Screen) collect only this.
      */
     val screenState: StateFlow<SurahDetailUiState> = combine(
-        uiState, fontState, bookmarkSurahState, bookmarkAyahState, dbReadyState
-    ) { base, fontSize, surahMarks, ayahMarks, dbReady ->
-        base.copy(
-            fontSize = fontSize,
-            bookmarkedSurahs = surahMarks,
-            bookmarkedAyat = ayahMarks,
-            isDbReady = dbReady
+        uiState, fontState, quranFontState, bookmarkSurahState, bookmarkAyahState, dbReadyState
+    ) { values ->
+        @Suppress("UNCHECKED_CAST")
+        (values[0] as SurahDetailUiState).copy(
+            fontSize = values[1] as Float,
+            quranFont = values[2] as QuranFont,
+            bookmarkedSurahs = values[3] as Set<String>,
+            bookmarkedAyat = values[4] as Set<String>,
+            isDbReady = values[5] as Boolean
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SurahDetailUiState())
 
@@ -146,12 +154,35 @@ class SurahDetailViewModel @Inject constructor(
                 viewModelScope.launch { preferences.setFontSize(event.size.coerceIn(1f, 48f)) }
             is SurahDetailEvent.EnterSelection -> _selection.update { it.enter(event.ayah) }
             is SurahDetailEvent.ToggleAyahSelection -> _selection.update { it.toggle(event.ayah) }
-            SurahDetailEvent.SelectAllAyahs -> _selection.update {
-                it.selectAll(_ayat.value.map { ayah -> ayah.ayah })
-            }
+            is SurahDetailEvent.RangeSelect -> rangeSelect(event.ayah)
             SurahDetailEvent.ClearSelection -> _selection.update { it.clear() }
+            SurahDetailEvent.BookmarkSelection -> bookmarkSelection()
             // Platform events (copy/share selection) are handled by the Route.
             SurahDetailEvent.CopySelection, SurahDetailEvent.ShareSelection -> Unit
+        }
+    }
+
+    /**
+     * Extends the selection from the anchor to [ayah] (union). Selection ids
+     * apply instantly even beyond the loaded pages; the far end is then paged
+     * in behind so its wash renders as pages arrive.
+     */
+    private fun rangeSelect(ayah: Int) {
+        val anchor = _selection.value.anchorId
+        _selection.update { it.rangeTo(ayah) }
+        val farEnd = maxOf(anchor ?: ayah, ayah)
+        viewModelScope.launch { ensureAyahLoaded(farEnd) }
+    }
+
+    private fun bookmarkSelection() {
+        val surahId = currentSurahId
+        val selected = _selection.value.selectedIds
+        if (surahId <= 0 || selected.isEmpty()) return
+        // Optimistic clear: selection is UI state, persistence continues in
+        // the background — the bar dismisses instantly on tap.
+        _selection.update { it.clear() }
+        viewModelScope.launch {
+            selected.forEach { ayahNum -> preferences.toggleAyahBookmark(surahId, ayahNum) }
         }
     }
 
@@ -219,8 +250,7 @@ class SurahDetailViewModel @Inject constructor(
                 is Result.Success -> {
                     val nextPage = result.data
                     if (nextPage.isNotEmpty()) {
-                        _ayat.value = _ayat.value + nextPage
-                        currentOffset += nextPage.size
+                        appendAyat(nextPage)
                         val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
                         hasMore = nextPage.size == pageSize && currentOffset < total
                     } else {
@@ -231,6 +261,21 @@ class SurahDetailViewModel @Inject constructor(
             }
             _isLoadingMore.value = false
         }
+    }
+
+    /**
+     * Appends paged ayat deduplicated by ayah number so concurrent
+     * [loadNextPage]/[ensureAyahLoaded]/[ensurePageLoaded] fetches at a stale
+     * offset can never duplicate rows (which previously produced duplicate
+     * `mushaf_page_*` LazyColumn keys). [currentOffset] advances only by the
+     * actually-added count so a duplicate fetch never skips verses.
+     */
+    private fun appendAyat(next: List<Ayah>) {
+        if (next.isEmpty()) return
+        val current = _ayat.value
+        val deduped = (current + next).distinctBy { it.ayah }
+        _ayat.value = deduped
+        currentOffset += deduped.size - current.size
     }
 
     suspend fun ensureAyahLoaded(targetAyah: Int) {
@@ -244,8 +289,7 @@ class SurahDetailViewModel @Inject constructor(
                 hasMore = false
                 break
             }
-            _ayat.value = _ayat.value + nextPage
-            currentOffset += nextPage.size
+            appendAyat(nextPage)
             val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
             hasMore = nextPage.size == pageSize && currentOffset < total
             // Small yield to not block UI
@@ -270,8 +314,7 @@ class SurahDetailViewModel @Inject constructor(
                 _isLoadingMore.value = false
                 break
             }
-            _ayat.value = _ayat.value + nextPage
-            currentOffset += nextPage.size
+            appendAyat(nextPage)
             val total = _surah.value?.ayahCount ?: Int.MAX_VALUE
             hasMore = nextPage.size == pageSize && currentOffset < total
             _isLoadingMore.value = false
@@ -281,6 +324,9 @@ class SurahDetailViewModel @Inject constructor(
 
     fun updateLastRead(surahId: Int, ayahNum: Int) {
         if (surahId <= 0) return
+        val key = surahId to ayahNum
+        if (lastWrittenLastRead == key) return
+        lastWrittenLastRead = key
         viewModelScope.launch { preferences.setLastRead(surahId, ayahNum) }
     }
 

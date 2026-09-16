@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -30,8 +29,6 @@ class HomeViewModel @Inject constructor(
     private val _isDbReady = MutableStateFlow(repository.isDatabaseReady())
     val isDbReady: StateFlow<Boolean> = _isDbReady.asStateFlow()
 
-    private val _lastReadSurah = MutableStateFlow(1)
-    private val _lastReadAyah = MutableStateFlow(1)
     private val _bookmarkedSurahs = MutableStateFlow<Set<String>>(emptySet())
     private val _bookmarkedAyat = MutableStateFlow<Set<String>>(emptySet())
 
@@ -56,21 +53,18 @@ class HomeViewModel @Inject constructor(
                 is Result.Error -> Unit // featured roots are decorative; list stays empty
             }
         }
-        viewModelScope.launch {
-            _lastReadSurah.value = preferences.lastReadSurah.first()
-            _lastReadAyah.value = preferences.lastReadAyah.first()
-        }
     }
 
     /**
      * Single-collection UiState; granular flows above stay as source of truth
-     * (Decision 14).
+     * (Decision 14). Last-read is combined reactively from DataStore so
+     * returning to Home after reading updates the Continue card immediately.
      */
     val uiState: StateFlow<HomeUiState> = combine(
         _featuredRoots,
         _isDbReady,
-        _lastReadSurah,
-        _lastReadAyah,
+        preferences.lastReadSurah,
+        preferences.lastReadAyah,
         _bookmarkedSurahs,
         _bookmarkedAyat
     ) { values ->

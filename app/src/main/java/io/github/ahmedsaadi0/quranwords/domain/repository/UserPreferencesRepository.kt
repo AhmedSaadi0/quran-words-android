@@ -11,6 +11,7 @@ interface UserPreferencesRepository {
     // Display preferences
     val language: Flow<String>
     val fontSize: Flow<Float>
+    val quranFontKey: Flow<String>
     val darkModeSetting: Flow<Int>
     val dynamicColorEnabled: Flow<Boolean>
 
@@ -34,6 +35,8 @@ interface UserPreferencesRepository {
     suspend fun setLastDbCheckAt(timestamp: Long = System.currentTimeMillis())
 
     suspend fun setFontSize(size: Float)
+
+    suspend fun setQuranFontKey(key: String)
 
     suspend fun setDarkModeSetting(mode: Int)
 

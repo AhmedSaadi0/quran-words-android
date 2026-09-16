@@ -3,6 +3,7 @@ package io.github.ahmedsaadi0.quranwords.ui.surah.detail
 import io.github.ahmedsaadi0.quranwords.domain.model.Ayah
 import io.github.ahmedsaadi0.quranwords.domain.model.Surah
 import io.github.ahmedsaadi0.quranwords.domain.model.WordToken
+import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 
 data class SurahDetailUiState(
     val surah: Surah? = null,
@@ -16,6 +17,7 @@ data class SurahDetailUiState(
     val aiGeneratedAt: String? = null,
     val isAiLoading: Boolean = false,
     val fontSize: Float = 24f,
+    val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
     val bookmarkedSurahs: Set<String> = emptySet(),
     val bookmarkedAyat: Set<String> = emptySet(),
     val isDbReady: Boolean = false,
@@ -39,11 +41,12 @@ sealed interface SurahDetailEvent {
     data class ToggleSurahBookmark(val surahId: Int) : SurahDetailEvent
     data class SetFontSize(val size: Float) : SurahDetailEvent
 
-    // Selection mode
+    // Selection mode (long-press in selection mode extends a range via RangeSelect)
     data class EnterSelection(val ayah: Int) : SurahDetailEvent
     data class ToggleAyahSelection(val ayah: Int) : SurahDetailEvent
-    data object SelectAllAyahs : SurahDetailEvent
+    data class RangeSelect(val ayah: Int) : SurahDetailEvent
     data object ClearSelection : SurahDetailEvent
+    data object BookmarkSelection : SurahDetailEvent
 
     // Platform events intercepted by the Route (owns ShareHandler).
     data object CopySelection : SurahDetailEvent

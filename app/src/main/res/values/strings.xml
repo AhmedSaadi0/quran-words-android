@@ -62,6 +62,10 @@
     <string name="lang_arabic">Arabic</string>
     <string name="lang_english">English</string>
 
+    <!-- Quran text font -->
+    <string name="font_title">Quran font</string>
+    <string name="font_preview_sample">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</string>
+
     <!-- Database update banner (rendered inside Home) -->
     <string name="db_update_title">New database update %1$s</string>
     <string name="db_update_installed">Installed: %1$s • </string>
@@ -197,6 +201,7 @@
     <string name="attested_badge">Attested in revelation</string>
     <string name="quranic_badge">Quranic</string>
     <string name="select_all">Select all</string>
+    <string name="cd_bookmark_selection">Bookmark selected ayat</string>
     <string name="cd_copy_selection">Copy selected ayat</string>
     <string name="copying">Copying…</string>
     <string name="copy_ayat">Copy ayat</string>

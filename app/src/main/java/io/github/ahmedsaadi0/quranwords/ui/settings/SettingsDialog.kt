@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
@@ -19,8 +21,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import io.github.ahmedsaadi0.quranwords.R
 import io.github.ahmedsaadi0.quranwords.core.util.AppLanguage
+import io.github.ahmedsaadi0.quranwords.ui.theme.QuranFont
 import io.github.ahmedsaadi0.quranwords.ui.theme.ShapeMedium
 
 @Composable
@@ -33,7 +37,10 @@ fun SettingsDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.theme_title), fontWeight = FontWeight.Bold) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 // Theme section
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
@@ -109,6 +116,25 @@ fun SettingsDialog(
                         onClick = { onEvent(SettingsEvent.LanguageChanged(AppLanguage.ENGLISH)) }
                     )
                 }
+                // Quran font section: name + live preview rendered in each cut.
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        stringResource(R.string.font_title),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    val previewSample = stringResource(R.string.font_preview_sample)
+                    QuranFont.entries.forEach { font ->
+                        FontOptionRow(
+                            name = font.arabicName,
+                            preview = previewSample,
+                            font = font,
+                            selected = uiState.quranFont == font,
+                            onClick = { onEvent(SettingsEvent.QuranFontChanged(font.key)) }
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
@@ -121,6 +147,43 @@ fun SettingsDialog(
         },
         shape = ShapeMedium
     )
+}
+
+@Composable
+private fun FontOptionRow(
+    name: String,
+    preview: String,
+    font: QuranFont,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 6.dp)
+            .testTag("font_option_${font.key}"),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                fontFamily = font.fontFamily,
+                fontSize = 18.sp,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = preview,
+                fontFamily = font.fontFamily,
+                fontSize = 16.sp,
+                lineHeight = (16f * font.lineHeightMultiplier).sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @Composable

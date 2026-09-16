@@ -51,6 +51,9 @@
     <string name="lang_arabic">العربية</string>
     <string name="lang_english">الإنجليزية</string>
 
+    <string name="font_title">خط المصحف</string>
+    <string name="font_preview_sample">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</string>
+
     <string name="db_update_title">تحديث جديد لقاعدة البيانات %1$s</string>
     <string name="db_update_installed">المثبتة: %1$s • </string>
     <string name="db_update_download">التنزيل: %1$s</string>
@@ -170,6 +173,7 @@
     <string name="attested_badge">وارد في التنزيل</string>
     <string name="quranic_badge">قرآني</string>
     <string name="select_all">تحديد الكل</string>
+    <string name="cd_bookmark_selection">إضافة الآيات المحددة إلى العلامات</string>
     <string name="cd_copy_selection">نسخ الآيات المحددة</string>
     <string name="copying">جاري النسخ...</string>
     <string name="copy_ayat">نسخ الآيات</string>

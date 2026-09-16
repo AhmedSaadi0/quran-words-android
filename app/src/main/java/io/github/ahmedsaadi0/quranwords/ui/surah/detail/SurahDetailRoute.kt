@@ -54,9 +54,21 @@ fun SurahDetailRoute(
                         context.getString(R.string.share_ayat),
                         context.getString(R.string.no_share_app)
                     )
+                    viewModel.onEvent(SurahDetailEvent.ClearSelection)
                 }
             }
             else -> viewModel.onEvent(event)
+        }
+    }
+
+    fun onBookmarkSelection() {
+        // Count first: the VM clears the selection synchronously on bookmark.
+        val count = uiState.selectedAyahs.size
+        viewModel.onEvent(SurahDetailEvent.BookmarkSelection)
+        if (count > 0) {
+            shareHandler.showMessage(
+                context.resources.getQuantityString(R.plurals.bookmarked_ayat_count, count, count)
+            )
         }
     }
 
@@ -65,7 +77,10 @@ fun SurahDetailRoute(
         surahId = surahId,
         targetAyah = targetAyah,
         collapseState = collapseState,
-        onEvent = ::onEvent,
+        onEvent = { event ->
+            if (event == SurahDetailEvent.BookmarkSelection) onBookmarkSelection()
+            else onEvent(event)
+        },
         onNavigateBack = onNavigateBack,
         onNavigateToRootDetail = onNavigateToRootDetail,
         snackbarHostState = snackbarHostState

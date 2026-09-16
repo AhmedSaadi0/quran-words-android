@@ -72,6 +72,14 @@
         <item quantity="many">تم نسخ %1$d آية</item>
         <item quantity="other">تم نسخ %1$d آية</item>
     </plurals>
+    <plurals name="bookmarked_ayat_count">
+        <item quantity="zero">لا توجد آيات للحفظ</item>
+        <item quantity="one">تم حفظ آية واحدة</item>
+        <item quantity="two">تم حفظ آيتين</item>
+        <item quantity="few">تم حفظ %1$d آيات</item>
+        <item quantity="many">تم حفظ %1$d آية</item>
+        <item quantity="other">تم حفظ %1$d آية</item>
+    </plurals>
 
     <plurals name="selected_words_count">
         <item quantity="zero">لم يتم تحديد كلمات</item>
