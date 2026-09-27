@@ -5,6 +5,7 @@ import com.quranwords.domain.model.RootDetail
 import com.quranwords.domain.model.RootMeaningModel
 import com.quranwords.domain.model.RootWordModel
 import com.quranwords.ui.roots.detail.util.RootDetailTab
+import com.quranwords.ui.theme.QuranFont
 
 /**
  * UDF contract for RootDetail (Phase 3).
@@ -59,6 +60,8 @@ data class RootDetailUiState(
     val hasSubtitle: Boolean = false,
     val aiMetaLine: String? = null,
     val hasAiMeta: Boolean = false,
+    val fontSize: Float = 24f,
+    val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
     val tabs: List<RootDetailTabUi> = emptyList(),
     val meanings: MeaningsTabState = MeaningsTabState(),
     val words: WordsTabState = WordsTabState(),
@@ -98,6 +101,7 @@ sealed interface RootDetailEvent {
 
     data class OccurrenceClicked(val surahId: Int, val ayahNum: Int) : RootDetailEvent
     data class AyatNearingEnd(val lastVisibleIndex: Int) : RootDetailEvent
+    data class SetFontSize(val size: Float) : RootDetailEvent
     data object CopyAllOccurrences : RootDetailEvent
     data object ShareAllOccurrences : RootDetailEvent
     data object Retry : RootDetailEvent

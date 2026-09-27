@@ -22,10 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.domain.model.DerivativeModel
+import com.quranwords.ui.theme.QuranFont
 import com.quranwords.ui.theme.ShapeSmall
 
 @Composable
-fun DerivativeCard(derivative: DerivativeModel) {
+fun DerivativeCard(derivative: DerivativeModel, fontSize: Float, quranFont: QuranFont) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -44,7 +45,8 @@ fun DerivativeCard(derivative: DerivativeModel) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
                     text = derivative.formAr,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.scaled(fontSize),
+                    fontFamily = quranFont.fontFamily,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )

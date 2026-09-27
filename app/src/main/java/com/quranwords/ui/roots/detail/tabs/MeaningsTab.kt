@@ -38,6 +38,7 @@ fun MeaningsTab(
     isSelectionMode: Boolean,
     isCopyingAll: Boolean,
     isCopyingSelected: Boolean,
+    fontSize: Float,
     onCopyAll: () -> Unit,
     onShareAll: () -> Unit,
     onCopySelected: () -> Unit,
@@ -109,6 +110,7 @@ fun MeaningsTab(
                         meaning = meaning,
                         isSelected = selectedIds.contains(meaning.id),
                         isSelectionMode = isSelectionMode,
+                        fontSize = fontSize,
                         onClick = {
                             if (isSelectionMode) {
                                 onToggleSelection(meaning.id)

@@ -34,6 +34,7 @@ import com.quranwords.ui.roots.detail.components.CopyAllActionBar
 import com.quranwords.ui.roots.detail.components.PaddedPagerItem
 import com.quranwords.ui.roots.detail.components.cards.AyahOccurrenceCard
 import com.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
+import com.quranwords.ui.theme.QuranFont
 
 
 /**
@@ -49,6 +50,8 @@ fun AyatTab(
     hasMore: Boolean,
     isLoadingMore: Boolean,
     isCopyingAll: Boolean,
+    fontSize: Float,
+    quranFont: QuranFont,
     onCopyAll: () -> Unit,
     onShareAll: () -> Unit,
     onOccurrenceClick: (surahId: Int, ayahNum: Int) -> Unit,
@@ -117,7 +120,9 @@ fun AyatTab(
                 PaddedPagerItem {
                     AyahOccurrenceCard (
                         occ = occ,
-                        onClick = { onOccurrenceClick(occ.surahId, occ.ayahNum) }
+                        onClick = { onOccurrenceClick(occ.surahId, occ.ayahNum) },
+                        fontSize = fontSize,
+                        quranFont = quranFont
                     )
                 }
             }

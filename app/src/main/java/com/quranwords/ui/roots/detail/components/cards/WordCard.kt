@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.domain.model.RootWordModel
+import com.quranwords.ui.theme.QuranFont
 import com.quranwords.ui.theme.ShapeSmall
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -41,6 +42,8 @@ fun WordCard(
     word: RootWordModel,
     isSelected: Boolean,
     isSelectionMode: Boolean,
+    fontSize: Float,
+    quranFont: QuranFont,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
@@ -67,7 +70,8 @@ fun WordCard(
         ) {
             Text(
                 text = word.text,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.scaled(fontSize),
+                fontFamily = quranFont.fontFamily,
                 fontWeight = FontWeight.Bold,
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
                 else MaterialTheme.colorScheme.onSurface,

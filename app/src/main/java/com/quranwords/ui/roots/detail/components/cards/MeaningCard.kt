@@ -37,6 +37,7 @@ fun MeaningCard(
     meaning: RootMeaningModel,
     isSelected: Boolean = false,
     isSelectionMode: Boolean = false,
+    fontSize: Float,
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {}
 ) {
@@ -85,7 +86,7 @@ fun MeaningCard(
             }
             Text(
                 text = meaning.definition,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyMedium.scaled(fontSize),
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
                 else MaterialTheme.colorScheme.onSurface
             )

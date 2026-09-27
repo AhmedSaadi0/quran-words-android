@@ -27,6 +27,7 @@ import com.quranwords.ui.roots.detail.components.PaddedPagerItem
 import com.quranwords.ui.roots.detail.components.SelectionActionBar
 import com.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
 import com.quranwords.ui.roots.detail.components.cards.WordCard
+import com.quranwords.ui.theme.QuranFont
 
 
 /**
@@ -39,6 +40,8 @@ fun WordsTab(
     selectedIds: Set<Int>,
     isSelectionMode: Boolean,
     isCopyingSelected: Boolean,
+    fontSize: Float,
+    quranFont: QuranFont,
     onCopySelected: () -> Unit,
     onShareSelected: () -> Unit,
     onSelectAll: () -> Unit,
@@ -110,6 +113,8 @@ fun WordsTab(
                             word = word,
                             isSelected = selectedIds.contains(word.wordId),
                             isSelectionMode = isSelectionMode,
+                            fontSize = fontSize,
+                            quranFont = quranFont,
                             onClick = {
                                 if (isSelectionMode) {
                                     onToggleSelection(word.wordId)

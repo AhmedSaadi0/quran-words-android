@@ -44,6 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
+import com.quranwords.ui.components.FontSizeControls
+import com.quranwords.ui.roots.detail.components.cards.scaled
 import com.quranwords.ui.roots.detail.util.RootDetailTab
 import kotlin.math.roundToInt
 
@@ -77,8 +79,10 @@ fun RootDetailHeader(
     tabCounts: Map<RootDetailTab, Int>,
     pagerTabs: List<RootDetailTab>,
     selectedTabIndex: Int,
+    fontSize: Float,
     onNavigateBack: () -> Unit,
     onReportClick: () -> Unit,
+    onFontSizeChange: (Float) -> Unit,
     onCopyAiSummary: () -> Unit,
     onShareAiSummary: () -> Unit,
     onTabClick: (Int) -> Unit,
@@ -127,15 +131,25 @@ fun RootDetailHeader(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            IconButton(
-                onClick = onReportClick,
-                modifier = Modifier.testTag("report_help_button")
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.ReportProblem,
-                    contentDescription = stringResource(R.string.cd_report),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                FontSizeControls(
+                    fontSize = fontSize,
+                    onFontSizeChange = onFontSizeChange,
+                    modifier = Modifier.size(width = 180.dp, height = 38.dp)
                 )
+                IconButton(
+                    onClick = onReportClick,
+                    modifier = Modifier.testTag("report_help_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.ReportProblem,
+                        contentDescription = stringResource(R.string.cd_report),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
 
@@ -180,7 +194,7 @@ fun RootDetailHeader(
                     if (hasSubtitle) {
                         Text(
                             text = subtitleText ?: "",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyMedium.scaled(fontSize),
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }

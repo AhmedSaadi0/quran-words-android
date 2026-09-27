@@ -28,12 +28,15 @@ import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.core.util.AyahHighlighter
 import com.quranwords.domain.model.AyahOccurrenceModel
+import com.quranwords.ui.theme.QuranFont
 import com.quranwords.ui.theme.ShapeSmall
 
 @Composable
 fun AyahOccurrenceCard(
     occ: AyahOccurrenceModel,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    fontSize: Float = BASE_FONT_SIZE,
+    quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441
 ) {
     Card(
         modifier = Modifier
@@ -95,10 +98,14 @@ fun AyahOccurrenceCard(
                 }
             }
 
+            // Same typeface + per-cut line rhythm as the surah reading view.
+            val verseFontSize = MaterialTheme.typography.bodyLarge.fontSize.value * fontScale(fontSize)
             Text(
                 text = annotatedText,
                 style = MaterialTheme.typography.bodyLarge,
-                lineHeight = 28.sp,
+                fontFamily = quranFont.fontFamily,
+                fontSize = verseFontSize.sp,
+                lineHeight = (verseFontSize * quranFont.lineHeightMultiplier).sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }

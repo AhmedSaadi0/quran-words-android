@@ -13,7 +13,9 @@ import com.quranwords.domain.model.AyahOccurrenceModel
 import com.quranwords.domain.model.RootDetail
 import com.quranwords.domain.model.RootWordModel
 import com.quranwords.domain.repository.QuranRepository
+import com.quranwords.domain.repository.UserPreferencesRepository
 import com.quranwords.ui.roots.detail.util.RootDetailTab
+import com.quranwords.ui.theme.QuranFont
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.delay
@@ -30,6 +33,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class RootDetailViewModel @Inject constructor(
     private val repository: QuranRepository,
+    private val preferences: UserPreferencesRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
@@ -82,11 +86,24 @@ class RootDetailViewModel @Inject constructor(
     private val _meaningSelection = MutableStateFlow(SelectionState())
     val meaningSelection: StateFlow<SelectionState> = _meaningSelection.asStateFlow()
 
+    // Shared reading font size (same DataStore key as SurahDetail).
+    private val _fontSize = MutableStateFlow(24f)
+    val fontSize: StateFlow<Float> = _fontSize.asStateFlow()
+
+    // Selected mushaf typeface (same DataStore key as SurahDetail).
+    private val _quranFontState = MutableStateFlow(QuranFont.KFGQPC_HAFS_1441)
+
     init {
         // Restore pagination across process death if available
         savedStateHandle.get<Int>("currentRootIdForOcc")?.let { currentRootIdForOcc = it }
         savedStateHandle.get<Int>("occOffset")?.let { occOffset = it }
         savedStateHandle.get<Int>("occTotalCount")?.let { occTotalCount = it }
+        viewModelScope.launch {
+            preferences.fontSize.collectLatest { _fontSize.value = it }
+        }
+        viewModelScope.launch {
+            preferences.quranFontKey.collectLatest { _quranFontState.value = QuranFont.fromKey(it) }
+        }
     }
 
     fun loadRootDetail(rootId: Int) {
@@ -324,7 +341,9 @@ class RootDetailViewModel @Inject constructor(
         _meaningSelection,
         _copyingAction,
         _reportVisible,
-        _error
+        _error,
+        _fontSize,
+        _quranFontState
     ) { args ->
         @Suppress("UNCHECKED_CAST")
         val isLoading = args[0] as Boolean
@@ -339,6 +358,8 @@ class RootDetailViewModel @Inject constructor(
         val copying = args[9] as CopyAction?
         val report = args[10] as Boolean
         val error = args[11] as String?
+        val fontSize = args[12] as Float
+        val quranFont = args[13] as QuranFont
 
         val subtitle = detail?.aiSummary?.takeIf { it.isNotBlank() }
             ?: detail?.item?.glossAr?.takeIf { it.isNotBlank() }
@@ -380,6 +401,8 @@ class RootDetailViewModel @Inject constructor(
             copyingAction = copying,
             isCopying = copying != null,
             reportDialogVisible = report,
+            fontSize = fontSize,
+            quranFont = quranFont,
             error = error
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, RootDetailUiState())
@@ -423,6 +446,8 @@ class RootDetailViewModel @Inject constructor(
             is RootDetailEvent.OccurrenceClicked ->
                 _effect.tryEmit(RootDetailEffect.NavigateToSurah(event.surahId, event.ayahNum))
             is RootDetailEvent.AyatNearingEnd -> loadMoreOccurrencesIfNeeded(event.lastVisibleIndex)
+            is RootDetailEvent.SetFontSize ->
+                viewModelScope.launch { preferences.setFontSize(event.size.coerceIn(1f, 48f)) }
             RootDetailEvent.ShowReport -> setReportVisible(true)
             RootDetailEvent.DismissReport -> setReportVisible(false)
             RootDetailEvent.Retry -> currentRootIdForOcc?.let { loadRootDetail(it) }

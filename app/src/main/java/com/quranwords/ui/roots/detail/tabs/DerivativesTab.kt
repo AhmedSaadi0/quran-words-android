@@ -19,6 +19,7 @@ import com.quranwords.domain.model.DerivativeModel
 import com.quranwords.ui.roots.detail.components.PaddedPagerItem
 import com.quranwords.ui.roots.detail.components.cards.DerivativeCard
 import com.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
+import com.quranwords.ui.theme.QuranFont
 
 
 /**
@@ -27,6 +28,8 @@ import com.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
 @Composable
 fun DerivativesTab(
     derivatives: List<DerivativeModel>,
+    fontSize: Float,
+    quranFont: QuranFont,
     modifier: Modifier = Modifier,
     listState: LazyListState? = null,
 ) {
@@ -46,7 +49,7 @@ fun DerivativesTab(
         } else {
             items(derivatives, key = { it.id }) { derivative ->
                 PaddedPagerItem {
-                    DerivativeCard(derivative)
+                    DerivativeCard(derivative, fontSize, quranFont)
                 }
             }
         }

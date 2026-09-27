@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import com.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
 import com.quranwords.ui.roots.detail.components.cards.MasdarCard
+import com.quranwords.ui.theme.QuranFont
 
 /**
  * Masadir tab content (Phase 4).
@@ -27,6 +28,8 @@ import com.quranwords.ui.roots.detail.components.cards.MasdarCard
 @Composable
 fun MasadirTab(
     masadir: List<MasdarModel>,
+    fontSize: Float,
+    quranFont: QuranFont,
     modifier: Modifier = Modifier,
     listState: LazyListState? = null,
 ) {
@@ -48,7 +51,7 @@ fun MasadirTab(
         } else {
             items(masadir, key = { it.id }) { masdar ->
                 PaddedPagerItem {
-                    MasdarCard(masdar)
+                    MasdarCard(masdar, fontSize, quranFont)
                 }
             }
         }

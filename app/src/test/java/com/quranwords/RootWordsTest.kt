@@ -9,6 +9,7 @@ import com.quranwords.domain.model.RootWordModel
 import com.quranwords.domain.model.SearchResult
 import com.quranwords.domain.model.Surah
 import com.quranwords.domain.repository.QuranRepository
+import com.quranwords.fake.FakeUserPreferences
 import com.quranwords.ui.navigation.SurahDetail
 import com.quranwords.ui.roots.detail.RootDetailEvent
 import com.quranwords.ui.roots.detail.RootDetailViewModel
@@ -142,7 +143,7 @@ class RootWordsTest {
 
     @Test
     fun `RootDetailViewModel word selection transitions`() = runTest {
-        val vm = RootDetailViewModel(FakeQuranRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeQuranRepository(), FakeUserPreferences(), SavedStateHandle())
         advanceUntilIdle()
 
         assertFalse(vm.wordSelection.value.isSelectionMode)
@@ -163,7 +164,7 @@ class RootWordsTest {
 
     @Test
     fun `RootDetailViewModel selectAllWords selects every loaded word`() = runTest {
-        val vm = RootDetailViewModel(FakeQuranRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeQuranRepository(), FakeUserPreferences(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
         vm.onEvent(RootDetailEvent.SelectAllWords)
@@ -173,7 +174,7 @@ class RootWordsTest {
 
     @Test
     fun `RootDetailViewModel loads words on detail load`() = runTest {
-        val vm = RootDetailViewModel(FakeQuranRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeQuranRepository(), FakeUserPreferences(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
         assertEquals(3, vm.rootWords.value.size)

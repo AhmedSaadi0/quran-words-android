@@ -12,8 +12,10 @@ import com.quranwords.domain.model.RootWordModel
 import com.quranwords.domain.model.SearchResult
 import com.quranwords.domain.model.Surah
 import com.quranwords.domain.repository.QuranRepository
+import com.quranwords.fake.FakeUserPreferences
 import com.quranwords.ui.roots.detail.RootDetailEvent
 import com.quranwords.ui.roots.detail.RootDetailViewModel
+import com.quranwords.ui.theme.QuranFont
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -83,7 +85,7 @@ class RootMeaningsTest {
 
     @Test
     fun `meaning selection transitions mirror words`() = runTest {
-        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), FakeUserPreferences(), SavedStateHandle())
         advanceUntilIdle()
 
         assertFalse(vm.meaningSelection.value.isSelectionMode)
@@ -104,7 +106,7 @@ class RootMeaningsTest {
 
     @Test
     fun `selectAllMeanings selects every loaded meaning`() = runTest {
-        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), FakeUserPreferences(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
         vm.onEvent(RootDetailEvent.SelectAllMeanings)
@@ -114,7 +116,7 @@ class RootMeaningsTest {
 
     @Test
     fun `getAllMeaningsFormatted covers every meaning`() = runTest {
-        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), FakeUserPreferences(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
         val formatted = vm.getAllMeaningsFormatted()
@@ -126,7 +128,7 @@ class RootMeaningsTest {
 
     @Test
     fun `getSelectedMeaningsFormatted filters by selection`() = runTest {
-        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), FakeUserPreferences(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
         vm.onEvent(RootDetailEvent.EnterMeaningSelection(2))
@@ -138,9 +140,39 @@ class RootMeaningsTest {
 
     @Test
     fun `empty selection returns empty`() = runTest {
-        val vm = RootDetailViewModel(FakeMeaningsRepository(), SavedStateHandle())
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), FakeUserPreferences(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
         assertEquals("", vm.getSelectedMeaningsFormatted())
+    }
+
+    @Test
+    fun `setFontSize persists to preferences and surfaces in uiState`() = runTest {
+        val prefs = FakeUserPreferences()
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), prefs, SavedStateHandle())
+        advanceUntilIdle()
+        assertEquals(24f, vm.uiState.value.fontSize)
+
+        vm.onEvent(RootDetailEvent.SetFontSize(30f))
+        advanceUntilIdle()
+        assertEquals(30f, prefs.fontSizeState.value)
+        assertEquals(30f, vm.uiState.value.fontSize)
+
+        // Out-of-range values are coerced to the 1..48 slider range.
+        vm.onEvent(RootDetailEvent.SetFontSize(100f))
+        advanceUntilIdle()
+        assertEquals(48f, vm.uiState.value.fontSize)
+    }
+
+    @Test
+    fun `quranFontKey surfaces selected typeface in uiState`() = runTest {
+        val prefs = FakeUserPreferences()
+        val vm = RootDetailViewModel(FakeMeaningsRepository(), prefs, SavedStateHandle())
+        advanceUntilIdle()
+        assertEquals(QuranFont.KFGQPC_HAFS_1441, vm.uiState.value.quranFont)
+
+        prefs.quranFontKeyState.value = "amiri_quran"
+        advanceUntilIdle()
+        assertEquals(QuranFont.AMIRI_QURAN, vm.uiState.value.quranFont)
     }
 }
