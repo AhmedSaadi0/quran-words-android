@@ -14,15 +14,15 @@ plugins {
 }
 
 android {
-  namespace = "io.github.ahmedsaadi0.quranwords"
+  namespace = "com.quranwords"
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "io.github.ahmedsaadi0.quranwords"
+    applicationId = "com.quranwords"
     minSdk = 24
     targetSdk = 36
-    versionCode = 5
-    versionName = "0.4.0"
+    versionCode = 6
+    versionName = "0.6.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }

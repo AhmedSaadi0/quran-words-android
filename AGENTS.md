@@ -90,12 +90,12 @@ Document any future architectural deviation (e.g., adding multi-module, Ktor, Wo
 
 ```
 Unified package (namespace + applicationId + every Kotlin package):
-  io.github.ahmedsaadi0.quranwords
+  com.quranwords
 
-Source: reverse DNS of the repository github.com/AhmedSaadi0/quran-words-android
+Source: short product identity (see Decision Log #24; replaced reverse-DNS io.github.ahmedsaadi0.quranwords on 2026-09-27)
 ```
 
-- Every Kotlin file starts with `package io.github.ahmedsaadi0.quranwords.<layer>.<feature>`
+- Every Kotlin file starts with `package com.quranwords.<layer>.<feature>`
 - `com.example` must not exist anywhere.
 - `AndroidManifest.xml` and `app/build.gradle.kts` have identical `namespace` and `applicationId`.
 
@@ -123,7 +123,7 @@ Source: reverse DNS of the repository github.com/AhmedSaadi0/quran-words-android
 ## 7) Ideal Folder Structure
 
 ```
-app/src/main/java/io/github/ahmedsaadi0/quranwords/
+app/src/main/java/com/quranwords/
 ├── App.kt                          # @HiltAndroidApp
 ├── MainActivity.kt                 # @AndroidEntryPoint — single RTL provider
 │
@@ -450,6 +450,8 @@ sealed interface Result<out T> {
 | 22 | Target-ayah pulse on deep scroll (stepped, 3 flashes) | Deep links (search/root/bookmark/juz/last-read) scrolled to the ayah but users couldn't spot it | smooth `animateColorAsState` wash / stepped on-off blink / static highlight | Stepped blink (450ms lit / 300ms unlit ×3, `primaryContainer` 0.55) in `SurahDetailScreen` (`entryDidScroll`+`pulseDone` saveable, `pulseAyah`/`pulseLit` → `SurahAyatList`→`MushafFlowBlock` top-priority span); fires only if entry scroll moved; skipped when animator scale is 0 (reduced motion) | ~6 spaced relayouts instead of ~200 per-frame HarfBuzz reshapings; no nav-param changes; rotation-safe | Wash still snaps (no smooth fade by design); rotation mid-pulse may replay once | 2026-09-16 |
 
 | 23 | Overlay pulse replaces stepped span blink (2 soft fades, ~1s) | Stepped span blink felt heavy/slow (2.2s, full-ayah 0.55 wash flashing) | softer+faster stepped blink / smooth GPU overlay fade | Overlay wins: `pulseGeometry` line-bands from `TextLayoutResult` drawn behind text in `drawWithContent` (same centered-last-line clip/translate split); `Animatable` alpha 0→0.5→0.12 ×2 (200/100/180ms) self-driven in owning block, `onPulseDone` clears; span path + `pulseLit` + Screen delays removed; `AnnotatedString` static → zero relayout | Smooth + fast feel at GPU-rect cost only; ~1s total; reduced-motion/scroll gates kept | Opaque static wash (selected/bookmarked) covers overlay there — acceptable, already marked; mid-pulse font change may replay once | 2026-09-16 |
+
+| 24 | Package shortened to `com.quranwords` | Owner request for short product identity; supersedes Decision #1 | keep `io.github...` / shorten to `com.quranwords` | `com.quranwords` for namespace + applicationId + all Kotlin packages | Requested brand identity; shorter manifest/data paths | Breaks Play update continuity (new app id, prefs/DB re-install); less globally unique than reverse-DNS | 2026-09-27 |
 
 Add future significant choices here in the same format (Decision/Context/Options/Chosen/Reason/Trade-offs/Date) and never change rules silently.
 
