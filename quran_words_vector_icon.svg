@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F2B28" />
+      <stop offset="50%" stop-color="#192314" />
+      <stop offset="100%" stop-color="#071917" />
+    </linearGradient>
+    
+    <!-- Gold Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D4AF37" />
+      <stop offset="50%" stop-color="#B5934C" />
+      <stop offset="100%" stop-color="#8C6E2D" />
+    </linearGradient>
+
+    <!-- Light Cream Gradient -->
+    <linearGradient id="paperGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F2F5EC" />
+    </linearGradient>
+    
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="512" height="512" rx="115" fill="url(#bgGrad)" />
+
+  <!-- Geometric Frame Border -->
+  <rect x="24" y="24" width="464" height="464" rx="95" fill="none" stroke="url(#goldGrad)" stroke-width="4" stroke-opacity="0.35" />
+  <rect x="36" y="36" width="440" height="440" rx="83" fill="none" stroke="url(#goldGrad)" stroke-width="1.5" stroke-opacity="0.2" />
+
+  <!-- Main Icon Group -->
+  <g filter="url(#shadow)" transform="translate(0, 10)">
+    <!-- Rehal / Book Stand Base (Gold) -->
+    <path d="M 150,370 L 256,320 L 362,370 L 330,390 L 256,355 L 182,390 Z" fill="url(#goldGrad)" />
+    <path d="M 180,388 L 256,352 L 332,388 L 256,415 Z" fill="#634D1B" opacity="0.6" />
+
+    <!-- Open Quran Pages -->
+    <!-- Left Page -->
+    <path d="M 256,180 Q 180,165 100,185 L 100,325 Q 180,305 256,320 Z" fill="url(#paperGrad)" stroke="#DDE5D1" stroke-width="2" />
+    <!-- Right Page -->
+    <path d="M 256,180 Q 332,165 412,185 L 412,325 Q 332,305 256,320 Z" fill="url(#paperGrad)" stroke="#DDE5D1" stroke-width="2" />
+
+    <!-- Page Depth / Spine Effects -->
+    <path d="M 256,180 L 256,320" stroke="url(#goldGrad)" stroke-width="4" stroke-linecap="round" />
+    
+    <!-- Gold Page Borders -->
+    <path d="M 104,188 Q 180,169 252,184" fill="none" stroke="url(#goldGrad)" stroke-width="3" opacity="0.8" />
+    <path d="M 408,188 Q 332,169 260,184" fill="none" stroke="url(#goldGrad)" stroke-width="3" opacity="0.8" />
+
+    <!-- Text Lines Simulation (Left & Right Pages) -->
+    <path d="M 130,220 Q 180,210 230,218 M 125,245 Q 180,235 235,243 M 130,270 Q 180,260 230,268" fill="none" stroke="#56624B" stroke-width="3.5" stroke-linecap="round" opacity="0.35" />
+    <path d="M 282,218 Q 332,210 382,220 M 277,243 Q 332,235 387,245 M 282,268 Q 332,260 382,270" fill="none" stroke="#56624B" stroke-width="3.5" stroke-linecap="round" opacity="0.35" />
+
+    <!-- Central Calligraphic Emblem (Noble Quran / Words Accent) -->
+    <circle cx="256" cy="135" r="42" fill="url(#goldGrad)" />
+    <circle cx="256" cy="135" r="37" fill="#0F2B28" stroke="url(#goldGrad)" stroke-width="2" />
+    
+    <!-- Star Motif inside Emblem -->
+    <path d="M 256,105 L 263,122 L 281,122 L 266,133 L 272,150 L 256,139 L 240,150 L 246,133 L 231,122 L 249,122 Z" fill="url(#goldGrad)" />
+  </g>
+</svg>

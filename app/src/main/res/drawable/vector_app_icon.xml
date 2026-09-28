@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Rehal / Book Stand Base -->
+    <path
+        android:pathData="M 32,78 L 54,68 L 76,78 L 70,82 L 54,75 L 38,82 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="32"
+                android:startY="68"
+                android:endX="76"
+                android:endY="82"
+                android:type="linear">
+                <item android:color="#D4AF37" android:offset="0.0" />
+                <item android:color="#8C6E2D" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Open Quran Pages (Left Page) -->
+    <path
+        android:fillColor="#F7F8F2"
+        android:pathData="M 54,38 C 38,35 22,39 22,39 L 22,68 C 22,68 38,64 54,67 Z" />
+
+    <!-- Open Quran Pages (Right Page) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M 54,38 C 70,35 86,39 86,39 L 86,68 C 86,68 70,64 54,67 Z" />
+
+    <!-- Spine Divider -->
+    <path
+        android:pathData="M 54,38 L 54,67"
+        android:strokeWidth="1.5"
+        android:strokeColor="#8C6E2D" />
+
+    <!-- Left & Right Gold Page Header Borders -->
+    <path
+        android:pathData="M 23,40 C 38,36 53,39 53,39"
+        android:strokeWidth="1"
+        android:strokeColor="#B5934C" />
+    <path
+        android:pathData="M 85,40 C 70,36 55,39 55,39"
+        android:strokeWidth="1"
+        android:strokeColor="#B5934C" />
+
+    <!-- Text Lines Simulation (Left) -->
+    <path
+        android:pathData="M 28,47 C 36,45 44,46 48,47 M 27,53 C 36,51 44,52 49,53 M 28,59 C 36,57 44,58 48,59"
+        android:strokeWidth="1"
+        android:strokeColor="#56624B" />
+
+    <!-- Text Lines Simulation (Right) -->
+    <path
+        android:pathData="M 60,47 C 64,46 72,45 80,47 M 59,53 C 64,52 72,51 81,53 M 60,59 C 64,58 72,57 80,59"
+        android:strokeWidth="1"
+        android:strokeColor="#56624B" />
+
+    <!-- Star Emblem Circle -->
+    <path
+        android:pathData="M 54,20 A 8,8 0 1,1 53.99,20 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:startX="46"
+                android:startY="12"
+                android:endX="62"
+                android:endY="28"
+                android:type="linear">
+                <item android:color="#D4AF37" android:offset="0.0" />
+                <item android:color="#8C6E2D" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:fillColor="#0F2B28"
+        android:pathData="M 54,21 A 7,7 0 1,1 53.99,21 Z" />
+    <!-- Center Star -->
+    <path
+        android:fillColor="#D4AF37"
+        android:pathData="M 54,22 L 55,25 L 58,25 L 55.5,27 L 56.5,30 L 54,28 L 51.5,30 L 52.5,27 L 50,25 L 53,25 Z" />
+
+</vector>
