@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  Privacy Policy — كلمات القرآن (Quran Words)
+  ============================================================================
+  Hosted at: https://<YOUR-HOST>/privacy-policy.html
+             (paste the public URL here — Google Play Console > App content >
+              Privacy policy requires a live public web page URL)
+
+  Repo:    https://github.com/AhmedSaadi0/quran-words-android
+  Source:  https://github.com/AhmedSaadi0/quran-words
+
+  This file is fully self-contained on purpose:
+    * no external stylesheets, fonts, scripts, images, or trackers
+    * no cookies, no analytics, no requests to any server
+    * the only thing it ever stores locally is your language choice
+      (localStorage key "qw-policy-lang") — disclosed in section 5
+    * renders correctly offline and cannot leak a referrer
+  Update LAST_UPDATED below whenever the policy text changes.
+  ============================================================================
+-->
+<html lang="ar" dir="rtl" data-lang="ar">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>سياسة الخصوصية — كلمات القرآن | Privacy Policy — Quran Words</title>
+<meta name="description" content="سياسة خصوصية تطبيق كلمات القرآن: لا يجمع التطبيق أي بيانات شخصية ولا يشاركها. Privacy policy for the Quran Words Android app: no personal data is collected, stored on servers, or shared.">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#56624B" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121411" media="(prefers-color-scheme: dark)">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Privacy Policy — Quran Words (كلمات القرآن)">
+<meta property="og:description" content="This offline Quranic dictionary app collects no personal data. There is no account, no tracking, no ads, and no analytics.">
+<meta property="og:locale" content="ar">
+<meta property="og:locale:alternate" content="en">
+<meta name="twitter:card" content="summary">
+
+<style>
+/* ==========================================================================
+   Natural Tones palette — mirrors the app theme (ui/theme/Color.kt)
+   ========================================================================== */
+:root {
+  --bg:            #F7F8F2;
+  --surface:       #FFFFFF;
+  --surface-var:   #F2F5EC;
+  --border:        #E1E3D9;
+  --outline:       #D2D8C7;
+
+  --text:          #1A1C18;
+  --text-2:        #43483E;
+  --text-3:        #737A6C;
+
+  --primary:       #56624B;
+  --primary-ink:   #2B3824;
+  --primary-cont:  #DDE5D1;
+  --accent:        #A4AD96;
+
+  --gold:          #8C6E2D;
+  --gold-cont:     #F3E8D0;
+
+  --ok:            #2F5D3A;
+  --ok-cont:       #E2EFE2;
+
+  --shadow: 0 1px 2px rgba(26, 28, 24, .05), 0 8px 24px rgba(26, 28, 24, .05);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --maxw: 1080px;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+               "Noto Sans Arabic", "Noto Naskh Arabic", "Amiri", "Noto Kufi Arabic", sans-serif;
+  --font-ar:   "Noto Naskh Arabic", "Amiri", "Scheherazade New", "Noto Sans Arabic",
+               system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+               "Liberation Mono", monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:          #121411;
+    --surface:     #191D17;
+    --surface-var: #232820;
+    --border:      #363D31;
+    --outline:     #363D31;
+
+    --text:        #E2E5DC;
+    --text-2:      #A2A999;
+    --text-3:      #868D7D;
+
+    --primary:     #A4AD96;
+    --primary-ink: #E2E5DC;
+    --primary-cont:#323B2B;
+    --accent:      #869477;
+
+    --gold:        #B5934C;
+    --gold-cont:   #382A0C;
+
+    --ok:          #8FBF9A;
+    --ok-cont:     #22301F;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; scroll-padding-top: 5.5rem; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+:lang(ar) { font-family: var(--font-ar); line-height: 1.95; }
+
+/* Language visibility -------------------------------------------------------- */
+html[data-lang="ar"] [data-lang-en],
+html[data-lang="en"] [data-lang-ar] { display: none !important; }
+
+a { color: var(--primary); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+a:hover { text-decoration-thickness: 2px; }
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+code, kbd, .mono { font-family: var(--font-mono); font-size: .86em; }
+code {
+  background: var(--surface-var);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: .1em .38em;
+  word-break: break-word;
+}
+
+/* Skip link ------------------------------------------------------------------ */
+.skip {
+  position: absolute; left: -9999px; top: 0; z-index: 100;
+  background: var(--surface); color: var(--text);
+  padding: .75rem 1.25rem; border-radius: 0 0 var(--radius-sm) 0;
+  box-shadow: var(--shadow);
+}
+.skip:focus { left: 0; }
+
+/* Header --------------------------------------------------------------------- */
+header.site {
+  background: linear-gradient(180deg, var(--primary-cont) 0%, var(--bg) 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 3.25rem 1.25rem 2.5rem;
+}
+.wrap { max-width: var(--maxw); margin: 0 auto; }
+
+.brand { display: flex; align-items: center; gap: .85rem; margin-bottom: 1.5rem; }
+.brand .mark {
+  width: 46px; height: 46px; flex: none;
+  display: grid; place-items: center;
+  background: var(--primary); color: #fff;
+  border-radius: 12px;
+  font-size: 1.4rem; line-height: 1;
+  font-weight: 700;
+}
+@media (prefers-color-scheme: dark) { .brand .mark { color: #121411; } }
+.brand-name { font-weight: 700; font-size: 1.05rem; letter-spacing: .01em; }
+.brand-sub  { color: var(--text-3); font-size: .82rem; }
+
+h1 {
+  margin: 0 0 .6rem;
+  font-size: clamp(1.7rem, 4.4vw, 2.5rem);
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+.tagline { margin: 0; color: var(--text-2); font-size: 1.05rem; max-width: 62ch; }
+
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.5rem; padding: 0; list-style: none; }
+.chip {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text-2);
+  border-radius: 999px; padding: .3rem .8rem;
+  font-size: .82rem; white-space: nowrap;
+}
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+.chip .dot.ok { background: var(--ok); }
+
+/* Language toggle ------------------------------------------------------------ */
+.langbar { display: flex; justify-content: flex-end; margin-bottom: 1.25rem; }
+.lang-toggle {
+  display: inline-flex; padding: 3px; gap: 2px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.lang-toggle button {
+  font: inherit; font-size: .85rem; font-weight: 600;
+  color: var(--text-2); background: none; border: 0;
+  padding: .4rem 1.05rem; border-radius: 999px; cursor: pointer;
+  min-height: 40px;
+}
+.lang-toggle button[aria-pressed="true"] { background: var(--primary); color: #fff; }
+@media (prefers-color-scheme: dark) {
+  .lang-toggle button[aria-pressed="true"] { color: #121411; }
+}
+
+/* Layout --------------------------------------------------------------------- */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 270px;
+  gap: 3rem;
+  align-items: start;
+  padding: 2.75rem 1.25rem 4rem;
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; gap: 1.75rem; }
+  aside { order: -1; }
+}
+
+main { min-width: 0; }
+
+/* TOC ------------------------------------------------------------------------ */
+.toc {
+  position: sticky; top: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.15rem 1.15rem 1.35rem;
+  box-shadow: var(--shadow);
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+}
+@media (max-width: 900px) { .toc { position: static; max-height: none; } }
+.toc h2 {
+  margin: 0 0 .6rem;
+  font-size: .78rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-3);
+}
+:lang(ar) .toc h2 { letter-spacing: 0; text-transform: none; font-size: .9rem; }
+.toc ol { list-style: none; margin: 0; padding: 0; }
+.toc li { margin: 0; }
+.toc a {
+  display: block;
+  padding: .32rem .5rem .32rem 0;
+  color: var(--text-2); text-decoration: none;
+  font-size: .9rem; line-height: 1.5;
+  border-inline-start: 2px solid transparent;
+}
+.toc a:hover { color: var(--text); border-inline-start-color: var(--accent); }
+
+/* Sections ------------------------------------------------------------------- */
+section { margin-bottom: 3rem; scroll-margin-top: 5.5rem; }
+section > h2 {
+  margin: 0 0 .9rem;
+  font-size: 1.35rem; font-weight: 700; line-height: 1.4;
+  padding-bottom: .5rem;
+  border-bottom: 1px solid var(--border);
+}
+section h3 { margin: 1.75rem 0 .5rem; font-size: 1.05rem; font-weight: 700; }
+section p, section li { color: var(--text-2); }
+section p { margin: 0 0 1rem; }
+section ul, section ol { margin: 0 0 1rem; padding-inline-start: 1.4rem; }
+section li { margin-bottom: .45rem; }
+section li::marker { color: var(--accent); }
+section strong { color: var(--text); font-weight: 650; }
+section hr { border: 0; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+.lead { font-size: 1.05rem; color: var(--text-2); }
+
+/* Callout -------------------------------------------------------------------- */
+.callout {
+  background: var(--ok-cont);
+  border: 1px solid color-mix(in srgb, var(--ok) 30%, transparent);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.5rem;
+  margin: 0 0 2rem;
+}
+.callout h2 { margin: 0 0 .6rem; font-size: 1.1rem; color: var(--ok); border: 0; padding: 0; }
+.callout p { color: var(--text); margin: 0 0 .75rem; font-size: 1.05rem; font-weight: 600; }
+.callout p:last-child { margin: 0; font-weight: 400; font-size: .96rem; }
+
+.note {
+  background: var(--gold-cont);
+  border-inline-start: 4px solid var(--gold);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.2rem;
+  margin: 0 0 1.5rem;
+  font-size: .95rem;
+}
+.note p:last-child { margin: 0; }
+
+/* Tables --------------------------------------------------------------------- */
+.table-scroll { overflow-x: auto; margin: 0 0 1.5rem; border-radius: var(--radius-sm); }
+table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+caption { caption-side: top; text-align: start; color: var(--text-3); font-size: .85rem; padding-bottom: .5rem; }
+th, td { text-align: start; padding: .7rem .85rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+thead th {
+  background: var(--surface-var);
+  color: var(--text); font-weight: 650; font-size: .85rem;
+  white-space: nowrap;
+}
+tbody tr:last-child td { border-bottom: 0; }
+td .mono { white-space: nowrap; }
+.nowrap { white-space: nowrap; }
+
+.yes { color: var(--ok); font-weight: 650; }
+.no  { color: var(--gold); font-weight: 650; }
+
+/* Footer --------------------------------------------------------------------- */
+footer.site {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 2.5rem 1.25rem 3rem;
+  color: var(--text-3);
+  font-size: .9rem;
+}
+footer.site p { margin: 0 0 .6rem; }
+footer.site a { color: var(--text-2); }
+
+@media print {
+  header.site { background: none; padding: 1.5rem 0; }
+  .langbar, .toc, .skip { display: none !important; }
+  html[data-lang="ar"] [data-lang-en], html[data-lang="en"] [data-lang-ar] { display: revert !important; }
+  .layout { display: block; padding: 1rem 0; }
+  body { font-size: 11pt; }
+  section { break-inside: avoid; }
+}
+</style>
+</head>
+
+<body>
+<a class="skip" href="#policy-ar" data-lang-ar>تخطَّ إلى نص السياسة</a>
+<a class="skip" href="#policy-en" data-lang-en>Skip to policy text</a>
+
+<header class="site">
+  <div class="wrap">
+    <div class="langbar">
+      <div class="lang-toggle" role="group" aria-label="Language / اللغة">
+        <button type="button" id="btn-ar" data-set-lang="ar" aria-pressed="true">العربية</button>
+        <button type="button" id="btn-en" data-set-lang="en" aria-pressed="false">English</button>
+      </div>
+    </div>
+
+    <div class="brand">
+      <div class="mark" aria-hidden="true">ق</div>
+      <div>
+        <div class="brand-name">كلمات القرآن — Quran Words</div>
+        <div class="brand-sub mono">com.quranwords &middot; v0.6.0 (6)</div>
+      </div>
+    </div>
+
+    <h1 data-lang-ar>سياسة الخصوصية</h1>
+    <h1 data-lang-en>Privacy Policy</h1>
+
+    <p class="tagline" data-lang-ar>
+      هذا التطبيق معجم قرآني لغوي يعمل <strong>دون اتصال بالإنترنت</strong>. لا يجمع أي بيانات شخصية،
+      ولا ينشئ حسابات، ولا يحتوي على إعلانات أو أدوات تتبّع. هذه الوثيقة تشرح بدقة ما يحدث لبياناتك.
+    </p>
+    <p class="tagline" data-lang-en>
+      This app is an offline linguistic dictionary of the Qur'an. It <strong>collects no personal
+      data</strong>, has no accounts, and contains no advertising or tracking. This document explains
+      exactly what happens to your data.
+    </p>
+
+    <ul class="chips">
+      <li class="chip"><span class="dot ok" aria-hidden="true"></span>
+        <span data-lang-ar>لا تُجمع بيانات</span><span data-lang-en>No data collected</span></li>
+      <li class="chip"><span class="dot ok" aria-hidden="true"></span>
+        <span data-lang-ar>لا تتبّع ولا تحليلات</span><span data-lang-en>No tracking or analytics</span></li>
+      <li class="chip"><span class="dot ok" aria-hidden="true"></span>
+        <span data-lang-ar>لا إعلانات</span><span data-lang-en>No ads</span></li>
+      <li class="chip"><span class="dot" aria-hidden="true"></span>
+        <span data-lang-ar>إذن واحد فقط: الإنترنت</span><span data-lang-en>One permission: Internet</span></li>
+      <li class="chip"><span class="dot" aria-hidden="true"></span>
+        <span data-lang-ar>آخر تحديث: 30 سبتمبر 2026</span><span data-lang-en>Last updated: 30 September 2026</span></li>
+    </ul>
+  </div>
+</header>
+
+<div class="layout wrap">
+
+  <!-- ==================== Arabic policy ==================== -->
+  <main>
+  <article id="policy-ar" lang="ar" dir="rtl" data-lang-ar>
+
+    <div class="callout">
+      <h2>الخلاصة في سطر واحد</h2>
+      <p>نحن لا نجمع، ولا نخزّن على خوادمنا، ولا نشارك أي بيانات شخصية.</p>
+      <p>
+        لا يطلب التطبيق إنشاء حساب، ولا يحتوي على إعلانات أو أدوات تحليلات أو تتبّع،
+        ولا يرسل محتويات قراءتك أو إعداداتك أو إشاراتك المرجعية إلى أي جهة.
+        كل ما تكتبه يبقى على جهازك فقط.
+      </p>
+    </div>
+
+    <section id="ar-about">
+      <h2>١. عن هذا التطبيق</h2>
+      <p>
+        <strong>كلمات القرآن</strong> (المعرّف: <code>com.quranwords</code>) تطبيق أندرويد مفتوح المصدر
+        يعرض معجماً لغوياً للقرآن الكريم: ١١٤ سورة، و٦٢٣٦ آية، و٧٧٤٢٩ موضع كلمة، و١٦٤٢ جذراً
+        مع معانيه من لسان العرب والصحاح ومقاييس اللغة، إضافة إلى المصادر والمشتقات والتحليل الصرفي.
+      </p>
+      <p>
+        التطبيق <strong>يعمل دون اتصال بالإنترنت</strong> بعد تنزيل قاعدة البيانات أو استيرادها.
+        مصدر البيانات والمشروع مفتوحان ومتاحان للعموم على GitHub، ولا يملك المطوّر أي خادم
+        يستقبل بيانات المستخدمين أو يخزّنها.
+      </p>
+    </section>
+
+    <section id="ar-collect">
+      <h2>٢. المعلومات التي نجمعها</h2>
+      <p><strong>لا شيء.</strong></p>
+      <p>
+        لا يجمع التطبيق أي بيانات تعريف شخصية، ولا معرّفات فريدة، ولا عناوين IP ولا
+        ملفات ارتباط (Cookies)، ولا موقعك الجغرافي، ولا سجل مكالمات، ولا رسائل، ولا صور.
+        لا يوجد تسجيل دخول، ولا حساب مستخدم، ولا معرّف إعلاني (Advertising ID).
+      </p>
+      <p>
+        لا يحتوي التطبيق على أي مكتبة تحليلات (Analytics)، ولا إعلانات، ولا أدوات تتبّع
+        أو بصمة جهاز، ولا تقارير أخطاء تُرسل إلى أطراف خارجية. لا يوجد أي خادم خلفي
+       معالجة للبيانات — كل الاستعلامات تُنفَّذ محلياً على جهازك.
+      </p>
+    </section>
+
+    <section id="ar-local">
+      <h2>٣. البيانات المخزّنة على جهازك</h2>
+      <p>
+       ليعمل التطبيق، يحفظ بعض المعلومات <strong>محلياً على جهازك فقط</strong>.
+        هذه البيانات داخل مساحة التطبيق الخاصة (sandbox) ولا يطّلع عليها أي جهة خارجية،
+        ولا تُرسل إلى أي خادم:
+      </p>
+      <div class="table-scroll">
+        <table>
+          <caption>جدول البيانات المخزّنة محلياً</caption>
+          <thead>
+            <tr>
+              <th>البيان</th>
+              <th>الغرض</th>
+              <th>يُرسل إلى الخارج؟</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>حجم خط المصحف</td>
+              <td>ضبط حجم خط الآيات حسب تفضيلك</td>
+              <td class="no nowrap">لا</td>
+            </tr>
+            <tr>
+              <td>وضع الألوان (فاتح/داكن/تلقائي)</td>
+              <td>اختيار مظهر التطبيق</td>
+              <td class="no nowrap">لا</td>
+            </tr>
+            <tr>
+              <td>استخدام الألوان الديناميكية</td>
+              <td>تطابق ألوان النظام عند تفعيله</td>
+              <td class="no nowrap">لا</td>
+            </tr>
+            <tr>
+              <td>خط المصحف المختار</td>
+              <td>عرض النص بخط قرآني محدد</td>
+              <td class="no nowrap">لا</td>
+            </tr>
+            <tr>
+              <td>لغة واجهة التطبيق</td>
+              <td>اختيار العربية أو الإنجليزية</td>
+              <td class="no nowrap">لا</td>
+            </tr>
+            <tr>
+              <td>الإشارات المرجعية (سور وآيات)</td>
+              <td>حفظ ما وضعت عليه علامة</td>
+              <td class="no nowrap">لا</td>
+            </tr>
+            <tr>
+              <td>آخر موضع قراءة (رقم السورة والآية)</td>
+              <td>متابعة القراءة من حيث توقفت</td>
+              <td class="no nowrap">لا</td>
+            </tr>
+            <tr>
+              <td>رقم إصدار قاعدة البيانات وتاريخ تنزيلها وآخر فحص للتحديث</td>
+              <td>إدارة تحديث قاعدة البيانات المحلية</td>
+              <td class="no nowrap">لا</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">
+        <p>
+          <strong>ملاحظة:</strong> التخزين يتم عبر نظام <code>DataStore</code> في مساحة التطبيق
+          الخاصة. لا يقرأ هذا التطبيق أي بيانات من تطبيقات أخرى، ولا يصل إلى جهات الاتصال
+          أو السجلّ أو التقويم أو ملفاتك الشخصية.
+        </p>
+      </p>
+    </section>
+
+    <section id="ar-db">
+      <h2>٤. قاعدة بيانات القرآن</h2>
+      <p>
+        حتى يعمل التطبيق دون إنترنت، يحتوي على قاعدة بيانات محلية كبيرة (نحو ١١٨ ميجابايت)
+        تضم نصوص القرآن وبياناته اللغوية. يمكنك تحميلها بنفسك من
+        <a href="https://github.com/AhmedSaadi0/quran-words" rel="noopener noreferrer" target="_blank">مشروع البيانات المفتوحة</a>
+        أو استيرادها من وحدة تخزين جهازك.
+      </p>
+      <p>قاعدة البيانات هذه تحتوي على نصّ قرآني وبيانات معجمية عامة، ولا تحتوي على أي بيانات تخصّك.</p>
+      <p>
+        يتحقق التطبيق من سلامة الملف الذي ينزّله عبر بصمة <code>SHA-256</code>
+        وصيغة ملف SQLite قبل قبوله، ويحذف الملفات المؤقتة بعد الانتهاء.
+      </p>
+    </section>
+
+    <section id="ar-network">
+      <h2>٥. الاتصال بالإنترنت</h2>
+      <p>
+        لا يستخدم التطبيق الإنترنت إلا في عمليتين اثنتين، وكلاهما <strong>ببروتوكول HTTPS
+        المشفّر فقط</strong> (يرفض التطبيق أي رابط غير يبدأ بـ <code>https://</code>):
+      </p>
+      <ol>
+        <li>
+          <strong>فحص تحديث قاعدة البيانات</strong> — جلب ملف بيان صغير يحدد أحدث نسخة متاحة.
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>العنصر</th><th>التفصيل</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>الوجهة</td><td class="mono">raw.githubusercontent.com</td></tr>
+                <tr><td>الغرض</td><td>معرفة رقم النسخة الجديدة وحجمها ورابط تنزيلها</td></tr>
+                <tr><td>ما يُرسَل</td><td>طلب <code>GET</code> عادي بدون أي بيانات مستخدم</td></tr>
+                <tr><td>ترويسة مميّزة</td><td class="mono">User-Agent: QuranWordsApp</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </li>
+        <li>
+          <strong>تنزيل ملف قاعدة البيانات</strong> — عند طلبك ذلك من شاشة الإعداد أو الرئيسية.
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr><th>العنصر</th><th>التفصيل</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>الوجهة</td><td class="mono">media.githubusercontent.com</td></tr>
+                <tr><td>الغرض</td><td>جلب ملف قاعدة البيانات (نحو ١١٨ ميجابايت)</td></tr>
+                <tr><td>ما يُرسَل</td><td>طلب <code>GET</code> عادي بدون أي بيانات مستخدم</td></tr>
+                <tr><td>ترويسة مميّزة</td><td class="mono">User-Agent: QuranWordsApp/1.0</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </li>
+      </ol>
+      <p>
+        لا تُرفق أي من هذه الطلبات بمعرّف جهاز أو معرّف مستخدم أو رمز دخول أو بريد إلكتروني.
+        لا يقرأ التطبيق أي شيء من ذاكرة التخزين المؤقت لمتصفحك، ولا يضع أي ملف ارتباط.
+      </p>
+      <p>
+        <strong>ملاحظة تقنية:</strong> مثل أي اتصال HTTPS، يتلقّى خادم مزوّد الاستضافة
+        (GitHub) معلومات الشبكة المعتادة — عنوان IP الخاص بك ونوع جهازك — في سجلات الخادم
+        كجزء من عملية الاتصال. هذه المعالجة تجري وفق <a href="https://github.com/AhmedSaadi0/quran-words" rel="noopener noreferrer" target="_blank">سياسة خصوصية GitHub</a>
+        ولا نستطيع تغييرها أو التحكم بها.
+      </p>
+      <p>
+        <strong>عن صفحة السياسة نفسها:</strong> هذه الصفحة ملف واحد مستقل، بلا أي موارد
+        خارجية: لا خطوط ولا صور ولا أدوات تحليلات تُحمَّل من الإنترنت، ولا ترسل أي بيانات
+        إلى أي خادم. والشيء الوحيد الذي تحفظه هو <em>اختيارك للغة</em> (عربي أو إنجليزي)
+        في تخزين المتصفح على جهازك، ويمكنك مسحه في أي وقت بمحو بيانات الموقع من إعدادات
+        المتصفح.
+      </p>
+    </section>
+
+    <section id="ar-backup">
+      <h2>٦. النسخ الاحتياطي في أندرويد</h2>
+      <p>
+        يستخدم التطبيق خدمة النسخ الاحتياطي في أندرويد (إن كانت مفعّلة على جهازك). وقد استُثنيت
+        <strong>ملف قاعدة البيانات</strong> (نحو ١١٨ ميجابايت) من النسخ الاحتياطي السحابي
+        ومن النقل المباشر بين الأجهزة، لأنه ملف بيانات قابل لإعادة التنزيل.
+      </p>
+      <p>
+        قد تشمل خدمة النسخ الاحتياطي التي يديرها نظام التشغيل — مثل Google Drive أو خدمة الشركة
+        لديك — <strong>إعداداتك وإشاراتك المرجعية</strong>. هذه الخدمة تعمل تحت سياستها هي
+        وتتحكم فيها أنت بالكامل عبر إعدادات النظام، ولا يطّلع عليها المطوّر ولا تصل إليه.
+        يمكنك إيقافها من: <span class="mono">الإعدادات ← النظام ← النسخ الاحتياطي</span>.
+      </p>
+    </section>
+
+    <section id="ar-permissions">
+      <h2>٧. الأذونات</h2>
+      <p>يطلب التطبيق إذناً واحداً فقط:</p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>الإذن</th><th>لماذا ولماذا لا أكثر</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono nowrap">INTERNET</td>
+              <td>
+                يُستخدم حصراً لتنزيل ملف قاعدة البيانات وفحص تحديثها. بدونه لا يمكن للتطبيق
+                أن يجلب المحتوى؛ وبمجرد اكتمال التنزيل يمكن للتطبيق العمل بالكامل دون اتصال.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <strong>لا يطلب التطبيق</strong> أياً من الأذونات الحساسة التالية: الموقع، الكاميرا،
+        الميكروفون، جهات الاتصال، الرسائل، الهاتف، التخزين الإضافي (باستثناء ما تختاره
+        أنت يدوياً عبر منتقي الملفات لتصدير قاعدة البيانات)، أو الإشعارات.
+      </p>
+    </section>
+
+    <section id="ar-ai">
+      <h2>٨. الملخّص الذكي (AI Summary)</h2>
+      <p>
+        يعرض التطبيق لكل جذر ملخّصاً لغوياً. هذه الملخّصات <strong>مُولَّدة مسبقاً ومخزّنة داخل
+        قاعدة البيانات المحلية</strong>، وتُقرأ من القرص تماماً كنصّ الآيات.
+      </p>
+      <p>
+        التطبيق <strong>لا يتصل بأي خدمة ذكاء اصطناعي أثناء التشغيل</strong>، ولا يرسل
+        اسم الجذر أو نصّه أو أي جزء من قراءتك إلى أي نموذج لغوي أو خادم خارجي.
+      </p>
+    </section>
+
+    <section id="ar-thirdparty-actions">
+      <h2>٩. إجراءات تختارها أنت وتخرج بك من التطبيق</h2>
+      <p>
+        أحياناً يقترح التطبيق إجراءات تخرج بك من حدود التطبيق. في جميع الحالات
+        <strong>لا يرسل التطبيق شيئاً بنفسه</strong>؛ بل يفتح خدمة أخرى عبر المتصفح أو نافذة
+        المشاركة في نظام التشغيل، وتخضع تلك الخدمة لسياستها هي:
+      </p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>الإجراء</th><th>ما يحدث بالضبط</th><th>من يجمع البيانات</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>الإبلاغ عن معنى</td>
+              <td>
+                يفتح المتصفح على صفحة إنشاء Issue جديدة في GitHub، وقد تُعبَّأ مسبقاً
+                بعض البيانات (<span class="mono">root_id</span>، نص الجذر، رابط الصفحة).
+                إن نشرت التقرير فأنت من يفعل ذلك ويُخضع لنشره لـ
+                <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" rel="noopener noreferrer" target="_blank">سياسة خصوصية GitHub</a>.
+              </td>
+              <td>GitHub — بعد موافقتك</td>
+            </tr>
+            <tr>
+              <td>نسخ أو مشاركة نص</td>
+              <td>
+                ينسخ النص المحدد إلى الحافظة، أو يفتح نافذة المشاركة في النظام
+                لتختار أنت التطبيق المستلم.
+              </td>
+              <td>التطبيق الذي تختاره — بعد موافقتك</td>
+            </tr>
+            <tr>
+              <td>روابط الموقع والتحديثات</td>
+              <td>تفتح روابط إليكترونية في المتصفح.</td>
+              <td>الموقع وجهته</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ar-import">
+      <h2>١٠. استيراد قاعدة البيانات من جهازك</h2>
+      <p>
+        يمكنك وضع ملف <code>quran_words.db</code> في مساحة التخزين الخاصة بك واستيراده عبر
+        منتقي الملفات. يتم <strong>القراءة والنسخ داخل جهازك فقط</strong>، ولا يُرفع الملف
+        إلى أي خادم، ويصل إلى التطبيق صلاحية قراءة ذلك الملف المحدد وحده.
+      </p>
+    </section>
+
+    <section id="ar-nosell">
+      <h2>١١. لا نبيع بياناتك ولا نشاركها</h2>
+      <p>
+        لا يبيع التطبيق أي بيانات، ولا يشاركها مع أي طرف ثالث لأغراض تسويقية. وبما أنه
+        لا يجمع بيانات أصلاً، فلا يوجد أي تجارة أو مشاركة أو نقل بيانات منطَّق عليها.
+      </p>
+      <p>كما لا توجد أي عمليات إنشاء ملفات ارتباط، ولا إعلانات، ولا إعادة إرسال للمعلومات.</p>
+    </section>
+
+    <section id="ar-children">
+      <h2>١٢. خصوصية الأطفال</h2>
+      <p>
+        التطبيق مناسب لجميع الأعمار ولا يطلب بيانات من أي مستخدم، بما في ذلك الأطفال.
+        بما أن التطبيق لا يجمع أي بيانات شخصية على الإطلاق، فلا تُجمع بيانات عن الأطفال
+        ولا تُشارك. المحتويات قرآنية ومعجمية عامة.
+      </p>
+    </section>
+
+    <section id="ar-security">
+      <h2>١٣. أمن المعلومات</h2>
+      <ul>
+        <li>كل الاتصالات تتم عبر <strong>HTTPS فقط</strong>، ويرفض التطبيق أي رابط غير مشفّر.</li>
+        <li>يُتحقَّق من سلامة ملف قاعدة البيانات عبر بصمة <code>SHA-256</code> قبل استخدامه.</li>
+        <li>لا يحتوي التطبيق على أي مفاتيح API أو أسرار مُضمَّنة، ولا يحتاج إلى تسجيل دخول.</li>
+        <li>تُحذف الملفات المؤقتة للتنزيل تلقائياً عند النجاح أو الفشل أو الإلغاء.</li>
+        <li>تُحفظ بياناتك داخل مساحة التطبيق الخاصة، محميةً بعزل نظام أندرويد وصلاحيات التطبيقات.</li>
+        <li>التطبيق مفتوح المصدر، ويمكن مراجعة أي جزء من كوده علناً.</li>
+      </ul>
+    </section>
+
+    <section id="ar-delete">
+      <h2>١٤. حذف بياناتك</h2>
+      <p>لأن التطبيق لا يجمع بيانات عنك، فالحذف بسيط ويكفيه أحد الأمرين:</p>
+      <ul>
+        <li>
+          <strong>حذف الإشارات المرجعية:</strong> أزل العلامات من داخل التطبيق،
+          أو افتح إعدادات النظام ← التطبيقات ← كلمات القرآن ← مساحة التخزين وامسحها.
+        </li>
+        <li>
+          <strong>الحذف الكامل:</strong> إلغاء تثبيت التطبيق يحذف كل شيء: الإعدادات
+          والإشارات وقاعدة البيانات. بعد إعادة التثبيت ستبدأ من جديد كأن لم يكن.
+        </li>
+      </ul>
+    </section>
+
+    <section id="ar-rights">
+      <h2>١٥. حقوقك</h2>
+      <p>
+        أنت المالك الوحيد لأي بيانات على جهازك. وبما أن التطبيق لا يجمع بيانات شخصية ولا
+        يخزّنها على خوادمنا، فلا توجد أي بيانات شخصية محفوظة لدينا، وبالتالي لا حاجة
+        إلى طلب نسخة أو تصحيح أو حذف — اسمه عبر الإعدادات أو بإلغاء التثبيت.
+      </p>
+      <p>
+        في أي حال، ولأن حقك في الخصوصية محفوظ في كل الأحوال، يمكنك مراسلتنا في أي وقت
+        عبر صفحة Issues (انظر القسم التالي) وسنردّ عليك.
+      </p>
+    </section>
+
+    <section id="ar-contact">
+      <h2>١٦. التواصل معنا</h2>
+      <p>
+        لا نطلب منك بريداً إلكترونياً ولا نُنشئ لك حساباً، لذلك لا نترك وسيلة تواصل
+        شخصية على خوادمنا. الطريقة الرسمية الوحيدة للتواصل هي نظام المشكلات المفتوح في GitHub:
+      </p>
+      <p>
+        <a class="mono" href="https://github.com/AhmedSaadi0/quran-words/issues" rel="noopener noreferrer" target="_blank">github.com/AhmedSaadi0/quran-words/issues</a>
+      </p>
+      <p>
+        ننصح بأن <strong>لا تكتب</strong> في التقرير أي معلومات شخصية (اسمك الكامل أو بريدك أو
+        رقم هاتفك). نطلب فقط وصف المشكلة التي واجهتك.
+      </p>
+    </section>
+
+    <section id="ar-datasafety">
+      <h2>١٧. الإفصاحات في Google Play</h2>
+      <p>
+        لتوضيح الوضع بشكل مباشر، هذا ملخص إجابات التطبيق في نموذج «أمان البيانات»
+        (Data Safety) في Google Play Console:
+      </p>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th>السؤال في Google Play</th><th>إجابة التطبيق</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>هل يجمع التطبيق أو يشارك أي بيانات مستخدم؟</td><td class="no">لا — لا شيء</td></tr>
+            <tr><td>هل تتم مشاركة البيانات مع أطراف ثالثة؟</td><td class="no">لا</td></tr>
+            <tr><td>هل تُعالج البيانات أثناء النقل بشكل مشفّر؟</td><td class="yes">نعم — HTTPS فقط</td></tr>
+            <tr><td>هل يمكن للمستخدم طلب حذف بياناته؟</td><td class="yes">نعم — بمسح البيانات أو إلغاء التثبيت</td></tr>
+            <tr><td>هل التطبيق مستهدف للأطفال؟</td><td class="no">لا — مناسب لجميع الأعمار</td></tr>
+            <tr><td>هل يحتوي التطبيق إعلانات؟</td><td class="no">لا</td></tr>
+            <tr><td>هل يجمع التطبيق إحصائيات الاستخدام؟</td><td class="no">لا</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="ar-changes">
+      <h2>١٨. تعديلات هذه السياسة</h2>
+      <p>
+        قد تُحدَّث هذه السياسة إذا تغيّرت وظائف التطبيق أو طريقة عمله. سيُحدَّث تاريخ «آخر تحديث»
+        في أعلى الصفحة، وسيُنشر النص الجديد في مستودع المشروع المفتوح مع كل تغيير.
+      </p>
+    </section>
+
+    <section id="ar-more">
+      <h2>١٩. روابط مفيدة</h2>
+      <ul>
+        <li><a href="https://github.com/AhmedSaadi0/quran-words-android" rel="noopener noreferrer" target="_blank">مستودع تطبيق كلمات القرآن (أندرويد)</a></li>
+        <li><a href="https://github.com/AhmedSaadi0/quran-words" rel="noopener noreferrer" target="_blank">مشروع البيانات المفتوحة — مصدر المحتوى</a></li>
+        <li><a href="https://github.com/AhmedSaadi0/quran-words/issues" rel="noopener noreferrer" target="_blank">التقارير والمشاكل</a></li>
+        <li><a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" rel="noopener noreferrer" target="_blank">سياسة خصوصية GitHub</a></li>
+        <li><a href="https://policies.google.com/privacy" rel="noopener noreferrer" target="_blank">سياسة خصوصية Google Play</a></li>
+      </ul>
+    </section>
+
+  </article>
+
+  <!-- ==================== English policy ==================== -->
+  <article id="policy-en" lang="en" dir="ltr" data-lang-en>
+
+    <div class="callout">
+      <h2>The short version</h2>
+      <p>We do not collect, store on our servers, or share any personal data.</p>
+      <p>
+        The app has no sign-up, no advertising, no analytics, and no tracking. It never sends
+        your reading activity, settings, or bookmarks to anyone. Everything you do stays on
+        your device.
+      </p>
+    </div>
+
+    <section id="en-about">
+      <h2>1. About this app</h2>
+      <p>
+        <strong>Quran Words</strong> (package <code>com.quranwords</code>) is an open-source
+        Android app that presents a linguistic dictionary of the Qur'an: 114 surahs, 6,236
+        ayat, 77,429 word occurrences, and 1,642 roots with their meanings from Lisan al-Arab,
+        al-Sihah, and Maqayis al-Lugha, plus masadir, derivatives, and morphological analysis.
+      </p>
+      <p>
+        The app works <strong>fully offline</strong> once the database has been downloaded or
+        imported. The data source and the project are open and public on GitHub. The developer
+        operates no backend that receives or stores user data.
+      </p>
+    </section>
+
+    <section id="en-collect">
+      <h2>2. Information we collect</h2>
+      <p><strong>Nothing.</strong></p>
+      <p>
+        The app collects no personal information, no unique identifiers, no IP addresses, no
+        cookies, no location, no call logs, no messages, and no photos. There is no sign-up,
+        no user account, and no advertising ID.
+      </p>
+      <p>
+        The app contains no analytics SDK, no advertising, no tracking or fingerprinting
+        technology, and no third-party crash reporting. There is no server-side processing of
+        any kind — every query runs locally on your device.
+      </p>
+    </section>
+
+    <section id="en-local">
+      <h2>3. Data stored on your device</h2>
+      <p>
+        So the app can work, it saves a small amount of information <strong>locally on your
+        device only</strong>. It lives inside the app's private sandbox, is not accessible to
+        any outside party, and is never uploaded to any server:
+      </p>
+      <div class="table-scroll">
+        <table>
+          <caption>Locally stored items</caption>
+          <thead>
+            <tr><th>Item</th><th>Purpose</th><th>Sent off device?</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Quran text font size</td><td>Adjust how ayat are displayed for you</td><td class="no nowrap">No</td></tr>
+            <tr><td>Colour mode (light / dark / system)</td><td>Your app appearance choice</td><td class="no nowrap">No</td></tr>
+            <tr><td>Dynamic colour setting</td><td>Match your system palette when enabled</td><td class="no nowrap">No</td></tr>
+            <tr><td>Selected Quran font</td><td>Render the text in a chosen script</td><td class="no nowrap">No</td></tr>
+            <tr><td>Interface language</td><td>Arabic or English</td><td class="no nowrap">No</td></tr>
+            <tr><td>Bookmarks (surahs and ayat)</td><td>Remember what you flagged</td><td class="no nowrap">No</td></tr>
+            <tr><td>Last read position (surah and ayah number)</td><td>Resume reading where you stopped</td><td class="no nowrap">No</td></tr>
+            <tr><td>Database version, install time, and last update check</td><td>Manage the local database</td><td class="no nowrap">No</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note">
+        <p>
+          <strong>Note:</strong> Storage uses Android <code>DataStore</code> inside the app's
+          private directory. The app does not read data from other apps and has no access to
+          your contacts, calendar, call log, or personal files.
+        </p>
+      </div>
+    </section>
+
+    <section id="en-db">
+      <h2>4. The Quran database</h2>
+      <p>
+        To work offline, the app ships with a large local database (about 118 MB) containing
+        the Quran text and its linguistic data. You download it yourself from the
+        <a href="https://github.com/AhmedSaadi0/quran-words" rel="noopener noreferrer" target="_blank">open-data project</a>,
+        or import it from your own device storage.
+      </p>
+      <p>
+        That database contains only public scripture and public lexicographic data. It contains
+        nothing about you.
+      </p>
+      <p>
+        The app verifies the file it downloads using a <code>SHA-256</code> checksum and the
+        SQLite file signature before accepting it, and removes temporary files when finished.
+      </p>
+    </section>
+
+    <section id="en-network">
+      <h2>5. Network activity</h2>
+      <p>
+        The app uses the internet for exactly two things, both over <strong>encrypted HTTPS
+        only</strong> (the app rejects any URL that does not start with <code>https://</code>):
+      </p>
+      <ol>
+        <li>
+          <strong>Checking for a database update</strong> — fetching a small manifest that
+          states the newest available version.
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+              <tbody>
+                <tr><td>Destination</td><td class="mono">raw.githubusercontent.com</td></tr>
+                <tr><td>Purpose</td><td>Learn the latest version number, size, and download link</td></tr>
+                <tr><td>What is sent</td><td>A plain <code>GET</code> request with no user data</td></tr>
+                <tr><td>Identifying header</td><td class="mono">User-Agent: QuranWordsApp</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </li>
+        <li>
+          <strong>Downloading the database file</strong> — when you ask for it from the setup
+          or home screen.
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+              <tbody>
+                <tr><td>Destination</td><td class="mono">media.githubusercontent.com</td></tr>
+                <tr><td>Purpose</td><td>Fetch the database file (about 118 MB)</td></tr>
+                <tr><td>What is sent</td><td>A plain <code>GET</code> request with no user data</td></tr>
+                <tr><td>Identifying header</td><td class="mono">User-Agent: QuranWordsApp/1.0</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </li>
+      </ol>
+      <p>
+        Neither request carries a device identifier, user identifier, token, or email address.
+        The app reads nothing from your browser cache and sets no cookies.
+      </p>
+      <p>
+        <strong>Technical note:</strong> like any HTTPS connection, the hosting server (GitHub)
+        receives the usual network information — your IP address and your device type — in its
+        server logs as part of the connection. That is handled under
+        <a href="https://github.com/AhmedSaadi0/quran-words" rel="noopener noreferrer" target="_blank">GitHub's privacy policy</a>,
+        and we neither control nor can see it.
+      </p>
+      <p>
+        <strong>About this policy page itself:</strong> it is a single self-contained file
+        with no external resources — no fonts, no images, and no analytics are loaded from the
+        internet, and nothing is sent to any server. The only thing it saves is
+        <em>your language choice</em> (Arabic or English) in your browser's local storage, and
+        you can clear it at any time by clearing site data in your browser settings.
+      </p>
+    </section>
+
+    <section id="en-backup">
+      <h2>6. Android backup and device transfer</h2>
+      <p>
+        The app uses Android's backup service if you have it enabled. The
+        <strong>database file</strong> (about 118 MB) is explicitly excluded from both cloud
+        backup and direct device-to-device transfer, because it is a reproducible data file.
+      </p>
+      <p>
+        Your operating system's backup service — such as Google Drive or your employer's MDM —
+        may include <strong>your settings and bookmarks</strong>. That service operates under its
+        own policy and is fully under your control via system settings; the developer neither
+        accesses nor receives it. You can turn it off at
+        <span class="mono">Settings ← System → Backup</span>.
+      </p>
+    </section>
+
+    <section id="en-permissions">
+      <h2>7. Permissions</h2>
+      <p>The app requests exactly one permission:</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Permission</th><th>Why, and why nothing more</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="mono nowrap">INTERNET</td>
+              <td>
+                Used solely to download the database file and to check whether a newer version
+                exists. Without it the app cannot fetch its content; once the download is
+                complete the app works entirely offline.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        The app requests <strong>none</strong> of the sensitive permissions: location, camera,
+        microphone, contacts, SMS, phone, external storage (beyond the single file you pick
+        yourself to import), or notifications.
+      </p>
+    </section>
+
+    <section id="en-ai">
+      <h2>8. AI summaries</h2>
+      <p>
+        The app shows a linguistic summary for each root. These summaries are
+        <strong>pre-generated and stored inside the local database</strong>, and are read from
+        disk exactly like the text of the ayat.
+      </p>
+      <p>
+        The app <strong>contacts no AI service at runtime</strong>. It never sends a root name,
+        its text, or any part of your reading activity to a language model or any external
+        server.
+      </p>
+    </section>
+
+    <section id="en-thirdparty-actions">
+      <h2>9. Actions you choose that leave the app</h2>
+      <p>
+        The app sometimes offers actions that take you outside it. In every case
+        <strong>the app sends nothing itself</strong> — it hands off to your browser or to the
+        operating system's share sheet, and that service is governed by its own privacy policy:
+      </p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Action</th><th>What actually happens</th><th>Who handles data</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>Report a meaning</td>
+              <td>
+                Opens your browser at GitHub's new-issue page, possibly pre-filled with a little
+                technical context (<span class="mono">root_id</span>, root text, page URL). If
+                you post it, you are the one publishing, under
+                <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" rel="noopener noreferrer" target="_blank">GitHub's privacy policy</a>.
+              </td>
+              <td>GitHub — only after you choose to post</td>
+            </tr>
+            <tr>
+              <td>Copy or share text</td>
+              <td>
+                Copies your selection to the clipboard, or opens the system share sheet so you
+                pick the receiving app.
+              </td>
+              <td>The app you pick — only after you choose it</td>
+            </tr>
+            <tr>
+              <td>Links to the project and updates</td>
+              <td>Opens web links in your browser.</td>
+              <td>The site you land on</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="en-import">
+      <h2>10. Importing the database from your device</h2>
+      <p>
+        You may place a <code>quran_words.db</code> file in your own storage and import it via
+        the system file picker. This is <strong>read and copied entirely within your device</strong>;
+        the file is never uploaded anywhere, and the app receives read access only to the file
+        you selected.
+      </p>
+    </section>
+
+    <section id="en-nosell">
+      <h2>11. We do not sell or share your data</h2>
+      <p>
+        The app does not sell data and does not share it with third parties for marketing.
+        Because it collects no data in the first place, there is no data for us to sell, share,
+        or transfer.
+      </p>
+      <p>There are no cookies, no advertising, and no information retransmitted anywhere.</p>
+    </section>
+
+    <section id="en-children">
+      <h2>12. Children's privacy</h2>
+      <p>
+        The app is suitable for all ages and asks for no data from anyone, including children.
+        Because the app collects no personal data whatsoever, no data about children is
+        collected or shared. Its contents are public scripture and public lexicographic data.
+      </p>
+    </section>
+
+    <section id="en-security">
+      <h2>13. Information security</h2>
+      <ul>
+        <li>All communication is <strong>HTTPS only</strong>; the app rejects unencrypted URLs.</li>
+        <li>Downloaded database files are integrity-checked with a <code>SHA-256</code> checksum before use.</li>
+        <li>The app embeds no API keys or secrets, and requires no login.</li>
+        <li>Temporary download files are removed automatically on success, failure, or cancellation.</li>
+        <li>Your data stays inside the app's private directory, protected by Android's app sandboxing and permissions model.</li>
+        <li>The app is open source — any part of the code can be publicly reviewed.</li>
+      </ul>
+    </section>
+
+    <section id="en-delete">
+      <h2>14. Deleting your data</h2>
+      <p>Since the app collects nothing about you, deletion is simply one of the following:</p>
+      <ul>
+        <li>
+          <strong>Clear your bookmarks:</strong> remove them inside the app, or open
+          system Settings → Apps → Quran Words → Storage and clear it.
+        </li>
+        <li>
+          <strong>Full deletion:</strong> uninstalling the app removes everything — settings,
+          bookmarks, and the database. Reinstalling starts fresh.
+        </li>
+      </ul>
+    </section>
+
+    <section id="en-rights">
+      <h2>15. Your rights</h2>
+      <p>
+        You are the only owner of any data on your device. Because the app collects no personal
+        data and stores none on our servers, we hold no personal data about you, so there is
+        nothing to request a copy of, correct, or erase — you control it through settings or by
+        uninstalling.
+      </p>
+      <p>
+        In any case, and because your right to privacy stands regardless, you may reach us at
+        any time through the public issue tracker (see the next section) and we will respond.
+      </p>
+    </section>
+
+    <section id="en-contact">
+      <h2>16. Contacting us</h2>
+      <p>
+        We never ask for your email and we never create an account for you, so we keep no
+        personal contact details. The single official channel is the public issue tracker:
+      </p>
+      <p>
+        <a class="mono" href="https://github.com/AhmedSaadi0/quran-words/issues" rel="noopener noreferrer" target="_blank">github.com/AhmedSaadi0/quran-words/issues</a>
+      </p>
+      <p>
+        Please <strong>do not</strong> include personal information (your full name, email, or
+        phone number) in a report. A description of the problem you hit is all we need.
+      </p>
+    </section>
+
+    <section id="en-datasafety">
+      <h2>17. Google Play disclosures</h2>
+      <p>
+        For clarity, here is a direct summary of how this app answers the Google Play Console
+        "Data safety" form:
+      </p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Data safety question</th><th>This app's answer</th></tr></thead>
+          <tbody>
+            <tr><td>Does the app collect or share user data?</td><td class="no">No — nothing</td></tr>
+            <tr><td>Is data shared with third parties?</td><td class="no">No</td></tr>
+            <tr><td>Is data encrypted in transit?</td><td class="yes">Yes — HTTPS only</td></tr>
+            <tr><td>Can a user request data deletion?</td><td class="yes">Yes — clear storage or uninstall</td></tr>
+            <tr><td>Is the app directed at children?</td><td class="no">No — suitable for all ages</td></tr>
+            <tr><td>Does the app contain ads?</td><td class="no">No</td></tr>
+            <tr><td>Does the app collect usage statistics?</td><td class="no">No</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="en-changes">
+      <h2>18. Changes to this policy</h2>
+      <p>
+        This policy may be updated if the app's features or behaviour change. The "last
+        updated" date at the top of the page will change, and the new text will be published in
+        the public project repository alongside the relevant code change.
+      </p>
+    </section>
+
+    <section id="en-more">
+      <h2>19. Useful links</h2>
+      <ul>
+        <li><a href="https://github.com/AhmedSaadi0/quran-words-android" rel="noopener noreferrer" target="_blank">Quran Words Android app repository</a></li>
+        <li><a href="https://github.com/AhmedSaadi0/quran-words" rel="noopener noreferrer" target="_blank">Open-data project — the content source</a></li>
+        <li><a href="https://github.com/AhmedSaadi0/quran-words/issues" rel="noopener noreferrer" target="_blank">Reports and issues</a></li>
+        <li><a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" rel="noopener noreferrer" target="_blank">GitHub privacy policy</a></li>
+        <li><a href="https://policies.google.com/privacy" rel="noopener noreferrer" target="_blank">Google Play privacy policy</a></li>
+      </ul>
+    </section>
+
+  </article>
+  </main>
+
+  <!-- ==================== Table of contents (generated) ==================== -->
+  <aside>
+    <nav class="toc" aria-label="Table of contents / فهرس المحتويات">
+      <h2 data-lang-ar>المحتويات</h2>
+      <h2 data-lang-en>Contents</h2>
+      <ol id="toc-list"></ol>
+    </nav>
+  </aside>
+</div>
+
+<footer class="site">
+  <div class="wrap">
+    <p>
+      <strong data-lang-ar>كلمات القرآن</strong> — معجم قرآني لغوي، مفتوح المصدر ويعمل دون اتصال بالإنترنت.
+      <strong data-lang-en>Quran Words</strong> — an open-source, offline linguistic dictionary of the Qur'an.
+    </p>
+    <p>
+      <span data-lang-ar>راجع هذه السياسة في مستودع المشروع:</span>
+      <span data-lang-en>Review this policy in the project repository:</span>
+      <a class="mono" href="https://github.com/AhmedSaadi0/quran-words-android/blob/master/docs/privacy-policy.html" rel="noopener noreferrer" target="_blank">docs/privacy-policy.html</a>
+    </p>
+    <p>
+      <span data-lang-ar>آخر تحديث: ٣٠ سبتمبر ٢٠٢٦</span>
+      <span data-lang-en>Last updated: 30 September 2026</span>
+    </p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var DEFAULT_LANG = "ar";
+  var supported = { ar: true, en: true };
+  var root = document.documentElement;
+
+  function readLangFromQuery() {
+    try {
+      var m = /[?&]lang=(ar|en)\b/i.exec(window.location.search);
+      return m ? m[1].toLowerCase() : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function readLangFromStorage() {
+    try {
+      var v = window.localStorage.getItem("qw-policy-lang");
+      return supported[v] ? v : null;
+    } catch (e) {
+      return null; // private mode / storage blocked
+    }
+  }
+
+  function storeLang(lang) {
+    try {
+      window.localStorage.setItem("qw-policy-lang", lang);
+    } catch (e) { /* ignore */ }
+  }
+
+  function applyLang(lang, persist) {
+    if (!supported[lang]) lang = DEFAULT_LANG;
+    root.setAttribute("data-lang", lang);
+    root.setAttribute("lang", lang);
+    root.setAttribute("dir", lang === "ar" ? "rtl" : "ltr");
+
+    var buttons = document.querySelectorAll("[data-set-lang]");
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].setAttribute("aria-pressed",
+        buttons[i].getAttribute("data-set-lang") === lang ? "true" : "false");
+    }
+
+    // Move focus to the top so keyboard/SR users are not left in the hidden article.
+    var visible = document.getElementById(lang === "ar" ? "policy-ar" : "policy-en");
+    if (visible) {
+      var anchor = visible.getAttribute("aria-labelledby") || (lang === "ar" ? "ar-about" : "en-about");
+      var target = document.getElementById(anchor);
+      if (target) target.setAttribute("tabindex", "-1");
+    }
+
+    if (persist) storeLang(lang);
+    document.title = lang === "ar"
+      ? "سياسة الخصوصية — كلمات القرآن"
+      : "Privacy Policy — Quran Words (كلمات القرآن)";
+    buildToc(lang);
+  }
+
+  /* ---- Table of contents built from the visible article's headings ---- */
+  function buildToc(lang) {
+    var list = document.getElementById("toc-list");
+    if (!list) return;
+    var article = document.getElementById(lang === "ar" ? "policy-ar" : "policy-en");
+    if (!article) return;
+
+    // Ids live on the <section>, so select sections and read their own heading.
+    var sections = article.querySelectorAll("section[id] > h2");
+    var html = "";
+    for (var i = 0; i < sections.length; i++) {
+      var heading = sections[i];
+      var section = heading.parentNode;
+      var id = section.id;
+      if (!id) continue;
+      var text = heading.textContent.trim();
+      if (!text) continue;
+      html += '<li><a href="#' + id + '">' + text.replace(/</g, "&lt;") + "</a></li>";
+    }
+    list.innerHTML = html;
+  }
+
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest ? e.target.closest("[data-set-lang]") : null;
+    if (!btn) return;
+    var lang = btn.getAttribute("data-set-lang");
+    applyLang(lang, true);
+    // Keep the toggle reachable but return the reader to the start of the document.
+    window.scrollTo({ top: 0, behavior: "auto" });
+  });
+
+  applyLang(readLangFromQuery() || readLangFromStorage() || DEFAULT_LANG, false);
+})();
+</script>
+</body>
+</html>
