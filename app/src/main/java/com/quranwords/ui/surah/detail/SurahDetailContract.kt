@@ -37,10 +37,17 @@ data class SurahDetailUiState(
 
 sealed interface SurahDetailEvent {
     /**
+     * @param targetAyah ayah the reader is entering at; drives the initial fetch
+     *   window so a deep link lands with its target already loaded (no
+     *   render-at-ayah-1 frame, no scroll hunt).
      * @param immediate skips the enter-animation warm-up delay — used by
      * adjacent-surah switches whose vertical slide is already playing.
      */
-    data class Load(val surahId: Int, val immediate: Boolean = false) : SurahDetailEvent
+    data class Load(
+        val surahId: Int,
+        val targetAyah: Int = 1,
+        val immediate: Boolean = false
+    ) : SurahDetailEvent
     data class WordSelected(val word: WordToken, val ayah: Ayah) : SurahDetailEvent
     data object DismissWord : SurahDetailEvent
     data class AyahVisible(val ayahNum: Int) : SurahDetailEvent

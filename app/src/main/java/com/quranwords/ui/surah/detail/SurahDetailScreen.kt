@@ -59,6 +59,17 @@ import com.quranwords.ui.surah.detail.components.rememberNestedScrollCollapse
 import com.quranwords.ui.surah.detail.components.rememberSurahSwitchGesture
 import com.quranwords.ui.theme.AppMotion
 
+/** Centred progress placeholder for first load and deep-link placement. */
+@Composable
+private fun SurahLoadingPlaceholder() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+    }
+}
+
 /**
  * Stateless surah detail screen. Collapse state is saveable; pagination,
  * last-read tracking and selection flow through [SurahDetailEvent].
@@ -95,8 +106,18 @@ fun SurahDetailScreen(
     val blockLastAyahListIndex = remember(flowGroups, listOffset) {
         buildBlockLastAyahListIndex(flowGroups, listOffset)
     }
-    val sheetState = rememberModalBottomSheetState (skipPartiallyExpanded = true)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var hasHandledInitialScroll by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
+
+    /**
+     * False until the list has been placed at the deep-link target. While false
+     * the ayat list is NOT composed, so index 0 (ayah 1) can never reach the
+     * screen for even one frame. Starts settled for ayah-1 entries, which need
+     * no placement.
+     */
+    var isInitialPositionSettled by rememberSaveable(surahId, targetAyah) {
+        mutableStateOf(targetAyah <= 1)
+    }
 
     // Deep-link pulse state: did the entry scroll actually move, and did the
     // pulse run already (survives rotation so it never re-fires)?
@@ -157,6 +178,11 @@ fun SurahDetailScreen(
     val readingProgressState = remember(listState, flowGroups, listOffset, surah, surahPages) {
         derivedStateOf { readingProgressOf(listState, flowGroups, listOffset, surah, surahPages) }
     }
+    // Page-chip highlight: derived so the screen never subscribes to scroll
+    // position — only the header recomposes, and only on page boundaries.
+    val currentPageState = remember(listState, flowGroups, hasBasmalah) {
+        derivedStateOf { currentPageFor(flowGroups, listState, hasBasmalah) }
+    }
 
     // System back dismisses an active ayah selection first instead of leaving
     // the surah. Disabled while the morphology sheet is open so the sheet
@@ -167,34 +193,56 @@ fun SurahDetailScreen(
 
     // Load surah only if not already loaded for this surahId. Adjacent switches
     // enter immediately: the vertical slide is already playing, so first-page
-    // content must land inside it instead of after the warm-up delay.
+    // content must land inside it instead of after the warm-up delay. Deep links
+    // also skip it — their content must not wait on the enter transition.
     LaunchedEffect(surahId) {
         if (uiState.surah?.id != surahId || uiState.ayat.isEmpty()) {
             hasHandledInitialScroll = false
+            // Both flags re-armed together: a stale `true` here would make the
+            // placement effect a no-op for the new surah. Inside this guard, so
+            // a rotation with an already-loaded surah never re-hides the list.
+            isInitialPositionSettled = targetAyah <= 1
             collapseState.reset()
-            onEvent(SurahDetailEvent.Load(surahId, immediate = enter != SurahEnter.Normal))
+            onEvent(
+                SurahDetailEvent.Load(
+                    surahId = surahId,
+                    targetAyah = targetAyah,
+                    immediate = enter != SurahEnter.Normal || targetAyah > 1
+                )
+            )
         }
     }
 
-    // Initial scroll to the block owning the target ayah, then record last-read
+    // Initial placement at the target block. Deep links (targetAyah > 1) must
+    // be INSTANT and silent: the VM already fetched through the target, so the
+    // distance is short and animating it would replay the very jump we are
+    // removing. animateScrollToItem stays for in-session page-chip jumps only.
     LaunchedEffect(uiState.ayat, uiState.surah, hasHandledInitialScroll) {
         if (hasHandledInitialScroll) return@LaunchedEffect
         val currentSurah = uiState.surah
         if (uiState.ayat.isEmpty() || currentSurah == null) return@LaunchedEffect
         val scrollIndex = blockIndexOfAyah[targetAyah]
-        if (scrollIndex == null && uiState.ayat.size < currentSurah.ayahCount) {
+        val wholeSurahLoaded = uiState.ayat.size >= currentSurah.ayahCount
+        // Only stay pending while paging forward can still deliver the target.
+        // Once the full surah is in hand and the target still has no block, the
+        // DB numbering disagrees with the route: settle on the last block
+        // instead of leaving the spinner up forever.
+        if (scrollIndex == null && !wholeSurahLoaded) {
             onEvent(SurahDetailEvent.EnsureAyahLoaded(targetAyah))
             return@LaunchedEffect
         }
         if (scrollIndex != null) {
             entryDidScroll = scrollIndex != listState.firstVisibleItemIndex ||
                 listState.firstVisibleItemScrollOffset != 0
-            if (kotlin.math.abs(listState.firstVisibleItemIndex - scrollIndex) > 20) {
-                listState.scrollToItem(scrollIndex)
-            } else {
-                listState.animateScrollToItem(scrollIndex)
-            }
+            // requestScrollToItem (not scrollToItem): the list is still gated
+            // behind awaitingPlacement, so it has never laid out — the
+            // suspending scrollToItem would wait for first layout forever.
+            // The request applies on the next (i.e. first) remeasure instead.
+            listState.requestScrollToItem(scrollIndex)
+        } else {
+            listState.requestScrollToItem((flowGroups.size - 1 + listOffset).coerceAtLeast(0))
         }
+        isInitialPositionSettled = true
         hasHandledInitialScroll = true
         if (targetAyah in 1..currentSurah.ayahCount) {
             onEvent(SurahDetailEvent.AyahVisible(targetAyah))
@@ -265,6 +313,15 @@ fun SurahDetailScreen(
         }
     }
 
+    // True only while a deep-link placement is genuinely pending: data is in
+    // hand AND the target's block can be resolved. Anything else — error, empty
+    // result, or a target the DB numbering doesn't contain — falls through to
+    // the normal branches, so no failure mode can brick the screen on a spinner.
+    val awaitingPlacement = targetAyah > 1 &&
+        !isInitialPositionSettled &&
+        uiState.ayat.isNotEmpty() &&
+        blockIndexOfAyah[targetAyah] != null
+
     Scaffold(
         contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         containerColor = MaterialTheme.colorScheme.background,
@@ -311,7 +368,7 @@ fun SurahDetailScreen(
                         surah = uiState.surah,
                         fontSize = uiState.fontSize,
                         surahPages = uiState.surahPages,
-                        currentPage = currentPageFor(flowGroups, listState, hasBasmalah),
+                        currentPage = { currentPageState.value },
                         collapseState = collapseState,
                         readingProgress = { readingProgressState.value },
                         onNavigateBack = onNavigateBack,
@@ -326,13 +383,11 @@ fun SurahDetailScreen(
 
             Box(modifier = Modifier.fillMaxSize().weight(1f)) {
                 when {
-                    uiState.isLoading && uiState.ayat.isEmpty() -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-                        }
+                    (uiState.isLoading && uiState.ayat.isEmpty()) || awaitingPlacement -> {
+                        // Deep links hold here until the list is placed at the
+                        // target: the ayat list is not composed at all, so
+                        // ayah 1 can never reach the screen for one frame.
+                        SurahLoadingPlaceholder()
                     }
                     uiState.ayat.isEmpty() -> {
                         SurahDbMissingState()

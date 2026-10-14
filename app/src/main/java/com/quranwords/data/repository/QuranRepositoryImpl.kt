@@ -220,7 +220,8 @@ class QuranRepositoryImpl @Inject constructor(
 
     override suspend fun getAyatBySurahPaged(surahId: Int, limit: Int, offset: Int): List<Ayah> = withContext(ioDispatcher) {
         val db = getDb() ?: return@withContext emptyList()
-        val list = mutableListOf<Ayah>()
+        val rows = mutableListOf<Ayah>()
+        val ayahIds = mutableListOf<Int>()
         try {
             val cursor = db.rawQuery(
                 "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE surah = ? ORDER BY ayah ASC LIMIT ? OFFSET ?",
@@ -229,106 +230,146 @@ class QuranRepositoryImpl @Inject constructor(
             cursor.use { c ->
                 while (c.moveToNext()) {
                     val ayahId = c.getInt(0)
-                    val ayahNum = c.getInt(2)
-                    val textUth = sanitizeUthmanicText(c.getString(3) ?: "")
-                    val textUthPlain = c.getString(4) ?: ""
-                    val textIml = c.getString(5) ?: ""
-                    val wCount = c.getInt(6)
-                    val words = loadWordsForAyah(db, ayahId)
-                    list.add(
-                        Ayah(
-                            id = ayahId,
-                            surah = surahId,
-                            ayah = ayahNum,
-                            textUthmani = textUth,
-                            textUthmaniPlain = textUthPlain,
-                            textImlaei = textIml,
-                            wordCount = wCount,
-                            words = words,
-                            juz = if (c.isNull(7)) null else c.getInt(7),
-                            hizb = if (c.isNull(8)) null else c.getInt(8),
-                            rubElHizb = if (c.isNull(9)) null else c.getInt(9),
-                            pageNumber = if (c.isNull(10)) null else c.getInt(10)
-                        )
+                    ayahIds += ayahId
+                    rows += Ayah(
+                        id = ayahId,
+                        surah = surahId,
+                        ayah = c.getInt(2),
+                        textUthmani = sanitizeUthmanicText(c.getString(3) ?: ""),
+                        textUthmaniPlain = c.getString(4) ?: "",
+                        textImlaei = c.getString(5) ?: "",
+                        wordCount = c.getInt(6),
+                        // Attached below in one batched query instead of per row.
+                        words = emptyList(),
+                        juz = if (c.isNull(7)) null else c.getInt(7),
+                        hizb = if (c.isNull(8)) null else c.getInt(8),
+                        rubElHizb = if (c.isNull(9)) null else c.getInt(9),
+                        pageNumber = if (c.isNull(10)) null else c.getInt(10)
                     )
                 }
             }
         } catch (_: Exception) {
+            // Keep whatever was read before the failure, as before.
         }
-        return@withContext list
+        if (rows.isEmpty()) return@withContext emptyList()
+        val wordsByAyah = try {
+            loadWordsForAyat(db, ayahIds)
+        } catch (_: Exception) {
+            emptyMap()
+        }
+        return@withContext rows.map { ayah ->
+            ayah.copy(words = wordsByAyah[ayah.id].orEmpty())
+        }
+    }
+
+    /**
+     * Morphology for a whole page of ayat in a **single** query, grouped by
+     * ayah. This replaces one 4-table JOIN per ayah: a 20-ayah page used to
+     * cost 21 queries, and a 150-ayat deep-link window up to 151 — the source
+     * of the multi-second stall on low-end devices.
+     */
+    private fun loadWordsForAyat(db: SQLiteDatabase, ayahIds: List<Int>): Map<Int, List<WordToken>> {
+        if (ayahIds.isEmpty()) return emptyMap()
+        val placeholders = ayahIds.joinToString(",") { "?" }
+        val sql = """
+            SELECT wa.ayah_id, $WORD_COLUMNS
+            $WORD_JOINS
+            WHERE wa.ayah_id IN ($placeholders)
+            ORDER BY wa.ayah_id ASC, wa.position ASC
+        """.trimIndent()
+        val grouped = mutableMapOf<Int, MutableList<WordToken>>()
+        val cursor = db.rawQuery(sql, ayahIds.map { it.toString() }.toTypedArray())
+        cursor.use { c ->
+            while (c.moveToNext()) {
+                // Column 0 is wa.ayah_id; the shared projection starts at 1.
+                grouped.getOrPut(c.getInt(0)) { mutableListOf() }.add(readWordToken(c, base = 1))
+            }
+        }
+        return grouped
     }
 
     private fun loadWordsForAyah(db: SQLiteDatabase, ayahId: Int): List<WordToken> {
-        val words = mutableListOf<WordToken>()
         val sql = """
-            SELECT 
-                w.id,
-                wa.id,
-                wa.position,
-                w.text,
-                w.text_clean,
-                w.translation,
-                wm.root_id,
-                r.root,
-                wm.pos,
-                wm.form,
-                wm.aspect,
-                wm.mood,
-                wm.voice,
-                wm.person,
-                wm.gender,
-                wm.number,
-                wm.grammatical_case,
-                wm.state,
-                wm.derivation,
-                wm.special,
-                wm.segments
+            SELECT $WORD_COLUMNS
+            $WORD_JOINS
+            WHERE wa.ayah_id = ?
+            ORDER BY wa.position ASC
+        """.trimIndent()
+        val cursor = db.rawQuery(sql, arrayOf(ayahId.toString()))
+        return cursor.use { c ->
+            buildList {
+                while (c.moveToNext()) add(readWordToken(c, base = 0))
+            }
+        }
+    }
+
+    /**
+     * Maps one row of [WORD_COLUMNS] starting at column [base] to a
+     * [WordToken]. Shared by the single-ayah and batched loaders so the
+     * 21-column projection can never drift between them.
+     */
+    private fun readWordToken(c: Cursor, base: Int): WordToken {
+        val posCode = c.getString(base + 8)
+        val formCode = c.getString(base + 9)
+        return WordToken(
+            wordId = c.getInt(base),
+            wordAyahId = c.getInt(base + 1),
+            position = c.getInt(base + 2),
+            text = sanitizeUthmanicText(c.getString(base + 3) ?: ""),
+            textClean = sanitizeUthmanicText(c.getString(base + 4) ?: ""),
+            translation = c.getString(base + 5) ?: "",
+            rootId = if (c.isNull(base + 6)) null else c.getInt(base + 6),
+            rootText = c.getString(base + 7),
+            pos = posCode,
+            posNameAr = MorphologyMaps.POS_MAP[posCode] ?: posCode,
+            form = formCode,
+            formNameAr = MorphologyMaps.FORMS_MAP[formCode] ?: formCode,
+            aspect = c.getString(base + 10),
+            mood = c.getString(base + 11),
+            voice = c.getString(base + 12),
+            person = c.getString(base + 13),
+            gender = c.getString(base + 14),
+            number = c.getString(base + 15),
+            grammaticalCase = c.getString(base + 16),
+            state = c.getString(base + 17),
+            derivation = c.getString(base + 18),
+            special = c.getString(base + 19),
+            segments = c.getString(base + 20)
+        )
+    }
+
+    private companion object {
+        /** Projection shared by every morphology read; see [readWordToken]. */
+        const val WORD_COLUMNS = """
+            w.id,
+            wa.id,
+            wa.position,
+            w.text,
+            w.text_clean,
+            w.translation,
+            wm.root_id,
+            r.root,
+            wm.pos,
+            wm.form,
+            wm.aspect,
+            wm.mood,
+            wm.voice,
+            wm.person,
+            wm.gender,
+            wm.number,
+            wm.grammatical_case,
+            wm.state,
+            wm.derivation,
+            wm.special,
+            wm.segments
+        """
+
+        const val WORD_JOINS = """
             FROM word_ayah wa
             JOIN words w ON w.id = wa.word_id
             LEFT JOIN word_morphology wm ON wm.word_ayah_id = wa.id
             LEFT JOIN roots r ON r.id = wm.root_id
-            WHERE wa.ayah_id = ?
-            ORDER BY wa.position ASC
-        """.trimIndent()
-
-        val cursor = db.rawQuery(sql, arrayOf(ayahId.toString()))
-        cursor.use { c ->
-            while (c.moveToNext()) {
-                val posCode = c.getString(8)
-                val formCode = c.getString(9)
-                val posAr = MorphologyMaps.POS_MAP[posCode] ?: posCode
-                val formAr = MorphologyMaps.FORMS_MAP[formCode] ?: formCode
-
-                words.add(
-                    WordToken(
-                        wordId = c.getInt(0),
-                        wordAyahId = c.getInt(1),
-                        position = c.getInt(2),
-                        text = sanitizeUthmanicText(c.getString(3) ?: ""),
-                        textClean = sanitizeUthmanicText(c.getString(4) ?: ""),
-                        translation = c.getString(5) ?: "",
-                        rootId = if (c.isNull(6)) null else c.getInt(6),
-                        rootText = c.getString(7),
-                        pos = posCode,
-                        posNameAr = posAr,
-                        form = formCode,
-                        formNameAr = formAr,
-                        aspect = c.getString(10),
-                        mood = c.getString(11),
-                        voice = c.getString(12),
-                        person = c.getString(13),
-                        gender = c.getString(14),
-                        number = c.getString(15),
-                        grammaticalCase = c.getString(16),
-                        state = c.getString(17),
-                        derivation = c.getString(18),
-                        special = c.getString(19),
-                        segments = c.getString(20)
-                    )
-                )
-            }
-        }
-        return words
+        """
     }
 
     override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? = withContext(ioDispatcher) {

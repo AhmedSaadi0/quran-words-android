@@ -57,7 +57,8 @@ fun SurahDetailHeader(
     surah: Surah?,
     fontSize: Float,
     surahPages: List<Int>,
-    currentPage: Int?,
+    /** Provided as a lambda so page changes recompose the header only — never the screen. */
+    currentPage: () -> Int?,
     collapseState: SurahCollapsingHeaderState,
     readingProgress: () -> ReadingProgress?,
     onNavigateBack: () -> Unit,
@@ -167,7 +168,7 @@ fun SurahDetailHeader(
                 if (surahPages.isNotEmpty()) {
                     SurahPagesHeader(
                         pages = surahPages,
-                        currentPage = currentPage,
+                        currentPage = currentPage(),
                         onPageClick = onPageClick,
                         modifier = Modifier.fillMaxWidth()
                     )

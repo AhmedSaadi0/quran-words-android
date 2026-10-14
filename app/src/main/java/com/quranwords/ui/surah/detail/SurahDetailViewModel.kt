@@ -7,6 +7,7 @@ import com.quranwords.core.util.FontSizePreference
 import com.quranwords.core.util.QuranCopyFormatter
 import com.quranwords.core.util.Result
 import com.quranwords.core.util.SelectionState
+import com.quranwords.core.util.SurahMetadata
 import com.quranwords.core.util.runCatchingResult
 import com.quranwords.domain.repository.UserPreferencesRepository
 import com.quranwords.domain.model.Ayah
@@ -141,7 +142,7 @@ class SurahDetailViewModel @Inject constructor(
 
     fun onEvent(event: SurahDetailEvent) {
         when (event) {
-            is SurahDetailEvent.Load -> loadSurah(event.surahId, event.immediate)
+            is SurahDetailEvent.Load -> loadSurah(event.surahId, event.targetAyah, event.immediate)
             is SurahDetailEvent.WordSelected -> selectWord(event.word, event.ayah)
             SurahDetailEvent.DismissWord -> clearSelectedWord()
             is SurahDetailEvent.AyahVisible -> updateLastRead(currentSurahId, event.ayahNum)
@@ -187,11 +188,15 @@ class SurahDetailViewModel @Inject constructor(
     }
 
     /**
+     * @param targetAyah ayah being entered at. When it is beyond the first page,
+     *   the initial query reaches **through** it (plus a small runway) in a
+     *   single round-trip: the target block is present in the very first
+     *   composition, so the reader never sees ayah 1 and no scroll hunt runs.
      * @param immediate true for adjacent-surah switches: the vertical slide is
      * already running, so first-page content must land inside the animation
      * instead of after the enter-animation warm-up delay.
      */
-    fun loadSurah(surahId: Int, immediate: Boolean = false) {
+    fun loadSurah(surahId: Int, targetAyah: Int = 1, immediate: Boolean = false) {
         // Guard: if the surah is already loaded with ayat, keep state
         if (currentSurahId == surahId && _surah.value?.id == surahId && _ayat.value.isNotEmpty()) {
             return
@@ -205,21 +210,33 @@ class SurahDetailViewModel @Inject constructor(
         _error.value = null
 
         viewModelScope.launch {
-            // Delay until enter animation finishes (250ms + buffer) to avoid jank
-            if (!immediate) delay(300)
+            // Warm-up only when the entry content IS the first page. A deep link
+            // to a mid-surah ayah must query at 0ms, not after the transition.
+            if (!immediate && targetAyah == 1) delay(200)
             val result = runCatchingResult {
                 val surah = repository.getSurahById(surahId)
-                val firstPage = repository.getAyatBySurahPaged(surahId, pageSize, 0)
-                surah to firstPage
+                // Fall back to the bundled reference data: a missing or
+                // zero-count surah row would otherwise collapse the window to a
+                // single ayah and turn a deep link into a paging hunt.
+                val total = surah?.ayahCount?.takeIf { it > 0 }
+                    ?: SurahMetadata.SURAHS.getOrNull(surahId - 1)?.ayahCount
+                    ?: 0
+                surah to repository.getAyatBySurahPaged(
+                    surahId,
+                    initialAyatLimit(targetAyah, pageSize, total),
+                    0
+                )
             }
             when (result) {
                 is Result.Success -> {
-                    val (surah, firstPage) = result.data
+                    val (surah, initialAyat) = result.data
                     _surah.value = surah
-                    _ayat.value = firstPage
-                    currentOffset = firstPage.size
-                    val total = surah?.ayahCount ?: 0
-                    _hasMore.value = firstPage.size == pageSize && currentOffset < total
+                    _ayat.value = initialAyat
+                    currentOffset = initialAyat.size
+                    // Compare loaded count against the surah total: the first
+                    // fetch is deliberately larger than one page on deep links,
+                    // so a page-sized check would wrongly report "no more".
+                    _hasMore.value = currentOffset < (surah?.ayahCount ?: 0)
                 }
                 is Result.Error -> _error.value = result.message
             }
@@ -389,4 +406,32 @@ class SurahDetailViewModel @Inject constructor(
     fun getFormattedSingle(ayah: Ayah): String {
         return QuranCopyFormatter.formatSingle(ayah, _surah.value)
     }
+}
+
+/**
+ * Extra ayat fetched past a deep-link target so the reader lands with a little
+ * forward context instead of the target being the very last loaded row.
+ */
+private const val DEEP_LINK_RUNWAY = 10
+
+/**
+ * How many ayat the very first query must fetch for an entry at [targetAyah].
+ *
+ * A target inside the first page needs no special handling. A deeper target is
+ * fetched **through** in one round-trip — [runway] ayat of forward context on
+ * top — so the target block already exists in the first composition: no ayah-1
+ * frame, no `ensureAyahLoaded` page loop, no animated scroll. Never exceeds the
+ * surah, so "jump to the last ayah" degrades to loading the whole surah once.
+ *
+ * Top-level and pure so [SurahDeepLinkWindowTest] can pin the rule.
+ */
+internal fun initialAyatLimit(
+    targetAyah: Int,
+    pageSize: Int,
+    totalAyah: Int,
+    runway: Int = DEEP_LINK_RUNWAY
+): Int = if (targetAyah > pageSize) {
+    minOf(totalAyah, targetAyah + runway).coerceAtLeast(1)
+} else {
+    pageSize
 }
