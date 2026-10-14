@@ -60,6 +60,7 @@ data class RootDetailUiState(
     val hasSubtitle: Boolean = false,
     val aiMetaLine: String? = null,
     val hasAiMeta: Boolean = false,
+    val aiSummaryRefs: List<String> = emptyList(),
     val fontSize: Float = 24f,
     val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
     val tabs: List<RootDetailTabUi> = emptyList(),

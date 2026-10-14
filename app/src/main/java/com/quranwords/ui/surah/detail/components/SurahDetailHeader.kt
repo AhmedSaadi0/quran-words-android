@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -36,6 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
+import com.quranwords.core.util.ReadingProgress
 import com.quranwords.core.util.isMeccan
 import com.quranwords.domain.model.Surah
 import com.quranwords.ui.components.FontSizeControls
@@ -43,23 +42,25 @@ import com.quranwords.ui.components.SurahPagesHeader
 import kotlin.math.roundToInt
 
 /**
- * Surah header: pinned top bar (title + back + bookmark) above the
- * collapsible area (font controls + page chips). Collapse physics live in
+ * Surah header: pinned top bar (title + back + reading-progress rings) above
+ * the collapsible area (font controls + page chips). Collapse physics live in
  * [rememberNestedScrollCollapse], which the caller must attach via
  * `Modifier.nestedScroll(...)` to the common ancestor of this header and the
  * scrollable ayat list — attaching it here would never receive deltas because
  * this header has no scrollable child.
+ *
+ * [readingProgress] is invoked by [ReadingProgressRings] inside its own
+ * composition so scroll-driven updates recompute only that row.
  */
 @Composable
 fun SurahDetailHeader(
     surah: Surah?,
-    isBookmarked: Boolean,
     fontSize: Float,
     surahPages: List<Int>,
     currentPage: Int?,
     collapseState: SurahCollapsingHeaderState,
+    readingProgress: () -> ReadingProgress?,
     onNavigateBack: () -> Unit,
-    onToggleBookmark: () -> Unit,
     onFontSizeChange: (Float) -> Unit,
     onPageClick: (Int) -> Unit
 ) {
@@ -69,7 +70,7 @@ fun SurahDetailHeader(
             .background(MaterialTheme.colorScheme.surface)
             .windowInsetsPadding(WindowInsets.statusBars)
     ) {
-        // Pinned Top Bar Row (dedicated to title + back + bookmark)
+        // Pinned Top Bar Row (title + back + reading-progress rings)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -115,17 +116,9 @@ fun SurahDetailHeader(
                 }
             }
 
-            IconButton(
-                onClick = onToggleBookmark,
-                modifier = Modifier.testTag("bookmark_button")
-            ) {
-                Icon(
-                    imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                    contentDescription = stringResource(R.string.cd_save_surah),
-                    tint = if (isBookmarked) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            // Reading position: whole-surah ring + current-juz ring with the
+            // juz number inside it (bookmark action removed from this bar).
+            ReadingProgressRings(readingProgress = readingProgress)
         }
 
         // Collapsible area: alpha fades + height/offset collapse (no layout-write)

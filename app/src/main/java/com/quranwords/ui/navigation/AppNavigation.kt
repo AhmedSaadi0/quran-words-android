@@ -134,7 +134,7 @@ fun AppNavigation() {
             modifier = Modifier.padding(innerPadding),
             enterTransition = { AppMotion.navEnterTransition() },
             exitTransition = { AppMotion.navExitTransition() },
-            popEnterTransition = { AppMotion.navPopEnterTransition() },
+            popEnterTransition = { revealFromAdjacentSwitch() },
             popExitTransition = { AppMotion.navPopExitTransition() }
         ) {
             composable<Home> {
@@ -163,12 +163,31 @@ fun AppNavigation() {
                 )
             }
 
-            composable<SurahDetail> { backStackEntry ->
+            composable<SurahDetail>(
+                enterTransition = { surahDetailEnter() },
+                exitTransition = { surahDetailExit() },
+                popEnterTransition = { surahDetailPopEnter() },
+                popExitTransition = { surahDetailPopExit() }
+            ) { backStackEntry ->
                 val route: SurahDetail = backStackEntry.toRoute()
                 SurahDetailRoute(
                     surahId = route.surahId,
                     targetAyah = route.ayah,
+                    enter = route.enter,
                     onNavigateBack = { navController.popBackStack() },
+                    onNavigateToAdjacentSurah = { targetSurahId, ayah, fromNext ->
+                        navController.navigate(
+                            SurahDetail(
+                                surahId = targetSurahId,
+                                ayah = ayah,
+                                enter = if (fromNext) SurahEnter.FromNext else SurahEnter.FromPrev
+                            )
+                        ) {
+                            // Adjacent switches replace the current entry, so
+                            // back always returns to where reading started.
+                            popUpTo<SurahDetail> { inclusive = true }
+                        }
+                    },
                     onNavigateToRootDetail = { rootId ->
                         navController.navigate(RootDetail(rootId))
                     }

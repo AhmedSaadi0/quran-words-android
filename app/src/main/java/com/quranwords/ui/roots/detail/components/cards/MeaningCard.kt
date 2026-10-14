@@ -29,6 +29,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.domain.model.RootMeaningModel
+import com.quranwords.ui.theme.ArabicTextScale
+import com.quranwords.ui.theme.ArabicTextScale.asExplanation
 import com.quranwords.ui.theme.ShapeSmall
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -41,6 +43,7 @@ fun MeaningCard(
     onClick: () -> Unit = {},
     onLongClick: () -> Unit = {}
 ) {
+    val textScale = ArabicTextScale.calculate(fontSize)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -85,8 +88,10 @@ fun MeaningCard(
                 }
             }
             Text(
+                // Definition is the substance of this screen: readable Arabic
+                // body copy, never Material's 14sp Latin default.
                 text = meaning.definition,
-                style = MaterialTheme.typography.bodyMedium.scaled(fontSize),
+                style = MaterialTheme.typography.bodyMedium.asExplanation(textScale),
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
                 else MaterialTheme.colorScheme.onSurface
             )

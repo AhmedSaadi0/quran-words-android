@@ -172,5 +172,16 @@ data class RootAiSummaryEntity(
     @PrimaryKey @ColumnInfo(name = "root_id") val rootId: Int,
     @ColumnInfo(name = "summary_ar") val summaryAr: String?,
     val model: String?,
-    @ColumnInfo(name = "generated_at") val generatedAt: String?
+    @ColumnInfo(name = "generated_at") val generatedAt: String?,
+    @ColumnInfo(name = "hissi") val hissi: String? = null,
+    @ColumnInfo(name = "tatawwur") val tatawwur: String? = null,
+    @ColumnInfo(name = "tashrih") val tashrih: String? = null,
+    @ColumnInfo(name = "shabaka") val shabaka: String? = null,
+    @ColumnInfo(name = "furuq") val furuq: String? = null,
+    @ColumnInfo(name = "hissi_refs") val hissiRefs: String? = null,
+    @ColumnInfo(name = "tatawwur_refs") val tatawwurRefs: String? = null,
+    @ColumnInfo(name = "tashrih_refs") val tashrihRefs: String? = null,
+    @ColumnInfo(name = "shabaka_refs") val shabakaRefs: String? = null,
+    @ColumnInfo(name = "furuq_refs") val furuqRefs: String? = null,
+    @ColumnInfo(name = "summary_refs") val summaryRefs: String? = null
 )

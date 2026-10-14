@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
+import com.quranwords.core.util.FontSizePreference
 import com.quranwords.domain.repository.UserPreferencesRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -61,7 +62,7 @@ class UserPreferencesDataStore @Inject constructor(
     }
 
     override val fontSize: Flow<Float> = context.preferencesDataStore.data.map { preferences ->
-        (preferences[KEY_FONT_SIZE] ?: 24f).coerceIn(1f, 48f)
+        FontSizePreference.clamp(preferences[KEY_FONT_SIZE] ?: FontSizePreference.DEFAULT)
     }
 
     override val quranFontKey: Flow<String> = context.preferencesDataStore.data.map { preferences ->
@@ -117,7 +118,7 @@ class UserPreferencesDataStore @Inject constructor(
     }
 
     override suspend fun setFontSize(size: Float) {
-        context.preferencesDataStore.edit { it[KEY_FONT_SIZE] = size.coerceIn(1f, 48f) }
+        context.preferencesDataStore.edit { it[KEY_FONT_SIZE] = FontSizePreference.clamp(size) }
     }
 
     override suspend fun setQuranFontKey(key: String) {

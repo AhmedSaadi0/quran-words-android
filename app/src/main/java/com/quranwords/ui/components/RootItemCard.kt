@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.R
+import com.quranwords.core.util.MarkdownBlocks
 import com.quranwords.domain.model.RootItem
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.ShapeMedium
@@ -124,7 +126,15 @@ fun RootItemCard(
                     )
                 } else if (!rootItem.aiSummary.isNullOrBlank()) {
                     Text(
-                        text = rootItem.aiSummary,
+                        // 2-line snippet: strip Markdown markers so the preview
+                        // never shows a stray `- ` or `**`.
+                        text = remember(rootItem.aiSummary) {
+                            if (MarkdownBlocks.hasMarkdown(rootItem.aiSummary)) {
+                                MarkdownBlocks.renderPlain(rootItem.aiSummary)
+                            } else {
+                                rootItem.aiSummary
+                            }
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 2,

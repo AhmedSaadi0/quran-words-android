@@ -30,7 +30,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -44,10 +50,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
+import com.quranwords.core.util.MarkdownBlocks
 import com.quranwords.ui.components.FontSizeControls
-import com.quranwords.ui.roots.detail.components.cards.scaled
+import com.quranwords.ui.roots.detail.components.cards.CitedBodyText
 import com.quranwords.ui.roots.detail.util.RootDetailTab
 import kotlin.math.roundToInt
+
+/**
+ * Blocks of a Markdown-parsed `summary_ar` shown before the "read more" toggle.
+ * Legacy plain-prose summaries parse to exactly one block, so this only ever
+ * engages for the multi-paragraph summaries (~65 roots).
+ */
+private const val SUMMARY_COLLAPSED_BLOCKS = 3
 
 /**
  * Collapsing header for RootDetail (reveal-only-at-top, full-height summary).
@@ -76,6 +90,7 @@ fun RootDetailHeader(
     hasSubtitle: Boolean,
     aiMetaLine: String?,
     hasAiMeta: Boolean,
+    summaryRefs: List<String> = emptyList(),
     tabCounts: Map<RootDetailTab, Int>,
     pagerTabs: List<RootDetailTab>,
     selectedTabIndex: Int,
@@ -192,11 +207,37 @@ fun RootDetailHeader(
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     if (hasSubtitle) {
-                        Text(
-                            text = subtitleText ?: "",
-                            style = MaterialTheme.typography.bodyMedium.scaled(fontSize),
-                            color = MaterialTheme.colorScheme.onSurface
+                        // Multi-paragraph summaries would otherwise grow the header
+                        // without bound (it intentionally has no viewport cap),
+                        // starving the list of touch. Clamp to the first blocks and
+                        // offer an explicit toggle; the AI tab shows it in full.
+                        val blockCount = remember(subtitleText) {
+                            MarkdownBlocks.parse(subtitleText.orEmpty()).size
+                        }
+                        var summaryExpanded by rememberSaveable { mutableStateOf(false) }
+                        CitedBodyText(
+                            body = subtitleText ?: "",
+                            refs = summaryRefs,
+                            refsLabel = stringResource(R.string.ai_refs_label),
+                            fontSize = fontSize,
+                            testTagPrefix = "ai_ref_summary",
+                            collapsedBlockLimit = SUMMARY_COLLAPSED_BLOCKS
+                                .takeIf { blockCount > it },
+                            isExpanded = summaryExpanded,
+                            onToggleExpanded = { summaryExpanded = !summaryExpanded }
                         )
+                        if (summaryExpanded && blockCount > SUMMARY_COLLAPSED_BLOCKS) {
+                            TextButton(
+                                onClick = { summaryExpanded = false },
+                                modifier = Modifier.testTag("ai_summary_collapse")
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.show_less),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                     if (hasAiMeta && !aiMetaLine.isNullOrBlank()) {
                         Text(

@@ -4,6 +4,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
+import com.quranwords.domain.model.AiExtendedSection
+import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.domain.model.AyahOccurrenceModel
 import com.quranwords.domain.model.DerivativeModel
 import com.quranwords.domain.model.MasdarModel
@@ -22,6 +24,11 @@ private fun previewDetail() = RootDetail(
     aiSummary = "جذر يدل على الجمع والضم، ومنه الكتابة لما فيها من جمع الحروف.",
     aiModel = "gpt-4",
     aiGeneratedAt = "2024-01-02T15:04:05",
+    aiExtended = AiExtendedSummary(
+        summaryRefs = listOf("جامع الأقسام"),
+        hissi = AiExtendedSection("الأصل الحسي نص تجريبي", listOf("مقاييس اللغة")),
+        furuq = AiExtendedSection("فروق نص تجريبي", listOf("الفروق اللغوية"))
+    ),
     meanings = listOf(
         RootMeaningModel(1, "الجمع والضم", "لسان العرب"),
         RootMeaningModel(2, "الخط بالقلم", "الصحاح")
@@ -42,7 +49,9 @@ private fun previewState() = RootDetailUiState(
     hasSubtitle = true,
     aiMetaLine = "gpt-4  •  2024-01-02 15:04",
     hasAiMeta = true,
+    aiSummaryRefs = listOf("جامع الأقسام"),
     tabs = listOf(
+        RootDetailTabUi(RootDetailTab.AI_SUMMARY, 2),
         RootDetailTabUi(RootDetailTab.MEANINGS, 2),
         RootDetailTabUi(RootDetailTab.AYAT, 319),
         RootDetailTabUi(RootDetailTab.WORDS, 2),

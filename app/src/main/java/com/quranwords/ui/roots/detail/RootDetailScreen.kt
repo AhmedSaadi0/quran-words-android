@@ -27,6 +27,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.quranwords.ui.components.ReportMeaningDialog
 import com.quranwords.ui.roots.detail.components.RootDetailHeader
 import com.quranwords.ui.roots.detail.components.rememberCollapsingHeaderState
+import com.quranwords.ui.roots.detail.tabs.AiSummaryTab
 import com.quranwords.ui.roots.detail.tabs.AyatTab
 import com.quranwords.ui.roots.detail.tabs.DerivativesTab
 import com.quranwords.ui.roots.detail.tabs.MasadirTab
@@ -62,6 +63,7 @@ fun RootDetailScreen(
         headerState.isSelectionMode = uiState.words.isSelectionMode || uiState.meanings.isSelectionMode
     }
     val meaningsState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    val aiSummaryState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val masadirState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val derivativesState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val ayatState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
@@ -93,6 +95,7 @@ fun RootDetailScreen(
                     hasSubtitle = uiState.hasSubtitle,
                     aiMetaLine = uiState.aiMetaLine,
                     hasAiMeta = uiState.hasAiMeta,
+                    summaryRefs = uiState.aiSummaryRefs,
                     tabCounts = tabCounts,
                     pagerTabs = pagerTabs,
                     selectedTabIndex = pagerState.currentPage,
@@ -106,6 +109,7 @@ fun RootDetailScreen(
                 )
                 HorizontalPager(state = pagerState, modifier = Modifier.weight(1f).fillMaxWidth(), beyondViewportPageCount = 1) { page ->
                     when (pagerTabs[page]) {
+                        RootDetailTab.AI_SUMMARY -> AiSummaryTab(extended = detail.aiExtended, fontSize = uiState.fontSize, listState = aiSummaryState)
                         RootDetailTab.MEANINGS -> MeaningsTab(meanings = uiState.meanings.meanings, selectedIds = uiState.meanings.selectedIds, isSelectionMode = uiState.meanings.isSelectionMode, isCopyingAll = copyMeaningsAll, isCopyingSelected = copyMeaningsSel, fontSize = uiState.fontSize, onCopyAll = { onEvent(RootDetailEvent.CopyAllMeanings) }, onShareAll = { onEvent(RootDetailEvent.ShareAllMeanings) }, onCopySelected = { onEvent(RootDetailEvent.CopySelectedMeanings) }, onShareSelected = { onEvent(RootDetailEvent.ShareSelectedMeanings) }, onSelectAll = { onEvent(RootDetailEvent.SelectAllMeanings) }, onClearSelection = { onEvent(RootDetailEvent.ClearMeaningSelection) }, onToggleSelection = { onEvent(RootDetailEvent.ToggleMeaning(it)) }, onEnterSelection = { onEvent(RootDetailEvent.EnterMeaningSelection(it)) }, listState = meaningsState)
                         RootDetailTab.MASADIR -> MasadirTab(masadir = detail.masadir, fontSize = uiState.fontSize, quranFont = uiState.quranFont, listState = masadirState)
                         RootDetailTab.DERIVATIVES -> DerivativesTab(derivatives = detail.derivatives, fontSize = uiState.fontSize, quranFont = uiState.quranFont, listState = derivativesState)

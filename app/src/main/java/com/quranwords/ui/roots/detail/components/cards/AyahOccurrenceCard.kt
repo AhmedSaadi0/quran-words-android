@@ -24,10 +24,11 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.core.util.AyahHighlighter
 import com.quranwords.domain.model.AyahOccurrenceModel
+import com.quranwords.ui.theme.ArabicTextScale
+import com.quranwords.ui.theme.ArabicTextScale.asMetadataLabel
 import com.quranwords.ui.theme.QuranFont
 import com.quranwords.ui.theme.ShapeSmall
 
@@ -35,9 +36,14 @@ import com.quranwords.ui.theme.ShapeSmall
 fun AyahOccurrenceCard(
     occ: AyahOccurrenceModel,
     onClick: () -> Unit,
-    fontSize: Float = BASE_FONT_SIZE,
+    // Default = the shared baseline, NOT a hardcoded 24: callers that don't
+    // expose the font-size preference (WordAyatScreen) still render verses at
+    // the same size as the mushaf instead of drifting from the token.
+    fontSize: Float = ArabicTextScale.DEFAULT_QURAN_SIZE,
     quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441
 ) {
+    // Same scale as the mushaf: verses read 1:1 with the reading view.
+    val textScale = ArabicTextScale.calculate(fontSize, quranFont.lineHeightMultiplier)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -59,9 +65,12 @@ fun AyahOccurrenceCard(
                 Text(
                     // surahNameAr is Arabic reference data (never translated).
                     text = stringResource(R.string.home_continue_template, occ.surahNameAr, occ.ayahNum),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelMedium.asMetadataLabel(textScale),
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.primary,
+                    // fill=false: the badge keeps its slot however far the
+                    // slider is pushed (Arabic grows horizontally).
+                    modifier = Modifier.weight(1f, fill = false)
                 )
                 Box(
                     modifier = Modifier
@@ -71,7 +80,7 @@ fun AyahOccurrenceCard(
                 ) {
                     Text(
                         text = occ.matchedWordText,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.asMetadataLabel(textScale),
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -98,14 +107,14 @@ fun AyahOccurrenceCard(
                 }
             }
 
-            // Same typeface + per-cut line rhythm as the surah reading view.
-            val verseFontSize = MaterialTheme.typography.bodyLarge.fontSize.value * fontScale(fontSize)
+            // Same typeface, size and per-cut line rhythm as the surah reading
+            // view — an occurrence is the same words the reader sees in mushaf.
             Text(
                 text = annotatedText,
                 style = MaterialTheme.typography.bodyLarge,
                 fontFamily = quranFont.fontFamily,
-                fontSize = verseFontSize.sp,
-                lineHeight = (verseFontSize * quranFont.lineHeightMultiplier).sp,
+                fontSize = textScale.verseTextSize,
+                lineHeight = textScale.verseLineHeight,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }

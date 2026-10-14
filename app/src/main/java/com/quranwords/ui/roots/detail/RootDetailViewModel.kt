@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.quranwords.core.util.FontSizePreference
 import com.quranwords.core.util.QuranCopyFormatter
 import com.quranwords.core.util.Result
 import com.quranwords.core.util.SelectionState
@@ -374,7 +375,9 @@ class RootDetailViewModel @Inject constructor(
             hasAiMeta = !metaLine.isNullOrBlank() ||
                 !detail?.aiModel.isNullOrBlank() ||
                 !detail?.aiGeneratedAt.isNullOrBlank(),
+            aiSummaryRefs = detail?.aiExtended?.summaryRefs.orEmpty(),
             tabs = listOf(
+                RootDetailTabUi(RootDetailTab.AI_SUMMARY, detail?.aiExtended?.sections()?.count { it.isNotBlank() } ?: 0),
                 RootDetailTabUi(RootDetailTab.MEANINGS, detail?.meanings?.size ?: 0),
                 RootDetailTabUi(RootDetailTab.AYAT, detail?.item?.occurrencesCount ?: 0),
                 RootDetailTabUi(RootDetailTab.WORDS, words.size),
@@ -447,7 +450,7 @@ class RootDetailViewModel @Inject constructor(
                 _effect.tryEmit(RootDetailEffect.NavigateToSurah(event.surahId, event.ayahNum))
             is RootDetailEvent.AyatNearingEnd -> loadMoreOccurrencesIfNeeded(event.lastVisibleIndex)
             is RootDetailEvent.SetFontSize ->
-                viewModelScope.launch { preferences.setFontSize(event.size.coerceIn(1f, 48f)) }
+                viewModelScope.launch { preferences.setFontSize(FontSizePreference.clamp(event.size)) }
             RootDetailEvent.ShowReport -> setReportVisible(true)
             RootDetailEvent.DismissReport -> setReportVisible(false)
             RootDetailEvent.Retry -> currentRootIdForOcc?.let { loadRootDetail(it) }

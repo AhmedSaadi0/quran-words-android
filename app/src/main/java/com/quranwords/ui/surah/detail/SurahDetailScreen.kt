@@ -9,25 +9,23 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,38 +34,46 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.distinctUntilChanged
-import com.quranwords.R
+import com.quranwords.core.util.SurahMetadata
+import com.quranwords.core.util.adjacentSurahTarget
 import com.quranwords.ui.components.MorphologyBottomSheet
-import com.quranwords.ui.surah.detail.components.AyahFlowGroup
+import com.quranwords.ui.navigation.SurahEnter
 import com.quranwords.ui.surah.detail.components.SelectionTopBar
 import com.quranwords.ui.surah.detail.components.SurahAyatList
+import com.quranwords.ui.surah.detail.components.SurahDbMissingState
+import com.quranwords.ui.surah.detail.components.SurahSwitchHints
+import com.quranwords.ui.surah.detail.components.buildBlockIndexOfAyah
+import com.quranwords.ui.surah.detail.components.buildBlockLastAyahListIndex
 import com.quranwords.ui.surah.detail.components.groupAyatByPage
 import com.quranwords.ui.surah.detail.components.SurahCollapsingHeaderState
 import com.quranwords.ui.surah.detail.components.SurahDetailHeader
+import com.quranwords.ui.surah.detail.components.currentPageFor
+import com.quranwords.ui.surah.detail.components.readingProgressOf
 import com.quranwords.ui.surah.detail.components.rememberNestedScrollCollapse
+import com.quranwords.ui.surah.detail.components.rememberSurahSwitchGesture
 import com.quranwords.ui.theme.AppMotion
 
 /**
  * Stateless surah detail screen. Collapse state is saveable; pagination,
  * last-read tracking and selection flow through [SurahDetailEvent].
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun SurahDetailScreen(
     uiState: SurahDetailUiState,
     surahId: Int,
     targetAyah: Int,
+    enter: SurahEnter,
     collapseState: SurahCollapsingHeaderState,
     onEvent: (SurahDetailEvent) -> Unit,
     onNavigateBack: () -> Unit,
+    onNavigateToAdjacentSurah: (surahId: Int, ayah: Int, fromNext: Boolean) -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
     snackbarHostState: SnackbarHostState
 ) {
@@ -83,20 +89,11 @@ fun SurahDetailScreen(
     val flowGroups = remember(uiState.ayat) { groupAyatByPage(uiState.ayat) }
     // Ayah number -> lazy item index of its owning block.
     val blockIndexOfAyah = remember(flowGroups, listOffset) {
-        buildMap {
-            flowGroups.forEachIndexed { groupIndex, group ->
-                val lazyIndex = groupIndex + listOffset
-                group.ayat.forEach { ayah -> put(ayah.ayah, lazyIndex) }
-            }
-        }
+        buildBlockIndexOfAyah(flowGroups, listOffset)
     }
     // Lazy item index -> source-list index of the block's last ayah (pagination).
     val blockLastAyahListIndex = remember(flowGroups, listOffset) {
-        buildMap {
-            flowGroups.forEachIndexed { groupIndex, group ->
-                put(groupIndex + listOffset, group.firstAyahIndex + group.ayat.size - 1)
-            }
-        }
+        buildBlockLastAyahListIndex(flowGroups, listOffset)
     }
     val sheetState = rememberModalBottomSheetState (skipPartiallyExpanded = true)
     var hasHandledInitialScroll by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
@@ -129,6 +126,38 @@ fun SurahDetailScreen(
     // scroll deltas reach onPreScroll. Disabled while selection is active.
     val nestedScrollConnection = rememberNestedScrollCollapse(collapseState, uiState.isSelectionMode)
 
+    // Adjacent-surah switch (Telegram-style): arms only at a real edge while
+    // touch-dragging; gates cover selection, sheet, pagination, list state and
+    // the Quran's own boundaries. "Next" additionally requires the repository to
+    // report no more ayat, i.e. the true end of the surah.
+    val gesture = rememberSurahSwitchGesture(
+        listState = listState,
+        canSwitchDown = !uiState.isSelectionMode &&
+            uiState.selectedWord == null &&
+            !uiState.isLoadingMore &&
+            uiState.ayat.isNotEmpty() &&
+            !uiState.hasMoreAyat &&
+            surahId < SurahMetadata.SURAHS.size,
+        canSwitchUp = !uiState.isSelectionMode &&
+            uiState.selectedWord == null &&
+            !uiState.isLoadingMore &&
+            uiState.ayat.isNotEmpty() &&
+            surahId > 1,
+        onSwitch = { forward ->
+            adjacentSurahTarget(surahId, forward)?.let { target ->
+                onNavigateToAdjacentSurah(target.surahId, target.ayah, target.fromNext)
+            }
+        }
+    )
+
+    // Top-bar rings: derived once, read only inside ReadingProgressRings'
+    // composition — per-frame scroll updates never recompose this screen.
+    val surah = uiState.surah
+    val surahPages = uiState.surahPages
+    val readingProgressState = remember(listState, flowGroups, listOffset, surah, surahPages) {
+        derivedStateOf { readingProgressOf(listState, flowGroups, listOffset, surah, surahPages) }
+    }
+
     // System back dismisses an active ayah selection first instead of leaving
     // the surah. Disabled while the morphology sheet is open so the sheet
     // consumes the back press (it registers its handler later in this scope).
@@ -136,12 +165,14 @@ fun SurahDetailScreen(
         onEvent(SurahDetailEvent.ClearSelection)
     }
 
-    // Load surah only if not already loaded for this surahId
+    // Load surah only if not already loaded for this surahId. Adjacent switches
+    // enter immediately: the vertical slide is already playing, so first-page
+    // content must land inside it instead of after the warm-up delay.
     LaunchedEffect(surahId) {
         if (uiState.surah?.id != surahId || uiState.ayat.isEmpty()) {
             hasHandledInitialScroll = false
             collapseState.reset()
-            onEvent(SurahDetailEvent.Load(surahId))
+            onEvent(SurahDetailEvent.Load(surahId, immediate = enter != SurahEnter.Normal))
         }
     }
 
@@ -184,6 +215,12 @@ fun SurahDetailScreen(
     }
     LaunchedEffect(hasHandledInitialScroll, uiState.ayat) {
         if (!hasHandledInitialScroll || pulseDone) return@LaunchedEffect
+        // No deep-link pulse on adjacent-surah entries: the vertical slide
+        // itself already marks the arrival.
+        if (enter != SurahEnter.Normal) {
+            pulseDone = true
+            return@LaunchedEffect
+        }
         if (uiState.ayat.none { it.ayah == targetAyah }) return@LaunchedEffect
         pulseDone = true
         if (!entryDidScroll || animatorScale == 0f) return@LaunchedEffect
@@ -238,6 +275,10 @@ fun SurahDetailScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .nestedScroll(nestedScrollConnection)
+                .nestedScroll(gesture)
+                // Draw-phase pull translation: follows the finger while
+                // dragging at an edge without recomposing the screen.
+                .graphicsLayer { translationY = gesture.pullPx }
         ) {
             // Header ↔ selection bar swap: fade + subtle ±8dp slide on one small
             // node only — no list/text relayout, safe for low-end devices.
@@ -268,13 +309,12 @@ fun SurahDetailScreen(
                 } else {
                     SurahDetailHeader(
                         surah = uiState.surah,
-                        isBookmarked = uiState.isSurahBookmarked,
                         fontSize = uiState.fontSize,
                         surahPages = uiState.surahPages,
                         currentPage = currentPageFor(flowGroups, listState, hasBasmalah),
                         collapseState = collapseState,
+                        readingProgress = { readingProgressState.value },
                         onNavigateBack = onNavigateBack,
-                        onToggleBookmark = { onEvent(SurahDetailEvent.ToggleSurahBookmark(surahId)) },
                         onFontSizeChange = { onEvent(SurahDetailEvent.SetFontSize(it)) },
                         onPageClick = { page ->
                             pendingPage = page
@@ -295,66 +335,50 @@ fun SurahDetailScreen(
                         }
                     }
                     uiState.ayat.isEmpty() -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(24.dp),
-                            verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Download,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(bottom = 16.dp)
-                            )
-                            Text(
-                                text = stringResource(R.string.db_missing_title),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                textAlign = TextAlign.Center
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = stringResource(R.string.db_missing_body),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center
+                        SurahDbMissingState()
+                    }
+                    else -> {
+                        // The Android 12+ stretch effect consumes unconsumed edge
+                        // deltas BEFORE parent nested-scroll connections see
+                        // them, which would starve the adjacent-surah gesture.
+                        // Disabled locally so the pull is the only edge feedback.
+                        CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
+                            SurahAyatList(
+                                ayat = uiState.ayat,
+                                fontSize = uiState.fontSize,
+                                quranFont = uiState.quranFont,
+                                hasBasmalah = hasBasmalah,
+                                isSelectionMode = uiState.isSelectionMode,
+                                selectedAyahs = uiState.selectedAyahs,
+                                bookmarkedAyahs = bookmarkedAyahNums,
+                                pulseAyah = pulseAyah,
+                                onPulseDone = { pulseAyah = null },
+                                isLoadingMore = uiState.isLoadingMore,
+                                listState = listState,
+                                onWordClick = { word, ayah ->
+                                    if (!uiState.isSelectionMode) {
+                                        onEvent(SurahDetailEvent.WordSelected(word, ayah))
+                                    }
+                                },
+                                onToggleSelection = { onEvent(SurahDetailEvent.ToggleAyahSelection(it)) },
+                                // Long-press: fresh anchor outside selection mode,
+                                // range extension from the anchor inside it.
+                                onEnterSelection = {
+                                    if (uiState.isSelectionMode) {
+                                        onEvent(SurahDetailEvent.RangeSelect(it))
+                                    } else {
+                                        onEvent(SurahDetailEvent.EnterSelection(it))
+                                    }
+                                }
                             )
                         }
                     }
-                    else -> {
-                        SurahAyatList(
-                            ayat = uiState.ayat,
-                            fontSize = uiState.fontSize,
-                            quranFont = uiState.quranFont,
-                            hasBasmalah = hasBasmalah,
-                            isSelectionMode = uiState.isSelectionMode,
-                            selectedAyahs = uiState.selectedAyahs,
-                            bookmarkedAyahs = bookmarkedAyahNums,
-                            pulseAyah = pulseAyah,
-                            onPulseDone = { pulseAyah = null },
-                            isLoadingMore = uiState.isLoadingMore,
-                            listState = listState,
-                            onWordClick = { word, ayah ->
-                                if (!uiState.isSelectionMode) {
-                                    onEvent(SurahDetailEvent.WordSelected(word, ayah))
-                                }
-                            },
-                            onToggleSelection = { onEvent(SurahDetailEvent.ToggleAyahSelection(it)) },
-                            // Long-press: fresh anchor outside selection mode,
-                            // range extension from the anchor inside it.
-                            onEnterSelection = {
-                                if (uiState.isSelectionMode) {
-                                    onEvent(SurahDetailEvent.RangeSelect(it))
-                                } else {
-                                    onEvent(SurahDetailEvent.EnterSelection(it))
-                                }
-                            }
-                        )
-                    }
                 }
+
+                // Edge badges while pulling toward an adjacent surah; the
+                // gesture only arms these past its minimum pull, and only at
+                // surahs that actually have a neighbor.
+                SurahSwitchHints(direction = gesture.hintDirection, surahId = surahId)
             }
         }
 
@@ -369,23 +393,12 @@ fun SurahDetailScreen(
                     if (rootId > 0) onNavigateToRootDetail(rootId)
                 },
                 aiSummary = uiState.aiSummary,
+                aiExtended = uiState.aiExtended,
                 aiModel = uiState.aiModel,
                 aiGeneratedAt = uiState.aiGeneratedAt,
-                isAiLoading = uiState.isAiLoading
+                isAiLoading = uiState.isAiLoading,
+                fontSize = uiState.fontSize
             )
         }
     }
-}
-
-private fun currentPageFor(
-    groups: List<AyahFlowGroup>,
-    listState: androidx.compose.foundation.lazy.LazyListState,
-    hasBasmalah: Boolean
-): Int? {
-    if (groups.isEmpty()) return null
-    val groupIndex = (listState.firstVisibleItemIndex - if (hasBasmalah) 1 else 0)
-        .coerceIn(0, groups.size - 1)
-    return groups[groupIndex].pageNumber
-        // Unpaged fallback chunk: report the nearest preceding page.
-        ?: groups.take(groupIndex + 1).lastOrNull { it.pageNumber != null }?.pageNumber
 }

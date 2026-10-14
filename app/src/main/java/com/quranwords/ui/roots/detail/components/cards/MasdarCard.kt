@@ -22,11 +22,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.domain.model.MasdarModel
+import com.quranwords.ui.theme.ArabicTextScale
 import com.quranwords.ui.theme.QuranFont
 import com.quranwords.ui.theme.ShapeSmall
 
 @Composable
 fun MasdarCard(masdar: MasdarModel, fontSize: Float, quranFont: QuranFont) {
+    val textScale = ArabicTextScale.calculate(fontSize, quranFont.lineHeightMultiplier)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -42,11 +44,18 @@ fun MasdarCard(masdar: MasdarModel, fontSize: Float, quranFont: QuranFont) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            // fill=false keeps the attested badge on screen while the Arabic
+            // headline grows with the slider.
+            Column(
+                modifier = Modifier.weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(
                     text = masdar.masdarAr,
-                    style = MaterialTheme.typography.titleMedium.scaled(fontSize),
+                    style = MaterialTheme.typography.titleMedium,
                     fontFamily = quranFont.fontFamily,
+                    fontSize = textScale.wordTitleSize,
+                    lineHeight = textScale.wordTitleLineHeight,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -55,6 +64,7 @@ fun MasdarCard(masdar: MasdarModel, fontSize: Float, quranFont: QuranFont) {
                         // pattern is Arabic reference data; label is chrome.
                         text = stringResource(R.string.pattern_label, it),
                         style = MaterialTheme.typography.bodySmall,
+                        fontSize = textScale.metadataLabelSize,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -70,6 +80,7 @@ fun MasdarCard(masdar: MasdarModel, fontSize: Float, quranFont: QuranFont) {
                     Text(
                         text = stringResource(R.string.attested_badge),
                         style = MaterialTheme.typography.labelSmall,
+                        fontSize = textScale.metadataLabelSize,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )

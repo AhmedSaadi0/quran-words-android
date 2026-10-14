@@ -12,12 +12,13 @@ import com.quranwords.R
  *
  * [contentId] preserves the legacy content identifiers used by testTags
  * (`root_detail_screen_<contentId>`) to avoid breaking existing UI tests:
- * 0 meanings, 1 masadir, 2 derivatives, 3 words, 4 ayat.
+ * 0 meanings, 1 masadir, 2 derivatives, 3 words, 4 ayat, 5 ai_summary.
  */
 enum class RootDetailTab(
     @StringRes val titleRes: Int,
     val contentId: Int,
 ) {
+    AI_SUMMARY(R.string.tab_ai_summary, 5),
     MEANINGS(R.string.tab_meanings, 0),
     AYAT(R.string.tab_ayat, 4),
     WORDS(R.string.tab_words, 3),

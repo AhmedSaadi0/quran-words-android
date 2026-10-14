@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.domain.model.RootWordModel
+import com.quranwords.ui.theme.ArabicTextScale
 import com.quranwords.ui.theme.QuranFont
 import com.quranwords.ui.theme.ShapeSmall
 
@@ -47,6 +48,7 @@ fun WordCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val textScale = ArabicTextScale.calculate(fontSize, quranFont.lineHeightMultiplier)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -70,12 +72,16 @@ fun WordCard(
         ) {
             Text(
                 text = word.text,
-                style = MaterialTheme.typography.titleMedium.scaled(fontSize),
+                style = MaterialTheme.typography.titleMedium,
                 fontFamily = quranFont.fontFamily,
+                fontSize = textScale.wordTitleSize,
+                lineHeight = textScale.wordTitleLineHeight,
                 fontWeight = FontWeight.Bold,
                 color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
                 else MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.weight(1f),
+                // fill=false so the occurrence chip + selection icon keep their
+                // slot even at the top of the slider, where Arabic grows wide.
+                modifier = Modifier.weight(1f, fill = false),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -93,7 +99,8 @@ fun WordCard(
                         text = pluralStringResource(R.plurals.root_occurrences, word.occurrencesCount, word.occurrencesCount),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSecondaryContainer,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontSize = textScale.metadataLabelSize
                     )
                 }
                 if (isSelectionMode) {

@@ -68,14 +68,32 @@ private fun handleRootDetailEvent(
 ) {
     when (event) {
         RootDetailEvent.CopyAiSummary -> {
+            val detail = uiState.detail
             val formatted = QuranCopyFormatter.formatAiSummary(
-                uiState.rootText, uiState.detail?.aiSummary ?: ""
+                uiState.rootText, detail?.aiSummary ?: "",
+                detail?.aiExtended,
+                listOf(
+                    context.getString(R.string.ai_section_furuq),
+                    context.getString(R.string.ai_section_shabaka),
+                    context.getString(R.string.ai_section_hissi),
+                    context.getString(R.string.ai_section_tatawwur),
+                    context.getString(R.string.ai_section_tashrih)
+                )
             )
             shareHandler.copyImmediate(formatted, context.getString(R.string.ai_summary_copied))
         }
         RootDetailEvent.ShareAiSummary -> {
+            val detail = uiState.detail
             val formatted = QuranCopyFormatter.formatAiSummary(
-                uiState.rootText, uiState.detail?.aiSummary ?: ""
+                uiState.rootText, detail?.aiSummary ?: "",
+                detail?.aiExtended,
+                listOf(
+                    context.getString(R.string.ai_section_furuq),
+                    context.getString(R.string.ai_section_shabaka),
+                    context.getString(R.string.ai_section_hissi),
+                    context.getString(R.string.ai_section_tatawwur),
+                    context.getString(R.string.ai_section_tashrih)
+                )
             )
             shareHandler.shareImmediate(
                 formatted,

@@ -22,11 +22,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.domain.model.DerivativeModel
+import com.quranwords.ui.theme.ArabicTextScale
 import com.quranwords.ui.theme.QuranFont
 import com.quranwords.ui.theme.ShapeSmall
 
 @Composable
 fun DerivativeCard(derivative: DerivativeModel, fontSize: Float, quranFont: QuranFont) {
+    val textScale = ArabicTextScale.calculate(fontSize, quranFont.lineHeightMultiplier)
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -42,11 +44,18 @@ fun DerivativeCard(derivative: DerivativeModel, fontSize: Float, quranFont: Qura
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Column(
+                // fill=false: the Quranic badge keeps its slot while the
+                // Arabic form grows with the slider.
+                modifier = Modifier.weight(1f, fill = false),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(
                     text = derivative.formAr,
-                    style = MaterialTheme.typography.titleMedium.scaled(fontSize),
+                    style = MaterialTheme.typography.titleMedium,
                     fontFamily = quranFont.fontFamily,
+                    fontSize = textScale.wordTitleSize,
+                    lineHeight = textScale.wordTitleLineHeight,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -54,6 +63,7 @@ fun DerivativeCard(derivative: DerivativeModel, fontSize: Float, quranFont: Qura
                     // derivativeType/pattern are Arabic data; label is chrome.
                     text = stringResource(R.string.search_derivative_line, derivative.derivativeType, derivative.pattern),
                     style = MaterialTheme.typography.bodySmall,
+                    fontSize = textScale.metadataLabelSize,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -68,6 +78,7 @@ fun DerivativeCard(derivative: DerivativeModel, fontSize: Float, quranFont: Qura
                     Text(
                         text = stringResource(R.string.quranic_badge),
                         style = MaterialTheme.typography.labelSmall,
+                        fontSize = textScale.metadataLabelSize,
                         color = MaterialTheme.colorScheme.tertiary,
                         fontWeight = FontWeight.Bold
                     )

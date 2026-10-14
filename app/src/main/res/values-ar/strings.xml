@@ -89,6 +89,12 @@
     <string name="quarter_label">ربع %1$d</string>
     <string name="page_label">صفحة %1$d</string>
 
+    <string name="cd_page_progress">الصفحة %1$d من %2$d</string>
+    <string name="cd_juz_progress">الجزء %1$d — مكتمل بنسبة %2$d%%</string>
+
+    <string name="surah_switch_next_hint">التالي: سورة %1$s</string>
+    <string name="surah_switch_prev_hint">السابق: سورة %1$s</string>
+
     <string name="morpho_ayah">الآية %1$d</string>
     <string name="morpho_root">الجذر اللغوي</string>
     <string name="morpho_details">تفاصيل الجذر والمشتقات</string>
@@ -135,7 +141,6 @@
     <string name="search_derivative_line">%1$s • وزن: %2$s</string>
     <string name="search_ayah_ref">سورة رقم %1$d • الآية %2$d</string>
 
-    <string name="cd_save_surah">حفظ السورة</string>
     <string name="surah_unnamed">سورة</string>
     <string name="db_missing_title">قاعدة البيانات غير متوفرة</string>
     <string name="db_missing_body">يجب تنزيل قاعدة البيانات الكاملة (118 ميجابايت) لعرض آيات هذه السورة مع التحليل الصرفي.</string>
@@ -155,6 +160,16 @@
     <string name="cd_selected">محدد</string>
     <string name="cd_unselected">غير محدد</string>
     <string name="tab_meanings">معاجم</string>
+    <string name="tab_ai_summary">الملخص الذكي</string>
+    <string name="ai_section_hissi">الأصل الحسي</string>
+    <string name="ai_section_tatawwur">التطور الدلالي</string>
+    <string name="ai_section_tashrih">التشريح الصرفي</string>
+    <string name="ai_section_shabaka">الشبكة القرآنية</string>
+    <string name="ai_section_furuq">الفروق</string>
+    <string name="ai_refs_label">المراجع</string>
+    <string name="ai_section_expand">توسيع القسم</string>
+    <string name="ai_section_collapse">طي القسم</string>
+    <string name="root_no_ai_summary">لا يوجد ملخص ذكي لهذا الجذر بعد</string>
     <string name="tab_masadir">مصادر</string>
     <string name="tab_derivatives">مشتقات</string>
     <string name="tab_words">كلمات</string>
@@ -267,6 +282,7 @@
     <string name="share_ai_summary">مشاركة الملخص</string>
     <string name="cd_copy_ai_summary">نسخ الملخص الذكي</string>
     <string name="read_more">عرض المزيد</string>
+    <string name="show_less">عرض أقل</string>
     <string name="no_meanings_copy">لا توجد معانٍ للنسخ</string>
     <string name="no_meanings_share">لا توجد معانٍ للمشاركة</string>
 </resources>

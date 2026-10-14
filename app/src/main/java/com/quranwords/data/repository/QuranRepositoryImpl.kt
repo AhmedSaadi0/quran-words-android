@@ -6,7 +6,10 @@ import android.database.sqlite.SQLiteDatabase
 import com.quranwords.data.remote.DatabaseDownloadManager
 import com.quranwords.core.util.ArabicNormalizer
 import com.quranwords.core.util.sanitizeUthmanicText
+import com.quranwords.core.util.AiRefsParser
 import com.quranwords.core.util.MorphologyMaps
+import com.quranwords.domain.model.AiExtendedSection
+import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.core.util.SurahMetadata
 import com.quranwords.core.di.IoDispatcher
 import com.quranwords.domain.model.Ayah
@@ -593,6 +596,33 @@ class QuranRepositoryImpl @Inject constructor(
                         }
                     } catch (_: Exception) {}
 
+                    // Extended AI sections — separate query so old DB files
+                    // without the new columns keep working (fallback to empty).
+                    var aiExtended = AiExtendedSummary()
+                    try {
+                        val eCursor = db.rawQuery(
+                            "SELECT hissi, tatawwur, tashrih, shabaka, furuq, " +
+                                "hissi_refs, tatawwur_refs, tashrih_refs, " +
+                                "shabaka_refs, furuq_refs, summary_refs " +
+                                "FROM root_ai_summary WHERE root_id = ? LIMIT 1",
+                            arrayOf(rootId.toString())
+                        )
+                        eCursor.use {
+                            if (it.moveToNext()) {
+                                aiExtended = AiExtendedSummary(
+                                    summaryRefs = AiRefsParser.parse(it.getString(10)),
+                                    hissi = AiExtendedSection(it.getString(0), AiRefsParser.parse(it.getString(5))),
+                                    tatawwur = AiExtendedSection(it.getString(1), AiRefsParser.parse(it.getString(6))),
+                                    tashrih = AiExtendedSection(it.getString(2), AiRefsParser.parse(it.getString(7))),
+                                    shabaka = AiExtendedSection(it.getString(3), AiRefsParser.parse(it.getString(8))),
+                                    furuq = AiExtendedSection(it.getString(4), AiRefsParser.parse(it.getString(9)))
+                                )
+                            }
+                        }
+                    } catch (_: Exception) {
+                        aiExtended = AiExtendedSummary()
+                    }
+
                     val rootItem = RootItem(
                         id = rootId,
                         root = rootText,
@@ -609,6 +639,7 @@ class QuranRepositoryImpl @Inject constructor(
                         aiSummary = summaryAr,
                         aiModel = summaryModel,
                         aiGeneratedAt = summaryGeneratedAt,
+                        aiExtended = aiExtended,
                         meanings = meanings,
                         masadir = masadir,
                         derivatives = derivatives,

@@ -1,6 +1,7 @@
 package com.quranwords.ui.surah.detail
 
 import com.quranwords.domain.model.Ayah
+import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.domain.model.Surah
 import com.quranwords.domain.model.WordToken
 import com.quranwords.ui.theme.QuranFont
@@ -13,24 +14,33 @@ data class SurahDetailUiState(
     val selectedWord: WordToken? = null,
     val selectedWordAyah: Ayah? = null,
     val aiSummary: String? = null,
+    val aiExtended: AiExtendedSummary? = null,
     val aiModel: String? = null,
     val aiGeneratedAt: String? = null,
     val isAiLoading: Boolean = false,
     val fontSize: Float = 24f,
     val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
-    val bookmarkedSurahs: Set<String> = emptySet(),
     val bookmarkedAyat: Set<String> = emptySet(),
     val isDbReady: Boolean = false,
     val isSelectionMode: Boolean = false,
     val selectedAyahs: Set<Int> = emptySet(),
     val surahPages: List<Int> = emptyList(),
+    /**
+     * Authoritative pagination flag from the repository: `false` means every
+     * ayah of this surah is loaded. The gesture uses it to know the reader is
+     * at the true end of the surah (a size-vs-ayahCount comparison would break
+     * if the two ever disagree by a row).
+     */
+    val hasMoreAyat: Boolean = true,
     val error: String? = null
-) {
-    val isSurahBookmarked: Boolean get() = bookmarkedSurahs.contains(surah?.id?.toString() ?: "")
-}
+)
 
 sealed interface SurahDetailEvent {
-    data class Load(val surahId: Int) : SurahDetailEvent
+    /**
+     * @param immediate skips the enter-animation warm-up delay — used by
+     * adjacent-surah switches whose vertical slide is already playing.
+     */
+    data class Load(val surahId: Int, val immediate: Boolean = false) : SurahDetailEvent
     data class WordSelected(val word: WordToken, val ayah: Ayah) : SurahDetailEvent
     data object DismissWord : SurahDetailEvent
     data class AyahVisible(val ayahNum: Int) : SurahDetailEvent
@@ -38,7 +48,6 @@ sealed interface SurahDetailEvent {
     data class EnsureAyahLoaded(val ayah: Int) : SurahDetailEvent
     data class EnsurePageLoaded(val page: Int) : SurahDetailEvent
     data class ToggleAyahBookmark(val surahId: Int, val ayah: Int) : SurahDetailEvent
-    data class ToggleSurahBookmark(val surahId: Int) : SurahDetailEvent
     data class SetFontSize(val size: Float) : SurahDetailEvent
 
     // Selection mode (long-press in selection mode extends a range via RangeSelect)

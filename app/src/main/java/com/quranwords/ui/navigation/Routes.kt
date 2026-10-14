@@ -12,8 +12,20 @@ data object Home
 @Serializable
 data object SurahIndex
 
+/**
+ * How a surah screen enters: `Normal` keeps the standard horizontal
+ * transition; `FromNext`/`FromPrev` mark an adjacent-surah switch so
+ * `AppNavigation` plays the Telegram-style vertical slide instead.
+ */
 @Serializable
-data class SurahDetail(val surahId: Int, val ayah: Int = 1)
+enum class SurahEnter { Normal, FromNext, FromPrev }
+
+@Serializable
+data class SurahDetail(
+    val surahId: Int,
+    val ayah: Int = 1,
+    val enter: SurahEnter = SurahEnter.Normal
+)
 
 @Serializable
 data object Roots

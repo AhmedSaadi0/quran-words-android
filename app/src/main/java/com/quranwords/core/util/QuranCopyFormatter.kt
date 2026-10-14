@@ -1,5 +1,6 @@
 package com.quranwords.core.util
 
+import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.domain.model.Ayah
 import com.quranwords.domain.model.AyahOccurrenceModel
 import com.quranwords.domain.model.RootMeaningModel
@@ -91,6 +92,58 @@ object QuranCopyFormatter {
     fun formatAiSummary(rootText: String, summary: String): String {
         if (summary.isBlank()) return ""
         return "[الملخص الذكي للجذر: $rootText]\n\n${summary.trim()}"
+    }
+
+    fun formatAiSummary(
+        rootText: String,
+        summary: String,
+        extended: AiExtendedSummary?,
+        sectionTitles: List<String> = emptyList()
+    ): String {
+        val base = StringBuilder()
+        val header = "[الملخص الذكي للجذر: $rootText]"
+        base.append(header)
+        if (summary.isNotBlank()) {
+            // `summary_ar` carries inline `**bold**` on ~10 roots; strip markers so
+            // the clipboard matches the rendered screen.
+            val citedSummary = CitationMatcher.cite(
+                MarkdownBlocks.renderPlain(summary.trim()), extended?.summaryRefs.orEmpty()
+            )
+            base.append("\n\n${CitationMatcher.renderPlain(citedSummary)}")
+            appendNumberedRefs(base, citedSummary.orderedRefs)
+        }
+        if (extended != null) {
+            val sections = listOf(
+                extended.furuq to (sectionTitles.getOrNull(0) ?: "الفروق"),
+                extended.shabaka to (sectionTitles.getOrNull(1) ?: "الشبكة القرآنية"),
+                extended.hissi to (sectionTitles.getOrNull(2) ?: "الأصل الحسي"),
+                extended.tatawwur to (sectionTitles.getOrNull(3) ?: "التطور الدلالي"),
+                extended.tashrih to (sectionTitles.getOrNull(4) ?: "التشريح الصرفي")
+            )
+            sections.forEach { (section, title) ->
+                val raw = section.text?.trim().orEmpty()
+                if (raw.isBlank()) return@forEach
+                // Strip Markdown markers so the clipboard never carries `- `,
+                // `**` or backticks. Citation numbering still spans the whole
+                // section, so the clipboard matches what the screen shows.
+                val cited = CitationMatcher.cite(MarkdownBlocks.renderPlain(raw), section.refs)
+                val body = CitationMatcher.renderPlain(cited)
+                if (body.isNotBlank()) {
+                    base.append("\n\n▪ $title\n$body")
+                    appendNumberedRefs(base, cited.orderedRefs)
+                }
+            }
+        }
+        val result = base.toString()
+        return if (result == header) "" else result
+    }
+
+    private fun appendNumberedRefs(base: StringBuilder, refs: List<String>) {
+        if (refs.isEmpty()) return
+        base.append("\nالمراجع:")
+        refs.forEachIndexed { index, ref ->
+            base.append("\n${CitationMatcher.toEasternArabicDigits(index + 1)}. $ref")
+        }
     }
 
     /**

@@ -107,6 +107,14 @@
     <string name="quarter_label">Quarter %1$d</string>
     <string name="page_label">Page %1$d</string>
 
+    <!-- Surah top-bar reading progress rings -->
+    <string name="cd_page_progress">Page %1$d of %2$d</string>
+    <string name="cd_juz_progress">Juz %1$d — %2$d%% complete</string>
+
+    <!-- Adjacent-surah switch edge hint (%1$s = surah name, Arabic reference data) -->
+    <string name="surah_switch_next_hint">Next: Surah %1$s</string>
+    <string name="surah_switch_prev_hint">Previous: Surah %1$s</string>
+
     <!-- Morphology sheet -->
     <string name="morpho_ayah">Ayah %1$d</string>
     <string name="morpho_root">Root</string>
@@ -159,7 +167,6 @@
     <string name="search_ayah_ref">Surah no. %1$d • Ayah %2$d</string>
 
     <!-- Surah detail -->
-    <string name="cd_save_surah">Save surah</string>
     <string name="surah_unnamed">Surah</string>
     <string name="db_missing_title">Database unavailable</string>
     <string name="db_missing_body">Download the full database (118 MB) to view this surah’s ayat with morphology.</string>
@@ -182,6 +189,16 @@
     <string name="cd_selected">Selected</string>
     <string name="cd_unselected">Not selected</string>
     <string name="tab_meanings">Lexicons</string>
+    <string name="tab_ai_summary">AI summary</string>
+    <string name="ai_section_hissi">Sensory origin</string>
+    <string name="ai_section_tatawwur">Semantic development</string>
+    <string name="ai_section_tashrih">Morphological breakdown</string>
+    <string name="ai_section_shabaka">Quranic network</string>
+    <string name="ai_section_furuq">Distinctions</string>
+    <string name="ai_refs_label">References</string>
+    <string name="ai_section_expand">Expand section</string>
+    <string name="ai_section_collapse">Collapse section</string>
+    <string name="root_no_ai_summary">No AI summary for this root yet</string>
     <string name="tab_masadir">Masadirs</string>
     <string name="tab_derivatives">Derivatives</string>
     <string name="tab_words">Words</string>
@@ -300,6 +317,7 @@
     <string name="share_ai_summary">Share summary</string>
     <string name="cd_copy_ai_summary">Copy AI summary</string>
     <string name="read_more">Read more</string>
+    <string name="show_less">Show less</string>
     <string name="no_meanings_copy">No meanings to copy</string>
     <string name="no_meanings_share">No meanings to share</string>
 </resources>

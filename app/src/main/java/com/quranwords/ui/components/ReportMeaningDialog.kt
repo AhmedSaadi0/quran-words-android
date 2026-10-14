@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quranwords.R
+import com.quranwords.core.util.MarkdownBlocks
 import com.quranwords.ui.roots.detail.report.ReportMeaningViewModel
 import com.quranwords.util.MeaningReportLimits
 import com.quranwords.util.MeaningReportType
@@ -142,7 +144,12 @@ fun ReportMeaningDialog(
                         )
                         Text(
                             // aiSummary is Arabic reference data; only the empty fallback is chrome.
-                            text = aiSummary.ifBlank { stringResource(R.string.report_no_summary) },
+                            // Markdown markers are stripped so the reported text is clean.
+                            text = remember(aiSummary) {
+                                aiSummary.takeIf { MarkdownBlocks.hasMarkdown(it) }
+                                    ?.let { MarkdownBlocks.renderPlain(it) }
+                                    ?: aiSummary
+                            }.ifBlank { stringResource(R.string.report_no_summary) },
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -249,7 +256,13 @@ fun ReportMeaningDialog(
                     val content = viewModel.buildContent(
                         rootText = rootText,
                         rootId = rootId,
-                        aiSummary = aiSummary,
+                        // Issue bodies are Markdown, but shipping raw `- ` / `**`
+                        // from the source data would corrupt the report template.
+                        aiSummary = if (MarkdownBlocks.hasMarkdown(aiSummary)) {
+                            MarkdownBlocks.renderPlain(aiSummary)
+                        } else {
+                            aiSummary
+                        },
                         samples = samples
                     )
                     val url = buildMeaningReportIssueUrl(content)

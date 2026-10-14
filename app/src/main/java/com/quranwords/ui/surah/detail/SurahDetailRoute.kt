@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quranwords.R
+import com.quranwords.ui.navigation.SurahEnter
 import com.quranwords.ui.roots.detail.util.rememberShareHandler
 import com.quranwords.ui.surah.detail.components.rememberSurahCollapsingHeaderState
 import kotlinx.coroutines.launch
@@ -22,7 +23,9 @@ import kotlinx.coroutines.launch
 fun SurahDetailRoute(
     surahId: Int,
     targetAyah: Int,
+    enter: SurahEnter,
     onNavigateBack: () -> Unit,
+    onNavigateToAdjacentSurah: (surahId: Int, ayah: Int, fromNext: Boolean) -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
     viewModel: SurahDetailViewModel = hiltViewModel()
 ) {
@@ -76,12 +79,14 @@ fun SurahDetailRoute(
         uiState = uiState,
         surahId = surahId,
         targetAyah = targetAyah,
+        enter = enter,
         collapseState = collapseState,
         onEvent = { event ->
             if (event == SurahDetailEvent.BookmarkSelection) onBookmarkSelection()
             else onEvent(event)
         },
         onNavigateBack = onNavigateBack,
+        onNavigateToAdjacentSurah = onNavigateToAdjacentSurah,
         onNavigateToRootDetail = onNavigateToRootDetail,
         snackbarHostState = snackbarHostState
     )

@@ -11,6 +11,7 @@ class RootDetailRefactorTest {
         val tabs = RootDetailTab.entries.toList()
         assertEquals(
             listOf(
+                RootDetailTab.AI_SUMMARY,
                 RootDetailTab.MEANINGS,
                 RootDetailTab.AYAT,
                 RootDetailTab.WORDS,
@@ -23,6 +24,7 @@ class RootDetailRefactorTest {
 
     @Test
     fun `tab contentIds preserve legacy testTags`() {
+        assertEquals(5, RootDetailTab.AI_SUMMARY.contentId)
         assertEquals(0, RootDetailTab.MEANINGS.contentId)
         assertEquals(4, RootDetailTab.AYAT.contentId)
         assertEquals(3, RootDetailTab.WORDS.contentId)

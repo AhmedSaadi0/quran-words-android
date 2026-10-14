@@ -66,12 +66,38 @@ data class RootDetail(
     val aiSummary: String? = null,
     val aiModel: String? = null,
     val aiGeneratedAt: String? = null,
+    val aiExtended: AiExtendedSummary = AiExtendedSummary(),
     val meanings: List<RootMeaningModel> = emptyList(),
     val masadir: List<MasdarModel> = emptyList(),
     val derivatives: List<DerivativeModel> = emptyList(),
     val words: List<WordToken> = emptyList(),
     val ayatOccurrences: List<AyahOccurrenceModel> = emptyList()
 )
+
+data class AiExtendedSection(
+    val text: String? = null,
+    val refs: List<String> = emptyList()
+) {
+    fun isNotBlank(): Boolean = !text.isNullOrBlank()
+}
+
+data class AiExtendedSummary(
+    val summaryRefs: List<String> = emptyList(),
+    val hissi: AiExtendedSection = AiExtendedSection(),
+    val tatawwur: AiExtendedSection = AiExtendedSection(),
+    val tashrih: AiExtendedSection = AiExtendedSection(),
+    val shabaka: AiExtendedSection = AiExtendedSection(),
+    val furuq: AiExtendedSection = AiExtendedSection()
+) {
+    fun sections(): List<AiExtendedSection> =
+        listOf(hissi, tatawwur, tashrih, shabaka, furuq)
+
+    fun hasContent(summaryAr: String?): Boolean =
+        !summaryAr.isNullOrBlank() || sections().any { it.isNotBlank() }
+
+    fun nonEmptyCount(summaryAr: String?): Int =
+        (if (!summaryAr.isNullOrBlank()) 1 else 0) + sections().count { it.isNotBlank() }
+}
 
 data class RootMeaningModel(
     val id: Int,

@@ -59,3 +59,20 @@ fun groupAyatByPage(ayat: List<Ayah>, unpagedCap: Int = UNPAGED_GROUP_CAP): List
     }
     return groups
 }
+
+/** Ayah number → lazy item index of its owning block (deep-link target lookup). */
+fun buildBlockIndexOfAyah(groups: List<AyahFlowGroup>, listOffset: Int): Map<Int, Int> =
+    buildMap {
+        groups.forEachIndexed { groupIndex, group ->
+            val lazyIndex = groupIndex + listOffset
+            group.ayat.forEach { ayah -> put(ayah.ayah, lazyIndex) }
+        }
+    }
+
+/** Lazy item index → source-list index of the block's last ayah (pagination). */
+fun buildBlockLastAyahListIndex(groups: List<AyahFlowGroup>, listOffset: Int): Map<Int, Int> =
+    buildMap {
+        groups.forEachIndexed { groupIndex, group ->
+            put(groupIndex + listOffset, group.firstAyahIndex + group.ayat.size - 1)
+        }
+    }

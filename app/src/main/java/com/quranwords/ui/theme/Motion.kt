@@ -8,7 +8,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.unit.IntOffset
 
 // Telegram-like balanced motion - 250ms, smooth and lively
@@ -47,6 +49,25 @@ object AppMotion {
 
     fun navPopExitTransition() = slideOutHorizontally(
         targetOffsetX = { it / 6 },
+        animationSpec = tween(DurationMedium, easing = EasingStandard)
+    ) + fadeOut(animationSpec = tween(180))
+
+    /**
+     * Adjacent-surah switch (Telegram-style vertical slide). [fromBottom] =
+     * forward switch (next surah arrives from below), false = backward switch
+     * (previous surah arrives from above).
+     */
+    fun verticalEnter(fromBottom: Boolean) = slideInVertically(
+        initialOffsetY = { if (fromBottom) it else -it },
+        animationSpec = tween(DurationMedium, easing = EasingStandard)
+    ) + fadeIn(animationSpec = tween(DurationMedium, easing = EasingStandard))
+
+    /**
+     * Outgoing screen of a switch. [toBottom] = backward switch (old surah
+     * leaves downward); false = forward switch (old surah leaves upward).
+     */
+    fun verticalExit(toBottom: Boolean) = slideOutVertically(
+        targetOffsetY = { if (toBottom) it else -it },
         animationSpec = tween(DurationMedium, easing = EasingStandard)
     ) + fadeOut(animationSpec = tween(180))
 

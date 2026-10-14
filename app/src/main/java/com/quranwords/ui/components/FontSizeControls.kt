@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.quranwords.core.util.FontSizePreference
 
 @Composable
 fun FontSizeControls(
@@ -38,7 +39,9 @@ fun FontSizeControls(
     ) {
         IconButton(
             onClick = {
-                if (fontSize > 1f) onFontSizeChange((fontSize - 1f).coerceAtLeast(1f))
+                if (fontSize > FontSizePreference.MIN) {
+                    onFontSizeChange((fontSize - 1f).coerceAtLeast(FontSizePreference.MIN))
+                }
             },
             modifier = Modifier
                 .size(32.dp)
@@ -47,12 +50,14 @@ fun FontSizeControls(
             Text("A-", fontWeight = FontWeight.Bold, fontSize = 11.sp)
         }
 
-        // Slider 1..48, 1f steps — fixed width for TopAppBar actions overflow safety
+        // Slider spans the same bounds as the preference clamp
+        // (FontSizePreference), so the mushaf and the cards can never disagree
+        // at the edges. Fixed width for TopAppBar actions overflow safety.
         Slider(
-            value = fontSize,
+            value = fontSize.coerceIn(FontSizePreference.MIN, FontSizePreference.MAX),
             onValueChange = { onFontSizeChange(it) },
-            valueRange = 1f..48f,
-            steps = 46,
+            valueRange = FontSizePreference.MIN..FontSizePreference.MAX,
+            steps = (FontSizePreference.MAX - FontSizePreference.MIN).toInt() - 1,
             modifier = Modifier
                 .weight(1f, fill = true)
                 .testTag("font_size_slider")
@@ -60,7 +65,9 @@ fun FontSizeControls(
 
         IconButton(
             onClick = {
-                if (fontSize < 48f) onFontSizeChange((fontSize + 1f).coerceAtMost(48f))
+                if (fontSize < FontSizePreference.MAX) {
+                    onFontSizeChange((fontSize + 1f).coerceAtMost(FontSizePreference.MAX))
+                }
             },
             modifier = Modifier
                 .size(32.dp)
