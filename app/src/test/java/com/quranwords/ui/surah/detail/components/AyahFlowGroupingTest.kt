@@ -95,12 +95,11 @@ class AyahFlowGroupingTest {
     }
 
     @Test
-    fun `duplicate paged append keeps LazyColumn keys unique and dedupes cleanly`() {
-        // Simulates a concurrent-pagination double append before ViewModel dedupe:
-        // a stale fetch appends older ayat at the end, so page_131 appears in two
-        // non-contiguous groups with identical group.key. Grouping alone must still
-        // produce unique UI keys, and distinctBy (the SurahDetailViewModel.appendAyat
-        // contract) must collapse it back to two groups.
+    fun `duplicate groups keep LazyColumn keys unique and dedupe cleanly`() {
+        // Defensive case: the same page appearing in two non-contiguous groups
+        // with identical group.key. Grouping alone must still produce unique UI
+        // keys, and a distinctBy on ayah number must collapse it back to two
+        // groups.
         val firstFetch = listOf(ayah(1, 131), ayah(2, 131), ayah(3, 132), ayah(4, 132))
         val duplicated = firstFetch + firstFetch.take(2)
         val groups = groupAyatByPage(duplicated)

@@ -21,10 +21,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -44,7 +41,7 @@ import kotlin.math.roundToInt
 /**
  * Surah header: pinned top bar (title + back + reading-progress rings) above
  * the collapsible area (font controls + page chips). Collapse physics live in
- * [rememberNestedScrollCollapse], which the caller must attach via
+ * [SurahReadingScrollConnection], which the caller attaches via
  * `Modifier.nestedScroll(...)` to the common ancestor of this header and the
  * scrollable ayat list — attaching it here would never receive deltas because
  * this header has no scrollable child.
@@ -174,38 +171,6 @@ fun SurahDetailHeader(
                     )
                 }
             }
-        }
-    }
-}
-
-/**
- * Quick-return / enter-always collapse connection — physics preserved 1:1.
- * Must be hoisted by the screen and attached to the common ancestor of the
- * header and the scrollable list so scroll deltas reach [onPreScroll].
- */
-@Composable
-fun rememberNestedScrollCollapse(
-    state: SurahCollapsingHeaderState,
-    isSelectionActive: Boolean
-): NestedScrollConnection = androidx.compose.runtime.remember(isSelectionActive) {
-    object : NestedScrollConnection {
-        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-            if (isSelectionActive) return Offset.Zero
-            val delta = available.y
-            if (state.collapsibleHeightPx > 0) {
-                // Collapses immediately on scroll down, reappears on scroll up
-                // from anywhere on the page.
-                if ((delta < 0f && state.headerOffsetPx > -state.collapsibleHeightPx) ||
-                    (delta > 0f && state.headerOffsetPx < 0f)
-                ) {
-                    val prevOffset = state.headerOffsetPx
-                    state.headerOffsetPx = (state.headerOffsetPx + delta)
-                        .coerceIn(-state.collapsibleHeightPx.toFloat(), 0f)
-                    val consumed = state.headerOffsetPx - prevOffset
-                    return Offset(0f, consumed)
-                }
-            }
-            return Offset.Zero
         }
     }
 }

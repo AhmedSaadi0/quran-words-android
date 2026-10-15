@@ -10,7 +10,6 @@ data class SurahDetailUiState(
     val surah: Surah? = null,
     val ayat: List<Ayah> = emptyList(),
     val isLoading: Boolean = true,
-    val isLoadingMore: Boolean = false,
     val selectedWord: WordToken? = null,
     val selectedWordAyah: Ayah? = null,
     val aiSummary: String? = null,
@@ -25,21 +24,14 @@ data class SurahDetailUiState(
     val isSelectionMode: Boolean = false,
     val selectedAyahs: Set<Int> = emptySet(),
     val surahPages: List<Int> = emptyList(),
-    /**
-     * Authoritative pagination flag from the repository: `false` means every
-     * ayah of this surah is loaded. The gesture uses it to know the reader is
-     * at the true end of the surah (a size-vs-ayahCount comparison would break
-     * if the two ever disagree by a row).
-     */
-    val hasMoreAyat: Boolean = true,
     val error: String? = null
 )
 
 sealed interface SurahDetailEvent {
     /**
-     * @param targetAyah ayah the reader is entering at; drives the initial fetch
-     *   window so a deep link lands with its target already loaded (no
-     *   render-at-ayah-1 frame, no scroll hunt).
+     * @param targetAyah ayah the reader is entering at; the whole surah is
+     *   loaded in one shot, so the target is always present and the list can
+     *   be placed at it with no render-at-ayah-1 frame and no scroll hunt.
      * @param immediate skips the enter-animation warm-up delay — used by
      * adjacent-surah switches whose vertical slide is already playing.
      */
@@ -51,9 +43,6 @@ sealed interface SurahDetailEvent {
     data class WordSelected(val word: WordToken, val ayah: Ayah) : SurahDetailEvent
     data object DismissWord : SurahDetailEvent
     data class AyahVisible(val ayahNum: Int) : SurahDetailEvent
-    data class NearingEnd(val lastVisibleIndex: Int) : SurahDetailEvent
-    data class EnsureAyahLoaded(val ayah: Int) : SurahDetailEvent
-    data class EnsurePageLoaded(val page: Int) : SurahDetailEvent
     data class ToggleAyahBookmark(val surahId: Int, val ayah: Int) : SurahDetailEvent
     data class SetFontSize(val size: Float) : SurahDetailEvent
 

@@ -15,7 +15,12 @@ interface QuranRepository {
     fun getSurahs(): Flow<List<Surah>>
     suspend fun getSurahById(id: Int): Surah?
     fun getAyatBySurah(surahId: Int): Flow<List<Ayah>>
-    suspend fun getAyatBySurahPaged(surahId: Int, limit: Int, offset: Int): List<Ayah>
+    /**
+     * The whole surah in one shot (text + words). A surah is finite static
+     * data — Al-Baqarah, the longest, is 286 ayat — so paging it was a
+     * premature optimization; `LazyColumn` already virtualizes rendering.
+     */
+    suspend fun getAyatBySurahFull(surahId: Int): List<Ayah>
     suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah?
     suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem>
     suspend fun getAllRoots(): List<RootItem>

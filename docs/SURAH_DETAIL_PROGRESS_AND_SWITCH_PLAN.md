@@ -48,20 +48,28 @@ Confirmed decisions (user, 2026-10-14):
 - TalkBack: merged `contentDescription` per ring (new en + ar strings), Eastern
   Arabic digits in centers (`toEasternArabicDigits()`).
 
-### C) Switch gesture — `ui/surah/detail/components/SurahSwitchGesture.kt`
-Observational only — it never consumes, so the list keeps every pixel it can
-scroll and the reading position is never hijacked mid-list.
-- Second `NestedScrollConnection` chained after the collapse connection.
+### C) Scroll connection — `ui/surah/detail/components/SurahSwitchGesture.kt`
+One `SurahReadingScrollConnection` owns the whole screen's nested scroll. Two
+separate connections used to share the job (collapse + switch pull), but the
+framework offers a reverse drag to the header first
+(`NestedScrollNode.onPreScroll` calls parent-before-self), so cancelling a pull
+expanded the header while the pull stayed frozen. Merging them makes the
+priority explicit and order-proof; `onPreScroll` phases, in order:
+1. **Cancel a live pull** (touch only): unwind 1:1, taking only
+   `min(|delta|, |accumulated|)`; the remainder keeps flowing.
+2. **Quick-return header**: collapse on scroll down, reappear on scroll up
+   (frozen in selection mode) — physics unchanged from the old connection.
+3. Anything left reaches the list.
 - Edge detection uses the official state APIs only: `!listState.canScrollForward`
   (next) and `!listState.canScrollBackward` (prev) — pixel-exact, no item-index
   heuristics (which fire while the last verse is still scrolling in).
 - Accumulates **unconsumed** `onPostScroll` delta for `UserInput` only; fling
   leftovers (`Fling` source) are ignored — momentum never auto-advances.
-- **Overscroll must be disabled for the list** (`CompositionLocalProvider(
+- **Overscroll stays disabled for the list** (`CompositionLocalProvider(
   LocalOverscrollConfiguration provides null)` in `SurahDetailScreen`): the
   Android 12+ stretch effect consumes unconsumed edge deltas *before* parent
-  connections observe them (`AndroidOverscroll.applyToScroll` pulls them into the
-  stretch first), which starves this observer after the very first frame.
+  connections observe them, which would starve the edge observer after the very
+  first frame.
 - Rubber band: the switch threshold is measured on **raw finger travel** (110dp)
   while the visual pull is a damped `0.4f` fraction clamped to ±60dp — the content
   lags the finger instead of tracking it 1:1.
@@ -69,20 +77,12 @@ scroll and the reading position is never hijacked mid-list.
   uses), never mid-drag: below threshold the pull springs back with
   `AppMotion.SpringGentle`; above it the switch runs and `pullPx` stays frozen so
   the outgoing screen keeps its offset while the vertical slide takes over.
-- **Cancelling is intercepted in `onPreScroll`** (the only place this connection
-  consumes): once a pull is live the child list *can* scroll back, so a reverse
-  drag would be swallowed by the child and never reach `onPostScroll` — the pull
-  would stay armed and release would still switch. It therefore takes only
-  `min(|delta|, |accumulated|)`, i.e. exactly what the pull needs to unwind, and
-  hands the remainder back to the list: dragging back never locks the view, the
-  badge fades with the pull, and releasing after a cancel no longer navigates.
-- The connection instance is keyed on `listState` **only**; gates and the callback
-  are read through `rememberUpdatedState`, so a gate flip (pagination, selection,
-  sheet) can never recreate it and reset an in-progress pull.
-- Gates per direction: no selection mode, no morphology sheet, not loading more,
-  list non-empty; "next" additionally requires `!uiState.hasMoreAyat` (the
-  repository's own pagination flag = true end of the surah) and `surahId < 114`;
-  "prev" requires `surahId > 1`.
+- The connection instance is keyed on `listState` + `collapseState` **only**;
+  gates and the callback are read through `rememberUpdatedState`, so a gate flip
+  (selection, sheet) can never recreate it and reset an in-progress pull.
+- Gates per direction: no selection mode, no morphology sheet, non-empty list;
+  "next" additionally requires `surahId < 114`; "prev" requires `surahId > 1`.
+  (The whole surah is always loaded, so no pagination gate remains.)
 - Edge hint pill (neighbour surah name + arrow icon) fades in past 10dp of pull.
 
 ### D) Navigation + transitions
@@ -108,25 +108,45 @@ scroll and the reading position is never hijacked mid-list.
 ### E) Interplay fixes
 - Deep-link pulse suppressed when `enter != Normal` (no overlay pulse on
   backward entry at the last ayah).
-- `Load(surahId, immediate)` — adjacent switches skip the `delay(300)` warm-up so
-  the first page lands inside the 250ms slide instead of flashing the spinner
-  after the animation.
+- `Load(surahId, targetAyah, immediate)` — deep links and adjacent switches skip
+  the warm-up delay so content lands inside the transition instead of flashing
+  the spinner after the animation.
 - Last-read: forward switch records as you scroll; backward switch immediately
   records the previous surah's last ayah (correct — you are at its end).
 - Removed with the bookmark button: `ToggleSurahBookmark` event, VM
   `bookmarkedSurahs` slice, `isSurahBookmarked` state.
+
+### F) Full-surah loading (pagination removed)
+20-ayah paging was a premature optimization over finite static data
+(Al-Baqarah, the longest: 286 ayat) that spawned the whole pagination state
+machine (`_hasMore`, offsets, page loops, deadlocks). `LazyColumn` already
+virtualizes rendering, so the surah now loads whole in one shot:
+- `QuranRepository.getAyatBySurahFull(surahId)` — one ayat-text query plus
+  morphology batched in `chunked(100)` IN-queries (≤4 round-trips worst case);
+  `getAyatBySurahPaged` deleted from the interface, impl and test fake.
+- ViewModel keeps no paging state: no `_hasMore`/`_isLoadingMore`/offsets, no
+  `loadMoreIfNeeded`/`loadNextPage`/`appendAyat`/`ensure*` loops, no
+  `initialAyatLimit` window rule. Deleted events: `NearingEnd`,
+  `EnsureAyahLoaded`, `EnsurePageLoaded`; deleted state: `isLoadingMore`,
+  `hasMoreAyat`.
+- Screen: no `NearingEnd` collector, no `blockLastAyahListIndex`, no
+  `loading_more` footer item; page chips scroll locally (every page present);
+  range selection is a pure state update.
+- Placement/pulse/last-read/rings/gesture gates work unchanged — with a full
+  list the target block always resolves on first composition.
 
 ## File checklist
 - [x] `docs/SURAH_DETAIL_PROGRESS_AND_SWITCH_PLAN.md` (this file)
 - [x] `core/util/ReadingProgress.kt` (new)
 - [x] `test/core/ReadingProgressTest.kt` (new)
 - [x] `ui/surah/detail/components/ReadingProgressRings.kt` (new)
-- [x] `ui/surah/detail/components/SurahSwitchGesture.kt` (new)
-- [x] `test/ui/surah/detail/components/SurahSwitchGestureTest.kt` (new — pull/cancel/fire lifecycle, including the cancel-before-release regression)
+- [x] `ui/surah/detail/components/SurahSwitchGesture.kt` (merged `SurahReadingScrollConnection`: pull-cancel phase 1, header phase 2, edge observer)
+- [x] `test/ui/surah/detail/components/SurahReadingScrollTest.kt` (pull/cancel/fire lifecycle + cancel-before-header priority regressions)
 - [x] `ui/surah/detail/components/SurahSwitchHint.kt` (new — also hosts `BoxScope.SurahSwitchHints`)
 - [x] `ui/surah/detail/components/ReadingPosition.kt` (new — screen derivations moved out to keep the screen slim)
 - [x] `ui/surah/detail/components/SurahDbMissingState.kt` (new — empty-state extraction; keeps screen at 394 lines)
-- [x] `ui/surah/detail/components/AyahFlowGrouping.kt` (buildBlock* map helpers moved out of screen)
+- [x] `ui/surah/detail/components/AyahFlowGrouping.kt` (block-index helper; pagination map helper deleted with paging)
+- [x] `domain/repository/QuranRepository.kt` + `data/repository/QuranRepositoryImpl.kt` (`getAyatBySurahFull`, chunked morphology; paged API deleted)
 - [x] `ui/surah/detail/components/SurahDetailHeader.kt` (rings replace bookmark)
 - [x] `ui/surah/detail/SurahDetailContract.kt` (bookmark removal + `Load(immediate)`)
 - [x] `ui/surah/detail/SurahDetailViewModel.kt` (Load immediate + bookmark slice removal)

@@ -218,14 +218,14 @@ class QuranRepositoryImpl @Inject constructor(
         emit(emptyList())
     }.flowOn(ioDispatcher)
 
-    override suspend fun getAyatBySurahPaged(surahId: Int, limit: Int, offset: Int): List<Ayah> = withContext(ioDispatcher) {
+    override suspend fun getAyatBySurahFull(surahId: Int): List<Ayah> = withContext(ioDispatcher) {
         val db = getDb() ?: return@withContext emptyList()
         val rows = mutableListOf<Ayah>()
         val ayahIds = mutableListOf<Int>()
         try {
             val cursor = db.rawQuery(
-                "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE surah = ? ORDER BY ayah ASC LIMIT ? OFFSET ?",
-                arrayOf(surahId.toString(), limit.toString(), offset.toString())
+                "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE surah = ? ORDER BY ayah ASC",
+                arrayOf(surahId.toString())
             )
             cursor.use { c ->
                 while (c.moveToNext()) {
@@ -263,26 +263,30 @@ class QuranRepositoryImpl @Inject constructor(
     }
 
     /**
-     * Morphology for a whole page of ayat in a **single** query, grouped by
-     * ayah. This replaces one 4-table JOIN per ayah: a 20-ayah page used to
-     * cost 21 queries, and a 150-ayat deep-link window up to 151 — the source
-     * of the multi-second stall on low-end devices.
+     * Morphology for a list of ayat, grouped by ayah. Ids are fetched in
+     * chunks of 100 so no single cursor window ever holds a whole surah's
+     * morphology at once (Al-Baqarah is ~6k word rows) — well under both the
+     * SQLite bind-argument limit and the CursorWindow budget on low-end
+     * devices. Ordering is preserved per ayah because every chunk sorts by
+     * `ayah_id, position` and chunks never overlap.
      */
     private fun loadWordsForAyat(db: SQLiteDatabase, ayahIds: List<Int>): Map<Int, List<WordToken>> {
         if (ayahIds.isEmpty()) return emptyMap()
-        val placeholders = ayahIds.joinToString(",") { "?" }
-        val sql = """
-            SELECT wa.ayah_id, $WORD_COLUMNS
-            $WORD_JOINS
-            WHERE wa.ayah_id IN ($placeholders)
-            ORDER BY wa.ayah_id ASC, wa.position ASC
-        """.trimIndent()
         val grouped = mutableMapOf<Int, MutableList<WordToken>>()
-        val cursor = db.rawQuery(sql, ayahIds.map { it.toString() }.toTypedArray())
-        cursor.use { c ->
-            while (c.moveToNext()) {
-                // Column 0 is wa.ayah_id; the shared projection starts at 1.
-                grouped.getOrPut(c.getInt(0)) { mutableListOf() }.add(readWordToken(c, base = 1))
+        for (chunk in ayahIds.chunked(100)) {
+            val placeholders = chunk.joinToString(",") { "?" }
+            val sql = """
+                SELECT wa.ayah_id, $WORD_COLUMNS
+                $WORD_JOINS
+                WHERE wa.ayah_id IN ($placeholders)
+                ORDER BY wa.ayah_id ASC, wa.position ASC
+            """.trimIndent()
+            val cursor = db.rawQuery(sql, chunk.map { it.toString() }.toTypedArray())
+            cursor.use { c ->
+                while (c.moveToNext()) {
+                    // Column 0 is wa.ayah_id; the shared projection starts at 1.
+                    grouped.getOrPut(c.getInt(0)) { mutableListOf() }.add(readWordToken(c, base = 1))
+                }
             }
         }
         return grouped

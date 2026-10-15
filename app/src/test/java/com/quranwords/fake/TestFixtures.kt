@@ -105,7 +105,7 @@ class FakeQuranRepository(
     override fun getSurahs(): Flow<List<Surah>> = flowOf(emptyList())
     override suspend fun getSurahById(id: Int): Surah? = null
     override fun getAyatBySurah(surahId: Int): Flow<List<Ayah>> = flowOf(emptyList())
-    override suspend fun getAyatBySurahPaged(surahId: Int, limit: Int, offset: Int): List<Ayah> = emptyList()
+    override suspend fun getAyatBySurahFull(surahId: Int): List<Ayah> = emptyList()
     override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? = null
 
     override suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem> =

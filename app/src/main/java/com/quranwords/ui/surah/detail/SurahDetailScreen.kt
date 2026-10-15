@@ -49,14 +49,12 @@ import com.quranwords.ui.surah.detail.components.SurahAyatList
 import com.quranwords.ui.surah.detail.components.SurahDbMissingState
 import com.quranwords.ui.surah.detail.components.SurahSwitchHints
 import com.quranwords.ui.surah.detail.components.buildBlockIndexOfAyah
-import com.quranwords.ui.surah.detail.components.buildBlockLastAyahListIndex
 import com.quranwords.ui.surah.detail.components.groupAyatByPage
 import com.quranwords.ui.surah.detail.components.SurahCollapsingHeaderState
 import com.quranwords.ui.surah.detail.components.SurahDetailHeader
 import com.quranwords.ui.surah.detail.components.currentPageFor
 import com.quranwords.ui.surah.detail.components.readingProgressOf
-import com.quranwords.ui.surah.detail.components.rememberNestedScrollCollapse
-import com.quranwords.ui.surah.detail.components.rememberSurahSwitchGesture
+import com.quranwords.ui.surah.detail.components.rememberSurahReadingScroll
 import com.quranwords.ui.theme.AppMotion
 
 /** Centred progress placeholder for first load and deep-link placement. */
@@ -102,10 +100,6 @@ fun SurahDetailScreen(
     val blockIndexOfAyah = remember(flowGroups, listOffset) {
         buildBlockIndexOfAyah(flowGroups, listOffset)
     }
-    // Lazy item index -> source-list index of the block's last ayah (pagination).
-    val blockLastAyahListIndex = remember(flowGroups, listOffset) {
-        buildBlockLastAyahListIndex(flowGroups, listOffset)
-    }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var hasHandledInitialScroll by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
 
@@ -143,25 +137,20 @@ fun SurahDetailScreen(
         }.toSet()
     }
 
-    // Quick-return connection on the common ancestor of header + list so list
-    // scroll deltas reach onPreScroll. Disabled while selection is active.
-    val nestedScrollConnection = rememberNestedScrollCollapse(collapseState, uiState.isSelectionMode)
-
-    // Adjacent-surah switch (Telegram-style): arms only at a real edge while
-    // touch-dragging; gates cover selection, sheet, pagination, list state and
-    // the Quran's own boundaries. "Next" additionally requires the repository to
-    // report no more ayat, i.e. the true end of the surah.
-    val gesture = rememberSurahSwitchGesture(
+    // The screen's single nested-scroll connection: cancelling a live switch
+    // pull unwinds before the header or the list may move (see
+    // SurahReadingScrollConnection). The whole surah is always loaded, so the
+    // only gates left are selection, sheet, list state and Quran boundaries.
+    val nestedScrollConnection = rememberSurahReadingScroll(
         listState = listState,
+        collapseState = collapseState,
+        isSelectionActive = uiState.isSelectionMode,
         canSwitchDown = !uiState.isSelectionMode &&
             uiState.selectedWord == null &&
-            !uiState.isLoadingMore &&
             uiState.ayat.isNotEmpty() &&
-            !uiState.hasMoreAyat &&
             surahId < SurahMetadata.SURAHS.size,
         canSwitchUp = !uiState.isSelectionMode &&
             uiState.selectedWord == null &&
-            !uiState.isLoadingMore &&
             uiState.ayat.isNotEmpty() &&
             surahId > 1,
         onSwitch = { forward ->
@@ -214,34 +203,27 @@ fun SurahDetailScreen(
     }
 
     // Initial placement at the target block. Deep links (targetAyah > 1) must
-    // be INSTANT and silent: the VM already fetched through the target, so the
-    // distance is short and animating it would replay the very jump we are
-    // removing. animateScrollToItem stays for in-session page-chip jumps only.
+    // be INSTANT and silent: the whole surah is loaded in one shot, so the
+    // target block is always present. animateScrollToItem stays for in-session
+    // page-chip jumps only.
     LaunchedEffect(uiState.ayat, uiState.surah, hasHandledInitialScroll) {
         if (hasHandledInitialScroll) return@LaunchedEffect
         val currentSurah = uiState.surah
         if (uiState.ayat.isEmpty() || currentSurah == null) return@LaunchedEffect
-        val scrollIndex = blockIndexOfAyah[targetAyah]
-        val wholeSurahLoaded = uiState.ayat.size >= currentSurah.ayahCount
-        // Only stay pending while paging forward can still deliver the target.
-        // Once the full surah is in hand and the target still has no block, the
-        // DB numbering disagrees with the route: settle on the last block
-        // instead of leaving the spinner up forever.
-        if (scrollIndex == null && !wholeSurahLoaded) {
-            onEvent(SurahDetailEvent.EnsureAyahLoaded(targetAyah))
-            return@LaunchedEffect
-        }
-        if (scrollIndex != null) {
+        // A null index here means the DB numbering disagrees with the route;
+        // settle on the last block instead of leaving the spinner up forever.
+        val resolvedIndex = blockIndexOfAyah[targetAyah]
+        val scrollIndex = resolvedIndex
+            ?: (flowGroups.size - 1 + listOffset).coerceAtLeast(0)
+        if (resolvedIndex != null) {
             entryDidScroll = scrollIndex != listState.firstVisibleItemIndex ||
                 listState.firstVisibleItemScrollOffset != 0
-            // requestScrollToItem (not scrollToItem): the list is still gated
-            // behind awaitingPlacement, so it has never laid out — the
-            // suspending scrollToItem would wait for first layout forever.
-            // The request applies on the next (i.e. first) remeasure instead.
-            listState.requestScrollToItem(scrollIndex)
-        } else {
-            listState.requestScrollToItem((flowGroups.size - 1 + listOffset).coerceAtLeast(0))
         }
+        // requestScrollToItem (not scrollToItem): the list is still gated
+        // behind awaitingPlacement, so it has never laid out — the
+        // suspending scrollToItem would wait for first layout forever.
+        // The request applies on the next (i.e. first) remeasure instead.
+        listState.requestScrollToItem(scrollIndex)
         isInitialPositionSettled = true
         hasHandledInitialScroll = true
         if (targetAyah in 1..currentSurah.ayahCount) {
@@ -291,19 +273,8 @@ fun SurahDetailScreen(
             }
     }
 
-    // Pagination trigger (keyed on loaded size: trailing spacer indices resolve
-    // to size - 1, so the effect must see fresh sizes)
-    LaunchedEffect(listState, uiState.ayat.size) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
-            .collect { lastIdx ->
-                val ayatLastIdx = blockLastAyahListIndex[lastIdx]
-                    ?: if (lastIdx < listOffset) -1 else uiState.ayat.size - 1
-                onEvent(SurahDetailEvent.NearingEnd(ayatLastIdx))
-            }
-    }
-
-    // Scroll to a pending page chip once its page block is loaded
-    // (page chips map 1:1 to page groups).
+    // Scroll to a pending page chip. The whole surah is always loaded, so
+    // the block resolves on the first pass — no fetch, no waiting.
     LaunchedEffect(uiState.ayat, pendingPage) {
         val page = pendingPage ?: return@LaunchedEffect
         val groupIndex = flowGroups.indexOfFirst { it.pageNumber == page }
@@ -332,10 +303,9 @@ fun SurahDetailScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .nestedScroll(nestedScrollConnection)
-                .nestedScroll(gesture)
                 // Draw-phase pull translation: follows the finger while
                 // dragging at an edge without recomposing the screen.
-                .graphicsLayer { translationY = gesture.pullPx }
+                .graphicsLayer { translationY = nestedScrollConnection.pullPx }
         ) {
             // Header ↔ selection bar swap: fade + subtle ±8dp slide on one small
             // node only — no list/text relayout, safe for low-end devices.
@@ -373,9 +343,10 @@ fun SurahDetailScreen(
                         readingProgress = { readingProgressState.value },
                         onNavigateBack = onNavigateBack,
                         onFontSizeChange = { onEvent(SurahDetailEvent.SetFontSize(it)) },
+                        // Every page is already loaded: the pendingPage effect
+                        // below scrolls to it with no fetch.
                         onPageClick = { page ->
                             pendingPage = page
-                            onEvent(SurahDetailEvent.EnsurePageLoaded(page))
                         }
                     )
                 }
@@ -408,7 +379,6 @@ fun SurahDetailScreen(
                                 bookmarkedAyahs = bookmarkedAyahNums,
                                 pulseAyah = pulseAyah,
                                 onPulseDone = { pulseAyah = null },
-                                isLoadingMore = uiState.isLoadingMore,
                                 listState = listState,
                                 onWordClick = { word, ayah ->
                                     if (!uiState.isSelectionMode) {
@@ -433,7 +403,7 @@ fun SurahDetailScreen(
                 // Edge badges while pulling toward an adjacent surah; the
                 // gesture only arms these past its minimum pull, and only at
                 // surahs that actually have a neighbor.
-                SurahSwitchHints(direction = gesture.hintDirection, surahId = surahId)
+                SurahSwitchHints(direction = nestedScrollConnection.hintDirection, surahId = surahId)
             }
         }
 
