@@ -11,6 +11,8 @@ import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.quranwords.core.util.FontSizePreference
+import com.quranwords.core.util.ReadingModePreference
+import com.quranwords.core.util.PillTransparencyPreference
 import com.quranwords.domain.repository.UserPreferencesRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -33,6 +35,8 @@ class UserPreferencesDataStore @Inject constructor(
 
     private companion object {
         val KEY_FONT_SIZE = floatPreferencesKey("quran_font_size")
+        val KEY_PILL_TRANSPARENCY = floatPreferencesKey("reading_pill_transparency")
+        val KEY_READING_MODE = intPreferencesKey("reading_mode")
         val KEY_DARK_MODE = intPreferencesKey("dark_mode_mode") // 0 = system, 1 = light, 2 = dark
         val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color_enabled")
         val KEY_LAST_SURAH = intPreferencesKey("last_read_surah")
@@ -46,6 +50,10 @@ class UserPreferencesDataStore @Inject constructor(
         val KEY_LAST_DB_CHECK_AT = longPreferencesKey("last_db_check_at")
         val KEY_LANGUAGE = stringPreferencesKey("app_language") // system|ar|en
         val KEY_QURAN_FONT = stringPreferencesKey("quran_font_key")
+        // Fix #1: ordered MRU via string key, NOT StringSet (unordered).
+        val KEY_RECENT_SEARCHES = stringPreferencesKey("recent_search_queries")
+        const val RECENT_SEARCH_LIMIT = 10
+        const val RECENT_SEARCH_DELIM = "\n"
     }
 
     /** Mirrors ui.theme.QuranFont keys; unknown stored values fall back to default. */
@@ -63,6 +71,14 @@ class UserPreferencesDataStore @Inject constructor(
 
     override val fontSize: Flow<Float> = context.preferencesDataStore.data.map { preferences ->
         FontSizePreference.clamp(preferences[KEY_FONT_SIZE] ?: FontSizePreference.DEFAULT)
+    }
+
+    override val pillTransparency: Flow<Float> = context.preferencesDataStore.data.map { preferences ->
+        PillTransparencyPreference.clamp(preferences[KEY_PILL_TRANSPARENCY] ?: PillTransparencyPreference.DEFAULT)
+    }
+
+    override val readingMode: Flow<Int> = context.preferencesDataStore.data.map { preferences ->
+        ReadingModePreference.fromValue(preferences[KEY_READING_MODE] ?: ReadingModePreference.DEFAULT)
     }
 
     override val quranFontKey: Flow<String> = context.preferencesDataStore.data.map { preferences ->
@@ -94,6 +110,11 @@ class UserPreferencesDataStore @Inject constructor(
         preferences[KEY_BOOKMARKED_AYAT] ?: emptySet()
     }
 
+    override val recentSearches: Flow<List<String>> = context.preferencesDataStore.data.map { preferences ->
+        val raw = preferences[KEY_RECENT_SEARCHES] ?: ""
+        if (raw.isBlank()) emptyList() else raw.split(RECENT_SEARCH_DELIM).filter { it.isNotBlank() }.take(RECENT_SEARCH_LIMIT)
+    }
+
     override val dbVersionCode: Flow<Int> = context.preferencesDataStore.data.map { it[KEY_DB_VERSION_CODE] ?: 0 }
 
     override val dbVersionName: Flow<String> = context.preferencesDataStore.data.map { it[KEY_DB_VERSION_NAME] ?: "" }
@@ -119,6 +140,16 @@ class UserPreferencesDataStore @Inject constructor(
 
     override suspend fun setFontSize(size: Float) {
         context.preferencesDataStore.edit { it[KEY_FONT_SIZE] = FontSizePreference.clamp(size) }
+    }
+
+    override suspend fun setPillTransparency(transparency: Float) {
+        context.preferencesDataStore.edit {
+            it[KEY_PILL_TRANSPARENCY] = PillTransparencyPreference.clamp(transparency)
+        }
+    }
+
+    override suspend fun setReadingMode(mode: Int) {
+        context.preferencesDataStore.edit { it[KEY_READING_MODE] = ReadingModePreference.fromValue(mode) }
     }
 
     override suspend fun setQuranFontKey(key: String) {
@@ -160,5 +191,29 @@ class UserPreferencesDataStore @Inject constructor(
             val key = "$surahId:$ayahNum"
             prefs[KEY_BOOKMARKED_AYAT] = if (current.contains(key)) current - key else current + key
         }
+    }
+
+    override suspend fun addRecentSearch(query: String) {
+        val q = query.trim()
+        if (q.isBlank() || q.contains('\n') || q.length > 80) return
+        context.preferencesDataStore.edit { prefs ->
+            val raw = prefs[KEY_RECENT_SEARCHES] ?: ""
+            val current = if (raw.isBlank()) emptyList() else raw.split(RECENT_SEARCH_DELIM).filter { it.isNotBlank() }
+            // MRU: dedup + move to head, then cap.
+            val next = (listOf(q) + current.filterNot { it == q }).take(RECENT_SEARCH_LIMIT)
+            prefs[KEY_RECENT_SEARCHES] = next.joinToString(RECENT_SEARCH_DELIM)
+        }
+    }
+
+    override suspend fun removeRecentSearch(query: String) {
+        context.preferencesDataStore.edit { prefs ->
+            val raw = prefs[KEY_RECENT_SEARCHES] ?: ""
+            val current = if (raw.isBlank()) emptyList() else raw.split(RECENT_SEARCH_DELIM).filter { it.isNotBlank() }
+            prefs[KEY_RECENT_SEARCHES] = current.filterNot { it == query }.joinToString(RECENT_SEARCH_DELIM)
+        }
+    }
+
+    override suspend fun clearRecentSearches() {
+        context.preferencesDataStore.edit { it[KEY_RECENT_SEARCHES] = "" }
     }
 }

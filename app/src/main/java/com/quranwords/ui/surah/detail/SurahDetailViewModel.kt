@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.quranwords.core.util.FontSizePreference
+import com.quranwords.core.util.ReadingModePreference
+import com.quranwords.core.util.PillTransparencyPreference
 import com.quranwords.core.util.QuranCopyFormatter
 import com.quranwords.core.util.Result
 import com.quranwords.core.util.SelectionState
@@ -65,6 +67,8 @@ class SurahDetailViewModel @Inject constructor(
 
     // Preference slices kept as separate flows so the combine above stays readable.
     private val fontState = MutableStateFlow(24f)
+    private val pillTransparencyState = MutableStateFlow(PillTransparencyPreference.DEFAULT)
+    private val pageModeState = MutableStateFlow(ReadingModePreference.DEFAULT)
     private val quranFontState = MutableStateFlow(QuranFont.KFGQPC_HAFS_1441)
     private val bookmarkAyahState = MutableStateFlow<Set<String>>(emptySet())
     private val dbReadyState = MutableStateFlow(repository.isDatabaseReady())
@@ -108,6 +112,12 @@ class SurahDetailViewModel @Inject constructor(
             preferences.fontSize.collectLatest { fontState.value = it }
         }
         viewModelScope.launch {
+            preferences.pillTransparency.collectLatest { pillTransparencyState.value = it }
+        }
+        viewModelScope.launch {
+            preferences.readingMode.collectLatest { pageModeState.value = it }
+        }
+        viewModelScope.launch {
             preferences.quranFontKey.collectLatest { quranFontState.value = QuranFont.fromKey(it) }
         }
         viewModelScope.launch {
@@ -120,14 +130,17 @@ class SurahDetailViewModel @Inject constructor(
      * (Route/Screen) collect only this.
      */
     val screenState: StateFlow<SurahDetailUiState> = combine(
-        uiState, fontState, quranFontState, bookmarkAyahState, dbReadyState
+        uiState, fontState, quranFontState, bookmarkAyahState, dbReadyState,
+        pillTransparencyState, pageModeState
     ) { values ->
         @Suppress("UNCHECKED_CAST")
         (values[0] as SurahDetailUiState).copy(
             fontSize = values[1] as Float,
             quranFont = values[2] as QuranFont,
             bookmarkedAyat = values[3] as Set<String>,
-            isDbReady = values[4] as Boolean
+            isDbReady = values[4] as Boolean,
+            pillTransparency = values[5] as Float,
+            readingMode = values[6] as Int
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SurahDetailUiState())
 
@@ -141,6 +154,12 @@ class SurahDetailViewModel @Inject constructor(
                 viewModelScope.launch { preferences.toggleAyahBookmark(event.surahId, event.ayah) }
             is SurahDetailEvent.SetFontSize ->
                 viewModelScope.launch { preferences.setFontSize(FontSizePreference.clamp(event.size)) }
+            is SurahDetailEvent.SetPillTransparency ->
+                viewModelScope.launch {
+                    preferences.setPillTransparency(PillTransparencyPreference.clamp(event.transparency))
+                }
+            is SurahDetailEvent.SetReadingMode ->
+                viewModelScope.launch { preferences.setReadingMode(ReadingModePreference.fromValue(event.mode)) }
             is SurahDetailEvent.EnterSelection -> _selection.update { it.enter(event.ayah) }
             is SurahDetailEvent.ToggleAyahSelection -> _selection.update { it.toggle(event.ayah) }
             is SurahDetailEvent.RangeSelect -> rangeSelect(event.ayah)

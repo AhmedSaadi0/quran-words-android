@@ -151,5 +151,8 @@ data class SearchResult(
     val roots: List<RootItem> = emptyList(),
     val masadir: List<MasdarModel> = emptyList(),
     val derivatives: List<DerivativeModel> = emptyList(),
-    val ayat: List<Ayah> = emptyList()
+    val ayat: List<Ayah> = emptyList(),
+    val words: List<WordToken> = emptyList(),
+    val surahs: List<Surah> = emptyList(),
+    val exactReference: Ayah? = null
 )

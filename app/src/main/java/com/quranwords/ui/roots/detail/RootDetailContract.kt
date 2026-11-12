@@ -102,7 +102,6 @@ sealed interface RootDetailEvent {
 
     data class OccurrenceClicked(val surahId: Int, val ayahNum: Int) : RootDetailEvent
     data class AyatNearingEnd(val lastVisibleIndex: Int) : RootDetailEvent
-    data class SetFontSize(val size: Float) : RootDetailEvent
     data object CopyAllOccurrences : RootDetailEvent
     data object ShareAllOccurrences : RootDetailEvent
     data object Retry : RootDetailEvent

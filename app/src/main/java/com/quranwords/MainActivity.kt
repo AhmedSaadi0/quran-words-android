@@ -16,10 +16,16 @@ import dagger.hilt.android.AndroidEntryPoint
 import com.quranwords.ui.navigation.AppNavigation
 import com.quranwords.ui.settings.SettingsViewModel
 import com.quranwords.ui.theme.MyApplicationTheme
+import com.quranwords.ui.update.AppUpdateFlowLauncher
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val settingsViewModel: SettingsViewModel by viewModels()
+
+    /** UI-owned launch port implemented by the data layer (Decision #29). */
+    @Inject
+    lateinit var updateFlowLauncher: AppUpdateFlowLauncher
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,7 +47,10 @@ class MainActivity : AppCompatActivity() {
                 // RTL locally at their own call sites.
                 key(settings.language) {
                     Surface(modifier = Modifier.fillMaxSize()) {
-                        AppNavigation()
+                        AppNavigation(
+                            updateFlowStarter = updateFlowLauncher,
+                            readingMode = settings.readingMode
+                        )
                     }
                 }
             }

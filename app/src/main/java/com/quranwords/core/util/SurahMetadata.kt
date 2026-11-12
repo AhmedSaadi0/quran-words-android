@@ -194,6 +194,41 @@ object SurahMetadata {
         JuzMeta(30, "الجزء 30", 78, 1, "يبدأ من سورة النبأ – آية 1")
     )
 
+    /**
+     * The surah/ayah span a juz covers, derived read-only from [JUZ_LIST] and
+     * [SURAHS] — the "الفاتحة 1 – البقرة 141" line shown under juz rows in the
+     * quran.com-style index. No DB coupling, no invented data: the end is
+     * simply the ayah before the next juz's start (mushaf end for Juz 30).
+     */
+    data class JuzRange(
+        val startSurahId: Int,
+        val startAyah: Int,
+        val endSurahId: Int,
+        val endAyah: Int
+    )
+
+    /** [JuzRange] for [juzId], or null for an unknown id. */
+    fun juzRange(juzId: Int): JuzRange? {
+        val juz = JUZ_LIST.firstOrNull { it.id == juzId } ?: return null
+        val next = JUZ_LIST.firstOrNull { it.id == juzId + 1 }
+        val endSurahId: Int
+        val endAyah: Int
+        if (next == null) {
+            // Last juz runs to the mushaf's final ayah (An-Nas).
+            endSurahId = SURAHS.last().id
+            endAyah = SURAHS.last().ayahCount
+        } else if (next.startAyah == 1) {
+            // Next juz opens a new surah — this one ends at the previous
+            // surah's final ayah.
+            endSurahId = next.startSurahId - 1
+            endAyah = SURAHS[endSurahId - 1].ayahCount
+        } else {
+            endSurahId = next.startSurahId
+            endAyah = next.startAyah - 1
+        }
+        return JuzRange(juz.startSurahId, juz.startAyah, endSurahId, endAyah)
+    }
+
     /** Verified Hizb starts (60) from DB ayat.hizb. Each Juz holds 2 Hizbs. */
     val HIZB_LIST = listOf(
         HizbMeta(1, "الحزب 1", 1, 1),

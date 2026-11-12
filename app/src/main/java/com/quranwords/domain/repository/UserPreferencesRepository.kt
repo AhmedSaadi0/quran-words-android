@@ -15,6 +15,13 @@ interface UserPreferencesRepository {
     val darkModeSetting: Flow<Int>
     val dynamicColorEnabled: Flow<Boolean>
 
+    // Reading-chrome pill transparency (0 opaque .. 0.8), applied only while
+    // the status bar is hidden (immersive reading).
+    val pillTransparency: Flow<Float>
+
+    // Reading layout mode (0 = vertical scroll, 1 = horizontal book pages).
+    val readingMode: Flow<Int>
+
     // Reading progress
     val lastReadSurah: Flow<Int>
     val lastReadAyah: Flow<Int>
@@ -22,6 +29,11 @@ interface UserPreferencesRepository {
     // Bookmarks (surah keys "id", ayah keys "id:ayah")
     val bookmarkedSurahs: Flow<Set<String>>
     val bookmarkedAyat: Flow<Set<String>>
+
+    // Recent searches — ordered MRU list (most-recent-first), capped at 10.
+    // Order is part of the contract (see Decision #30 Fix #1): StringSet is
+    // forbidden because it is unordered.
+    val recentSearches: Flow<List<String>>
 
     // Installed database version bookkeeping
     val dbVersionCode: Flow<Int>
@@ -36,6 +48,10 @@ interface UserPreferencesRepository {
 
     suspend fun setFontSize(size: Float)
 
+    suspend fun setPillTransparency(transparency: Float)
+
+    suspend fun setReadingMode(mode: Int)
+
     suspend fun setQuranFontKey(key: String)
 
     suspend fun setDarkModeSetting(mode: Int)
@@ -49,4 +65,10 @@ interface UserPreferencesRepository {
     suspend fun toggleSurahBookmark(surahId: Int)
 
     suspend fun toggleAyahBookmark(surahId: Int, ayahNum: Int)
+
+    suspend fun addRecentSearch(query: String)
+
+    suspend fun removeRecentSearch(query: String)
+
+    suspend fun clearRecentSearches()
 }

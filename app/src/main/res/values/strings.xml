@@ -7,7 +7,7 @@
     <string name="home_search_hint">Search roots, words, masadirs, or ayah text…</string>
 
     <!-- Home database banner -->
-    <string name="home_db_title">Full database (118 MB)</string>
+    <string name="home_db_title">Full database (~30 MB)</string>
     <string name="home_db_body">Download the full lexicon and morphology database to work offline, or keep using the quick preview data.</string>
     <string name="home_db_action">Download database</string>
 
@@ -111,6 +111,21 @@
     <string name="cd_page_progress">Page %1$d of %2$d</string>
     <string name="cd_juz_progress">Juz %1$d — %2$d%% complete</string>
 
+    <!-- Reading top bar (obsidian-like chrome) -->
+    <string name="reading_options_cd">Reading options</string>
+    <string name="reading_menu_settings">Settings</string>
+    <string name="reading_font_size_title">Mushaf font size</string>
+    <string name="reading_font_pages_auto_note">In pages mode the mushaf font is auto-fitted so every page fills the screen exactly once; this slider rules scroll mode only.</string>
+    <string name="reading_font_preview_sample">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</string>
+    <string name="cd_page_menu_open">Open page list</string>
+    <string name="reading_pill_transparency_label">Indicators transparency</string>
+    <string name="reading_pill_transparency_hint">Applies when the status bar is hidden while reading; the indicators stay fully opaque whenever it is visible.</string>
+    <string name="reading_pill_transparency_percent">%1$d%%</string>
+    <string name="reading_mode_title">Reading mode</string>
+    <string name="reading_mode_hint">Read a surah as one continuous flow or flip through its mushaf pages like a paper book.</string>
+    <string name="reading_mode_scroll">Scroll</string>
+    <string name="reading_mode_pages">Pages</string>
+
     <!-- Adjacent-surah switch edge hint (%1$s = surah name, Arabic reference data) -->
     <string name="surah_switch_next_hint">Next: Surah %1$s</string>
     <string name="surah_switch_prev_hint">Previous: Surah %1$s</string>
@@ -134,6 +149,10 @@
     <string name="surah_index_filter_medinan">Medinan (%1$d)</string>
     <string name="surah_index_empty_filter">No surahs match the filter</string>
     <string name="surah_index_empty_query">No results for \"%1$s\"</string>
+    <string name="juz_range_label">%1$s %2$d – %3$s %4$d</string>
+    <string name="cd_bookmark_surah">Bookmark surah</string>
+    <string name="cd_unbookmark_surah">Remove bookmark</string>
+    <string name="number_plain" translatable="false">%1$d</string>
 
     <!-- Roots list -->
     <string name="roots_title">Quranic Root Lexicon</string>
@@ -165,6 +184,41 @@
     <string name="search_masdar_line">Root: %1$s • Pattern: %2$s</string>
     <string name="search_derivative_line">%1$s • Pattern: %2$s</string>
     <string name="search_ayah_ref">Surah no. %1$d • Ayah %2$d</string>
+    <string name="search_scope_all">All</string>
+    <string name="search_scope_ayahs">Ayat</string>
+    <string name="search_scope_words">Words &amp; meaning</string>
+    <string name="search_scope_surahs">Surahs</string>
+    <string name="search_scope_lexicon">Lexicon</string>
+    <string name="search_exact_title">Jump straight to the verse</string>
+    <string name="search_exact_subtitle">Surah %1$s (no. %2$d) • Ayah %3$d</string>
+    <string name="search_recent_title">Recent searches</string>
+    <string name="search_recent_clear">Clear all</string>
+    <string name="search_explorer_roots">Most frequent roots (%1$d)</string>
+    <string name="search_explorer_prompt">Type a word, verse, surah name or root to search</string>
+    <string name="search_see_all">See all (%1$d)</string>
+    <string name="search_section_words">Words &amp; meaning (%1$d)</string>
+    <string name="search_section_surahs">Matching surahs (%1$d)</string>
+    <string name="search_section_roots">Roots (%1$d)</string>
+    <string name="search_section_ayat">Matching ayat (%1$d)</string>
+    <string name="search_word_root_label">Root</string>
+    <string name="search_filter_all_quran">Whole Quran</string>
+    <string name="search_filter_surah">Filter by surah…</string>
+    <string name="search_filter_clear">Clear filter</string>
+    <string name="search_no_words">No matching words</string>
+    <string name="search_no_surahs">No matching surahs</string>
+    <string name="search_hint_unified">Search verse, surah, word or root…</string>
+    <!-- Quick jump + surah chrome (Full Plan v2) -->
+    <string name="quick_jump_title">Quick jump</string>
+    <string name="quick_jump_page_label">Page number</string>
+    <string name="quick_jump_surah_label">Surah number</string>
+    <string name="quick_jump_ayah_label">Ayah number</string>
+    <string name="quick_jump_go">Go to page</string>
+    <string name="quick_jump_go_surah">Go to verse</string>
+    <string name="quick_jump_cancel">Cancel</string>
+    <string name="quick_jump_invalid">Check the range</string>
+    <string name="surah_banner_count">%1$s</string>
+    <string name="page_header_juz">الجزء %1$s</string>
+    <string name="page_header_page">الصفحة %1$s</string>
 
     <!-- Surah detail -->
     <string name="surah_unnamed">Surah</string>
@@ -235,7 +289,17 @@
     <string name="guide_example_label">Quranic example:</string>
     <string name="guide_example_ref">%1$s (Ayah: %2$s)</string>
     <string name="guide_refs_title">Documentation references</string>
-    <string name="guide_refs_body">• Quranic Arabic Corpus - Kais Dukes, University of Leeds\n• Tanzil.net Project e-Mushaf\n• Lisan al-Arab by Ibn Manzur\n• Al-Sihah by Al-Jawhari\n• Maqayis al-Lughah by Ibn Faris\n• CAMeL Arabic morphology toolkit</string>
+    <string name="guide_refs_intro">AI root-summary sources (methodology v2.1), grouped by the five semantic sections. Quranic citations use [Surah: Ayah].</string>
+    <string name="guide_refs_hissi_title">Sensory origin</string>
+    <string name="guide_refs_hissi_body">• Maqayis al-Lughah by Ibn Faris\n• Al-Muhkam by Ibn Sidah\n• Al-Sihah by Al-Jawhari\n• Lisan al-Arab by Ibn Manzur\n• Taj al-Arus by Al-Zabidi\n• Lane\'s Arabic-English Lexicon\n• Kitab al-Ayn by Al-Khalil\n• Asas al-Balaghah by Al-Zamakhshari</string>
+    <string name="guide_refs_tatawwur_title">Semantic development</string>
+    <string name="guide_refs_tatawwur_body">• Al-Mufradat by Al-Raghib Al-Asfahani\n• Al-Tahrir wa Al-Tanwir by Ibn Ashur</string>
+    <string name="guide_refs_tashrih_title">Morphological breakdown</string>
+    <string name="guide_refs_tashrih_body">• Umdat al-Huffaz by Al-Samin Al-Halabi\n• Basair Dhawi Al-Tamyiz by Al-Fayruzabadi\n• Sarf tables (masadir &amp; derivatives)\n• Leeds morphological corpus (corpus_leeds) — Quranic Arabic Corpus, Kais Dukes, University of Leeds</string>
+    <string name="guide_refs_shabaka_title">Quranic network</string>
+    <string name="guide_refs_shabaka_body">• word_morphology &amp; ayat statistics\n• Nuzhat al-Ayun by Ibn Al-Jawzi\n• Islah al-Wujuh wa Al-Nazair by Al-Damghani\n• Tanzil.net Project e-Mushaf (ayah text)</string>
+    <string name="guide_refs_furuq_title">Distinctions</string>
+    <string name="guide_refs_furuq_body">• Al-Furuq Al-Lughawiyyah by Abu Hilal Al-Askari\n• Embedded contrasts in Al-Mufradat by Al-Raghib\n• Nazm similarities: Durrat Al-Tanzil by Al-Iskafi • Al-Gharnati • Al-Samarrai</string>
 
     <!-- Database setup -->
     <string name="db_setup_title">Database management</string>
@@ -320,4 +384,15 @@
     <string name="show_less">Show less</string>
     <string name="no_meanings_copy">No meanings to copy</string>
     <string name="no_meanings_share">No meanings to share</string>
+
+    <!-- App update banner (Play in-app updates) -->
+    <string name="update_available_title">New update available</string>
+    <string name="update_available_message">Update the app for the latest features and fixes</string>
+    <string name="update_banner_update_now">Update</string>
+    <string name="update_banner_downloading">Downloading update %1$d%%</string>
+    <string name="update_banner_restart_title">Update downloaded</string>
+    <string name="update_banner_restart_message">Restart the app to start the new version</string>
+    <string name="update_banner_restart_now">Restart now</string>
+    <string name="update_banner_failed_message">Something went wrong with the update — we\'ll retry later</string>
+    <string name="cd_update_banner_close">Hide the update banner</string>
 </resources>

@@ -9,6 +9,7 @@ import com.quranwords.domain.model.RootItem
 import com.quranwords.domain.model.RootWordModel
 import com.quranwords.domain.model.SearchResult
 import com.quranwords.domain.model.Surah
+import com.quranwords.domain.model.WordToken
 import kotlinx.coroutines.flow.Flow
 
 interface QuranRepository {
@@ -37,7 +38,11 @@ interface QuranRepository {
     suspend fun searchRootsPaged(query: String, limit: Int, offset: Int): List<RootItem>
     suspend fun searchMasadirPaged(query: String, limit: Int, offset: Int): List<MasdarModel>
     suspend fun searchDerivativesPaged(query: String, limit: Int, offset: Int): List<DerivativeModel>
-    suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah>
+    suspend fun searchAyatPaged(query: String, limit: Int, offset: Int, surahFilter: Int? = null): List<Ayah>
+    suspend fun searchWordsPaged(query: String, limit: Int, offset: Int): List<WordToken>
+    suspend fun getAyahDirect(surahId: Int, ayahNum: Int): Ayah?
+    suspend fun getSurahForPage(pageNumber: Int): Pair<Int, Int>?
+    suspend fun getTopRoots(limit: Int): List<RootItem>
     suspend fun getPagesForSurah(surahId: Int): List<Int>
     fun isDatabaseReady(): Boolean
     fun closeDb()

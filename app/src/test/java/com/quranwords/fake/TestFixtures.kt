@@ -28,13 +28,18 @@ class FakeUserPreferences(
     val lastReadSurahState = MutableStateFlow(initialLastReadSurah)
     val lastReadAyahState = MutableStateFlow(initialLastReadAyah)
     val fontSizeState = MutableStateFlow(24f)
+    val pillTransparencyState = MutableStateFlow(0.4f)
+    val readingModeState = MutableStateFlow(0)
     val quranFontKeyState = MutableStateFlow("kfgqpc_hafs_1441")
     val darkModeState = MutableStateFlow(0)
     val dynamicColorState = MutableStateFlow(false)
     val languageState = MutableStateFlow("system")
+    val recentSearchesState = MutableStateFlow<List<String>>(emptyList())
 
     override val language: Flow<String> = languageState
     override val fontSize: Flow<Float> = fontSizeState
+    override val pillTransparency: Flow<Float> = pillTransparencyState
+    override val readingMode: Flow<Int> = readingModeState
     override val quranFontKey: Flow<String> = quranFontKeyState
     override val darkModeSetting: Flow<Int> = darkModeState
     override val dynamicColorEnabled: Flow<Boolean> = dynamicColorState
@@ -42,6 +47,7 @@ class FakeUserPreferences(
     override val lastReadAyah: Flow<Int> = lastReadAyahState
     override val bookmarkedSurahs: Flow<Set<String>> = surahBookmarkState
     override val bookmarkedAyat: Flow<Set<String>> = ayahBookmarkState
+    override val recentSearches: Flow<List<String>> = recentSearchesState
     override val dbVersionCode: Flow<Int> = MutableStateFlow(0)
     override val dbVersionName: Flow<String> = MutableStateFlow("")
     override val dismissedDbVersionCode: Flow<Int> = MutableStateFlow(0)
@@ -52,6 +58,14 @@ class FakeUserPreferences(
 
     override suspend fun setFontSize(size: Float) {
         fontSizeState.value = size
+    }
+
+    override suspend fun setPillTransparency(transparency: Float) {
+        pillTransparencyState.value = transparency
+    }
+
+    override suspend fun setReadingMode(mode: Int) {
+        readingModeState.value = mode
     }
 
     override suspend fun setQuranFontKey(key: String) {
@@ -88,6 +102,20 @@ class FakeUserPreferences(
             if (key in ayahBookmarkState.value) ayahBookmarkState.value - key
             else ayahBookmarkState.value + key
     }
+
+    override suspend fun addRecentSearch(query: String) {
+        val q = query.trim()
+        if (q.isBlank()) return
+        recentSearchesState.value = (listOf(q) + recentSearchesState.value.filterNot { it == q }).take(10)
+    }
+
+    override suspend fun removeRecentSearch(query: String) {
+        recentSearchesState.value = recentSearchesState.value.filterNot { it == query }
+    }
+
+    override suspend fun clearRecentSearches() {
+        recentSearchesState.value = emptyList()
+    }
 }
 
 /**
@@ -98,6 +126,7 @@ class FakeQuranRepository(
     val roots: List<RootItem> = emptyList(),
     val searchResult: SearchResult = SearchResult(),
     val searchPageSize: Int = 20,
+    val topRoots: List<RootItem> = emptyList(),
     var failGetAllRoots: Boolean = false,
     var failSearch: Boolean = false
 ) : QuranRepository {
@@ -146,10 +175,26 @@ class FakeQuranRepository(
         return searchResult.derivatives.drop(offset).take(limit)
     }
 
-    override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah> {
+    override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int, surahFilter: Int?): List<Ayah> {
         if (failSearch) throw IllegalStateException("search failed")
-        return searchResult.ayat.drop(offset).take(limit)
+        val filtered = searchResult.ayat.filter { surahFilter == null || it.surah == surahFilter }
+        return filtered.drop(offset).take(limit)
     }
+
+    override suspend fun searchWordsPaged(query: String, limit: Int, offset: Int): List<com.quranwords.domain.model.WordToken> {
+        if (failSearch) throw IllegalStateException("search failed")
+        return searchResult.words.drop(offset).take(limit)
+    }
+
+    override suspend fun getAyahDirect(surahId: Int, ayahNum: Int): Ayah? =
+        searchResult.ayat.firstOrNull { it.surah == surahId && it.ayah == ayahNum }
+            ?: searchResult.exactReference?.takeIf { it.surah == surahId && it.ayah == ayahNum }
+
+    override suspend fun getSurahForPage(pageNumber: Int): Pair<Int, Int>? =
+        searchResult.ayat.firstOrNull { it.pageNumber == pageNumber }?.let { it.surah to it.ayah }
+
+    override suspend fun getTopRoots(limit: Int): List<RootItem> =
+        (topRoots.ifEmpty { roots }).take(limit)
 
     override suspend fun getPagesForSurah(surahId: Int): List<Int> = emptyList()
     override fun isDatabaseReady(): Boolean = true

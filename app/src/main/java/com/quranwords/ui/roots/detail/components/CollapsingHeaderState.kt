@@ -1,5 +1,8 @@
 package com.quranwords.ui.roots.detail.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.exponentialDecay
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -12,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.unit.Velocity
 import kotlin.math.roundToInt
 
 /**
@@ -52,6 +56,16 @@ class CollapsingHeaderState(
     var isSelectionMode: Boolean by mutableStateOf(false)
         internal set
 
+    /**
+     * Transient provider of the currently visible tab's [LazyListState], mirrored
+     * from the Screen (same pattern as [isSelectionMode], deliberately NOT part
+     * of [Saver]). Lets [HeaderNestedScrollConnection.onPostFling] continue a
+     * header-originated fling into the list with standard decay physics, so a
+     * swipe starting on the header glides exactly like one starting on the list.
+     */
+    var activeListProvider: (() -> LazyListState?)? = null
+        internal set
+
     val collapseProgress: Float
         get() = if (subtitleHeightPx > 0) {
             (1f + (headerOffsetPx / subtitleHeightPx.toFloat())).coerceIn(0f, 1f)
@@ -82,14 +96,20 @@ class CollapsingHeaderState(
     }
 
     /**
-     * Direct-touch drive for the header's own `draggable` modifier (large-font
+     * Direct-touch drive for the header's own `scrollable` modifier (large-font
      * trap fix): drags landing on the non-scrollable subtitle area would never
      * dispatch nested scroll, so they drive the same clamped physics directly.
      * Same sign convention as nested deltas — drag-up (`delta < 0`) collapses.
+     *
+     * Returns the actually applied delta so the scrollable can report honest
+     * consumption: the remainder keeps flowing through the nested chain (and,
+     * on finger lift, surfaces as real leftover velocity in [onPostFling]).
      */
-    fun onHandledDrag(delta: Float) {
-        if (isSelectionMode || subtitleHeightPx <= 0) return
+    fun onHandledDrag(delta: Float): Float {
+        if (isSelectionMode || subtitleHeightPx <= 0) return 0f
+        val prev = headerOffsetPx
         headerOffsetPx = (headerOffsetPx + delta).coerceIn(-subtitleHeightPx.toFloat(), 0f)
+        return headerOffsetPx - prev
     }
 
     val nestedScrollConnection: NestedScrollConnection = HeaderNestedScrollConnection()
@@ -127,6 +147,25 @@ class CollapsingHeaderState(
                 return Offset(0f, headerOffsetPx - prev)
             }
             return Offset.Zero
+        }
+
+        override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+            if (isSelectionMode) return Velocity.Zero
+            // Leftover of a header-originated fling (the header hit its clamp
+            // mid-gesture): continue it into the visible tab's list with the
+            // standard decay, so the glide feels identical to list-originated
+            // scrolling. A new touch cancels via LazyList's MutatorMutex.
+            val list = activeListProvider?.invoke() ?: return Velocity.Zero
+            val velocityY = available.y
+            if (velocityY == 0f) return Velocity.Zero
+            var last = 0f
+            list.scroll {
+                Animatable(0f).animateDecay(velocityY, exponentialDecay()) {
+                    scrollBy(value - last)
+                    last = value
+                }
+            }
+            return available
         }
     }
 

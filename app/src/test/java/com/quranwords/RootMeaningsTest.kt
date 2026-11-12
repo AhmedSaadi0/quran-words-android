@@ -42,7 +42,7 @@ private class FakeMeaningsRepository(
     override fun getSurahs(): Flow<List<Surah>> = flowOf(emptyList())
     override suspend fun getSurahById(id: Int): Surah? = null
     override fun getAyatBySurah(surahId: Int): Flow<List<Ayah>> = flowOf(emptyList())
-    override suspend fun getAyatBySurahPaged(surahId: Int, limit: Int, offset: Int): List<Ayah> = emptyList()
+    override suspend fun getAyatBySurahFull(surahId: Int): List<Ayah> = emptyList()
     override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? = null
     override suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem> = emptyList()
     override suspend fun getAllRoots(): List<RootItem> = emptyList()
@@ -62,7 +62,11 @@ private class FakeMeaningsRepository(
     override suspend fun searchRootsPaged(query: String, limit: Int, offset: Int): List<RootItem> = emptyList()
     override suspend fun searchMasadirPaged(query: String, limit: Int, offset: Int): List<MasdarModel> = emptyList()
     override suspend fun searchDerivativesPaged(query: String, limit: Int, offset: Int): List<DerivativeModel> = emptyList()
-    override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah> = emptyList()
+    override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int, surahFilter: Int?): List<Ayah> = emptyList()
+    override suspend fun searchWordsPaged(query: String, limit: Int, offset: Int): List<com.quranwords.domain.model.WordToken> = emptyList()
+    override suspend fun getAyahDirect(surahId: Int, ayahNum: Int): Ayah? = null
+    override suspend fun getSurahForPage(pageNumber: Int): Pair<Int, Int>? = null
+    override suspend fun getTopRoots(limit: Int): List<RootItem> = emptyList()
     override suspend fun getPagesForSurah(surahId: Int): List<Int> = emptyList()
     override fun isDatabaseReady(): Boolean = true
     override fun closeDb() = Unit

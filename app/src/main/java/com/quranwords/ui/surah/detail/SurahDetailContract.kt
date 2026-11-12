@@ -1,5 +1,6 @@
 package com.quranwords.ui.surah.detail
 
+import com.quranwords.core.util.ReadingModePreference
 import com.quranwords.domain.model.Ayah
 import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.domain.model.Surah
@@ -19,6 +20,13 @@ data class SurahDetailUiState(
     val isAiLoading: Boolean = false,
     val fontSize: Float = 24f,
     val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
+    /**
+     * Pill transparency while the status bar is hidden (0 opaque .. 0.8);
+     * with the bars visible the pill is always fully opaque.
+     */
+    val pillTransparency: Float = 0.4f,
+    /** Reading layout mode (see ReadingModePreference). */
+    val readingMode: Int = ReadingModePreference.DEFAULT,
     val bookmarkedAyat: Set<String> = emptySet(),
     val isDbReady: Boolean = false,
     val isSelectionMode: Boolean = false,
@@ -45,6 +53,8 @@ sealed interface SurahDetailEvent {
     data class AyahVisible(val ayahNum: Int) : SurahDetailEvent
     data class ToggleAyahBookmark(val surahId: Int, val ayah: Int) : SurahDetailEvent
     data class SetFontSize(val size: Float) : SurahDetailEvent
+    data class SetPillTransparency(val transparency: Float) : SurahDetailEvent
+    data class SetReadingMode(val mode: Int) : SurahDetailEvent
 
     // Selection mode (long-press in selection mode extends a range via RangeSelect)
     data class EnterSelection(val ayah: Int) : SurahDetailEvent

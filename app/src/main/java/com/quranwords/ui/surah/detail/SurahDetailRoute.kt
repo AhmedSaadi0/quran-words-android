@@ -11,13 +11,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quranwords.R
 import com.quranwords.ui.navigation.SurahEnter
 import com.quranwords.ui.roots.detail.util.rememberShareHandler
-import com.quranwords.ui.surah.detail.components.rememberSurahCollapsingHeaderState
 import kotlinx.coroutines.launch
 
 /**
  * Stateful entry point: the ONLY layer aware of the ViewModel, coroutine
- * scope and platform context. Owns the collapse state holder and routes
- * copy/share platform events through [ShareHandler].
+ * scope and platform context. Routes copy/share platform events through
+ * [ShareHandler].
  */
 @Composable
 fun SurahDetailRoute(
@@ -34,7 +33,6 @@ fun SurahDetailRoute(
     val snackbarHostState = remember { SnackbarHostState() }
     val shareHandler = rememberShareHandler(snackbarHostState, scope)
     val context = LocalContext.current
-    val collapseState = rememberSurahCollapsingHeaderState()
 
     fun onEvent(event: SurahDetailEvent) {
         when (event) {
@@ -80,7 +78,6 @@ fun SurahDetailRoute(
         surahId = surahId,
         targetAyah = targetAyah,
         enter = enter,
-        collapseState = collapseState,
         onEvent = { event ->
             if (event == SurahDetailEvent.BookmarkSelection) onBookmarkSelection()
             else onEvent(event)

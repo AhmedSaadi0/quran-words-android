@@ -10,8 +10,8 @@ import org.junit.Test
 
 /**
  * Covers the reading screen's scroll connection — in particular the phase order
- * that a split connection pair could never guarantee: a live pull unwinds
- * before the header or the list may move.
+ * that makes cancelling a live pull unconditionally first: the pull unwinds
+ * before anything else may move.
  *
  * Rubber-band factor is 0.4f (mirrors `PullResistance`); px values below are
  * chosen so the clamps never hide the arithmetic under test.
@@ -23,26 +23,21 @@ class SurahReadingScrollTest {
         atTopEdge: Boolean = false,
         canDown: Boolean = true,
         canUp: Boolean = true,
-        headerOffsetPx: Float = 0f,
-        collapsibleHeightPx: Int = 0,
-        selectionActive: Boolean = false,
+        horizontal: Boolean = false,
+        rtl: Boolean = true,
         onSwitch: (Boolean) -> Unit = {}
-    ): Pair<SurahReadingScrollConnection, SurahCollapsingHeaderState> {
-        val header = SurahCollapsingHeaderState(collapsibleHeightPx, headerOffsetPx)
-        val connection = SurahReadingScrollConnection(
-            canScrollForward = { !atBottomEdge },
-            canScrollBackward = { !atTopEdge },
-            collapseState = header,
-            isSelectionActive = { selectionActive },
-            canSwitchDown = { canDown },
-            canSwitchUp = { canUp },
-            onSwitch = onSwitch,
-            thresholdPx = 100f,
-            maxPullPx = 60f,
-            hintMinPx = 10f
-        )
-        return connection to header
-    }
+    ): SurahReadingScrollConnection = SurahReadingScrollConnection(
+        canScrollForward = { !atBottomEdge },
+        canScrollBackward = { !atTopEdge },
+        canSwitchDown = { canDown },
+        canSwitchUp = { canUp },
+        onSwitch = onSwitch,
+        thresholdPx = 100f,
+        maxPullPx = 60f,
+        hintMinPx = 10f,
+        horizontal = { horizontal },
+        rtl = { rtl }
+    )
 
     private fun pullUp(delta: Float, connection: SurahReadingScrollConnection) =
         connection.onPostScroll(Offset.Zero, Offset(0f, delta), NestedScrollSource.UserInput)
@@ -50,9 +45,15 @@ class SurahReadingScrollTest {
     private fun drag(delta: Float, connection: SurahReadingScrollConnection) =
         connection.onPreScroll(Offset(0f, delta), NestedScrollSource.UserInput)
 
+    private fun pullX(delta: Float, connection: SurahReadingScrollConnection) =
+        connection.onPostScroll(Offset.Zero, Offset(delta, 0f), NestedScrollSource.UserInput)
+
+    private fun dragX(delta: Float, connection: SurahReadingScrollConnection) =
+        connection.onPreScroll(Offset(delta, 0f), NestedScrollSource.UserInput)
+
     @Test
     fun `pull accumulates at the bottom edge and consumes nothing`() {
-        val (connection, _) = connection(atBottomEdge = true)
+        val connection = connection(atBottomEdge = true)
         val consumed = pullUp(-40f, connection)
 
         assertEquals(Offset.Zero, consumed)
@@ -62,7 +63,7 @@ class SurahReadingScrollTest {
 
     @Test
     fun `scrolling away from an edge never pulls or hints`() {
-        val (connection, _) = connection()
+        val connection = connection()
         pullUp(-40f, connection)
 
         assertEquals(0f, connection.pullPx, 0f)
@@ -71,7 +72,7 @@ class SurahReadingScrollTest {
 
     @Test
     fun `reverse drag unwinds the pull and consumes only the pull travel`() {
-        val (connection, _) = connection(atBottomEdge = true)
+        val connection = connection(atBottomEdge = true)
         pullUp(-150f, connection)
 
         val consumed = drag(60f, connection)
@@ -83,7 +84,7 @@ class SurahReadingScrollTest {
 
     @Test
     fun `unwinding past zero hands the remainder back to the list`() {
-        val (connection, _) = connection(atBottomEdge = true)
+        val connection = connection(atBottomEdge = true)
         pullUp(-40f, connection)
 
         val consumed = drag(100f, connection)
@@ -97,7 +98,7 @@ class SurahReadingScrollTest {
 
     @Test
     fun `same direction drag extends the pull without consuming`() {
-        val (connection, _) = connection(atBottomEdge = true)
+        val connection = connection(atBottomEdge = true)
         pullUp(-40f, connection)
 
         assertEquals(0f, drag(-30f, connection).y, 0f)
@@ -106,7 +107,7 @@ class SurahReadingScrollTest {
 
     @Test
     fun `previous pull cancels symmetrically at the top edge`() {
-        val (connection, _) = connection(atTopEdge = true)
+        val connection = connection(atTopEdge = true)
         pullUp(60f, connection) // dragging down pulls the previous surah
         assertEquals(1, connection.hintDirection)
 
@@ -119,7 +120,7 @@ class SurahReadingScrollTest {
 
     @Test
     fun `gated direction never pulls`() {
-        val (connection, _) = connection(atBottomEdge = true, canDown = false)
+        val connection = connection(atBottomEdge = true, canDown = false)
 
         pullUp(-40f, connection)
 
@@ -130,7 +131,7 @@ class SurahReadingScrollTest {
 
     @Test
     fun `fling leftovers never arm or move a pull`() {
-        val (connection, _) = connection(atBottomEdge = true)
+        val connection = connection(atBottomEdge = true)
 
         connection.onPostScroll(Offset.Zero, Offset(0f, -40f), NestedScrollSource.Fling)
 
@@ -141,7 +142,7 @@ class SurahReadingScrollTest {
     @Test
     fun `release past the threshold switches in the pull direction`() = runTest {
         val fired = mutableListOf<Boolean>()
-        val (connection, _) = connection(atBottomEdge = true, onSwitch = { fired += it })
+        val connection = connection(atBottomEdge = true, onSwitch = { fired += it })
         pullUp(-120f, connection)
 
         connection.onPreFling(Velocity.Zero)
@@ -152,7 +153,7 @@ class SurahReadingScrollTest {
     @Test
     fun `release backwards switches to the previous surah`() = runTest {
         val fired = mutableListOf<Boolean>()
-        val (connection, _) = connection(atTopEdge = true, onSwitch = { fired += it })
+        val connection = connection(atTopEdge = true, onSwitch = { fired += it })
         pullUp(120f, connection)
 
         connection.onPreFling(Velocity.Zero)
@@ -163,7 +164,7 @@ class SurahReadingScrollTest {
     @Test
     fun `cancelling the pull before release prevents the switch`() = runTest {
         val fired = mutableListOf<Boolean>()
-        val (connection, _) = connection(atBottomEdge = true, onSwitch = { fired += it })
+        val connection = connection(atBottomEdge = true, onSwitch = { fired += it })
         pullUp(-150f, connection)
         drag(200f, connection) // reader changes their mind and drags back
 
@@ -175,55 +176,108 @@ class SurahReadingScrollTest {
     }
 
     @Test
-    fun `cancel unwinds the pull before the header may move`() {
-        // Collapsed header (-100 of 100px): the old split pair offered the
-        // reverse drag to the header first, freezing the pull. The merged
-        // connection must spend it on the pull instead.
-        val (connection, header) = connection(
-            atBottomEdge = true,
-            headerOffsetPx = -100f,
-            collapsibleHeightPx = 100
-        )
-        pullUp(-150f, connection)
+    fun `extreme pull clamps at the visual limit`() {
+        val connection = connection(atBottomEdge = true)
 
-        val consumed = drag(60f, connection)
+        pullUp(-1000f, connection)
 
-        assertEquals(60f, consumed.y, 0.01f)
-        assertEquals(-100f, header.headerOffsetPx, 0.01f) // header untouched
-        assertEquals(-36f, connection.pullPx, 0.01f)
+        // accumulated clamps at the raw cap (240px) and the visual at 60px.
+        assertEquals(-60f, connection.pullPx, 0.01f)
+        assertEquals(-1, connection.hintDirection)
     }
 
     @Test
-    fun `header resumes only after the pull is fully unwound`() {
-        val (connection, header) = connection(
+    fun `extreme pull toward the previous surah clamps symmetrically`() {
+        val connection = connection(atTopEdge = true)
+
+        pullUp(1000f, connection)
+
+        assertEquals(60f, connection.pullPx, 0.01f)
+        assertEquals(1, connection.hintDirection)
+    }
+
+    @Test
+    fun `hint badge clears when the pull decays below its threshold`() {
+        val connection = connection(atBottomEdge = true)
+        pullUp(-30f, connection) // -12px visual → hinted
+        assertEquals(-1, connection.hintDirection)
+
+        drag(15f, connection) // unwind halfway: 6px visual < hintMin
+        assertEquals(-6f, connection.pullPx, 0.01f)
+        assertEquals(0, connection.hintDirection)
+    }
+
+    @Test
+    fun `horizontal RTL pull right at the bottom edge pulls the next surah`() {
+        val connection = connection(atBottomEdge = true, horizontal = true, rtl = true)
+
+        pullX(40f, connection)
+
+        // Normalized: +x right in RTL = next → pullPx negative.
+        assertEquals(-16f, connection.pullPx, 0.01f) // 40 * 0.4
+        assertEquals(-1, connection.hintDirection)
+    }
+
+    @Test
+    fun `horizontal LTR pull left at the bottom edge pulls the next surah`() {
+        val connection = connection(atBottomEdge = true, horizontal = true, rtl = false)
+
+        pullX(-40f, connection)
+
+        assertEquals(-16f, connection.pullPx, 0.01f) // same normalized value
+        assertEquals(-1, connection.hintDirection)
+    }
+
+    @Test
+    fun `horizontal RTL pull left at the top edge pulls the previous surah`() {
+        val connection = connection(atTopEdge = true, horizontal = true, rtl = true)
+
+        pullX(-60f, connection)
+
+        assertEquals(24f, connection.pullPx, 0.01f) // 60 * 0.4
+        assertEquals(1, connection.hintDirection)
+    }
+
+    @Test
+    fun `horizontal reverse drag unwinds on the x axis`() {
+        val connection = connection(atBottomEdge = true, horizontal = true, rtl = true)
+        // RTL: a rightward drag (+x) pulls the NEXT surah.
+        pullX(150f, connection)
+
+        // The reader changes their mind and drags left; the connection
+        // consumes exactly that reverse travel, reported on the REAL axis.
+        val consumed = dragX(-60f, connection)
+
+        assertEquals(-60f, consumed.x, 0.01f)
+        assertEquals(0f, consumed.y, 0f)
+        assertEquals(-36f, connection.pullPx, 0.01f) // 90 left * 0.4
+    }
+
+    @Test
+    fun `horizontal release past the threshold switches forward`() = runTest {
+        val fired = mutableListOf<Boolean>()
+        val connection = connection(
             atBottomEdge = true,
-            headerOffsetPx = -100f,
-            collapsibleHeightPx = 100
+            horizontal = true,
+            rtl = true,
+            onSwitch = { fired += it }
         )
-        pullUp(-150f, connection)
+        pullX(120f, connection) // RTL: right = next
 
-        val consumed = drag(200f, connection)
+        connection.onPreFling(Velocity.Zero)
 
-        assertEquals(200f, consumed.y, 0.01f) // 150 pull + 50 header
+        assertEquals(listOf(true), fired)
+    }
+
+    @Test
+    fun `horizontal pull never arms while scrolling mid-list`() {
+        val connection = connection(horizontal = true, rtl = true)
+
+        pullX(200f, connection)
+
+        // Same edge gates as the vertical pull: nothing at a non-edge.
         assertEquals(0f, connection.pullPx, 0f)
-        assertEquals(-50f, header.headerOffsetPx, 0.01f)
-    }
-
-    @Test
-    fun `selection freezes the header but never the cancel`() {
-        val (connection, header) = connection(
-            atBottomEdge = true,
-            headerOffsetPx = -100f,
-            collapsibleHeightPx = 100,
-            selectionActive = true
-        )
-        pullUp(-150f, connection)
-
-        val consumed = drag(60f, connection)
-
-        assertEquals(60f, consumed.y, 0.01f)
-        assertEquals(-100f, header.headerOffsetPx, 0.01f)
-        assertEquals(-36f, connection.pullPx, 0.01f)
+        assertEquals(0, connection.hintDirection)
     }
 
     // Note: the spring-back branch of onPreFling is deliberately not covered

@@ -59,15 +59,31 @@ fun RootDetailScreen(
     val headerState = rememberCollapsingHeaderState()
     val nestedScroll = remember(headerState) { headerState.nestedScrollConnection }
     // Freeze the collapsing header while multi-selecting (words/meanings).
-    SideEffect {
-        headerState.isSelectionMode = uiState.words.isSelectionMode || uiState.meanings.isSelectionMode
-    }
     val meaningsState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val aiSummaryState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val masadirState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val derivativesState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val ayatState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val wordsState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    // Target for header-originated flings: leftover velocity after the header
+    // hits its clamp continues into the visible tab's list (see onPostFling).
+    val activeTabListState = remember(
+        pagerState.currentPage, pagerTabs,
+        aiSummaryState, meaningsState, masadirState, derivativesState, wordsState, ayatState
+    ) {
+        when (pagerTabs[pagerState.currentPage]) {
+            RootDetailTab.AI_SUMMARY -> aiSummaryState
+            RootDetailTab.MEANINGS -> meaningsState
+            RootDetailTab.MASADIR -> masadirState
+            RootDetailTab.DERIVATIVES -> derivativesState
+            RootDetailTab.WORDS -> wordsState
+            RootDetailTab.AYAT -> ayatState
+        }
+    }
+    SideEffect {
+        headerState.isSelectionMode = uiState.words.isSelectionMode || uiState.meanings.isSelectionMode
+        headerState.activeListProvider = { activeTabListState }
+    }
     val copying = uiState.copyingAction
     val copyMeaningsAll = copying == CopyAction.COPY_MEANINGS_ALL || copying == CopyAction.SHARE_MEANINGS_ALL
     val copyMeaningsSel = copying == CopyAction.COPY_MEANINGS_SELECTED || copying == CopyAction.SHARE_MEANINGS_SELECTED
@@ -102,7 +118,6 @@ fun RootDetailScreen(
                     fontSize = uiState.fontSize,
                     onNavigateBack = onNavigateBack,
                     onReportClick = { onEvent(RootDetailEvent.ShowReport) },
-                    onFontSizeChange = { onEvent(RootDetailEvent.SetFontSize(it)) },
                     onCopyAiSummary = { onEvent(RootDetailEvent.CopyAiSummary) },
                     onShareAiSummary = { onEvent(RootDetailEvent.ShareAiSummary) },
                     onTabClick = { i -> scope.launch { pagerState.animateScrollToPage(i, animationSpec = tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard)) } }

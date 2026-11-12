@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.quranwords.core.util.AppLanguage
 import com.quranwords.core.util.LanguageManager
+import com.quranwords.core.util.ReadingModePreference
 import com.quranwords.domain.repository.UserPreferencesRepository
 import com.quranwords.ui.theme.QuranFont
 import javax.inject.Inject
@@ -30,18 +31,21 @@ class SettingsViewModel @Inject constructor(
     private val _dynamicColorEnabled = MutableStateFlow(false)
     private val _language = MutableStateFlow(AppLanguage.SYSTEM)
     private val _quranFont = MutableStateFlow(QuranFont.KFGQPC_HAFS_1441)
+    private val _readingMode = MutableStateFlow(ReadingModePreference.DEFAULT)
 
     val uiState: StateFlow<SettingsUiState> = combine(
         _darkModeSetting,
         _dynamicColorEnabled,
         _language,
-        _quranFont
-    ) { darkModeSetting, dynamicColorEnabled, language, quranFont ->
+        _quranFont,
+        _readingMode
+    ) { darkModeSetting, dynamicColorEnabled, language, quranFont, readingMode ->
         SettingsUiState(
             darkModeSetting = darkModeSetting,
             dynamicColorEnabled = dynamicColorEnabled,
             language = language,
-            quranFont = quranFont
+            quranFont = quranFont,
+            readingMode = readingMode
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SettingsUiState())
 
@@ -60,6 +64,9 @@ class SettingsViewModel @Inject constructor(
         }
         viewModelScope.launch {
             preferences.quranFontKey.collect { _quranFont.value = QuranFont.fromKey(it) }
+        }
+        viewModelScope.launch {
+            preferences.readingMode.collect { _readingMode.value = it }
         }
     }
 

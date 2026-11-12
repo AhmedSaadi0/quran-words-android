@@ -961,7 +961,8 @@ class QuranRepositoryImpl @Inject constructor(
             roots = searchRootsPaged(trimmed, pageSize, 0),
             masadir = searchMasadirPaged(trimmed, pageSize, 0),
             derivatives = searchDerivativesPaged(trimmed, pageSize, 0),
-            ayat = searchAyatPaged(trimmed, pageSize, 0)
+            ayat = searchAyatPaged(trimmed, pageSize, 0, null),
+            words = searchWordsPaged(trimmed, pageSize, 0)
         )
     }
 
@@ -1073,7 +1074,7 @@ class QuranRepositoryImpl @Inject constructor(
         return@withContext list
     }
 
-    override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int): List<Ayah> = withContext(ioDispatcher) {
+    override suspend fun searchAyatPaged(query: String, limit: Int, offset: Int, surahFilter: Int?): List<Ayah> = withContext(ioDispatcher) {
         val trimmed = query.trim()
         if (trimmed.isBlank()) return@withContext emptyList()
         val normalized = ArabicNormalizer.normalizeAr(trimmed)
@@ -1110,8 +1111,109 @@ class QuranRepositoryImpl @Inject constructor(
             }
         }
         getSeedAyat(1).filter {
-            it.textUthmaniPlain.contains(normalized) || it.textImlaei.contains(trimmed)
+            (surahFilter == null || it.surah == surahFilter) &&
+                (it.textUthmaniPlain.contains(normalized) || it.textImlaei.contains(trimmed))
         }.drop(offset).take(limit)
+    }
+
+    override suspend fun searchWordsPaged(query: String, limit: Int, offset: Int): List<WordToken> = withContext(ioDispatcher) {
+        val trimmed = query.trim()
+        if (trimmed.isBlank()) return@withContext emptyList()
+        val normalized = ArabicNormalizer.normalizeAr(trimmed)
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<WordToken>()
+        try {
+            val q = com.quranwords.data.local.search.SearchQueryBuilder.wordsSearchQuery(trimmed, normalized, limit, offset)
+            val cursor = db.rawQuery(q.sql, q.args.map { it.toString() }.toTypedArray())
+            cursor.use { c ->
+                while (c.moveToNext()) {
+                    list.add(
+                        WordToken(
+                            wordId = c.getInt(0),
+                            wordAyahId = 0,
+                            position = 0,
+                            text = sanitizeUthmanicText(c.getString(1) ?: ""),
+                            textClean = sanitizeUthmanicText(c.getString(2) ?: (c.getString(3) ?: "")),
+                            translation = c.getString(4) ?: ""
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {
+        }
+        return@withContext list
+    }
+
+    override suspend fun getAyahDirect(surahId: Int, ayahNum: Int): Ayah? = withContext(ioDispatcher) {
+        if (surahId !in 1..114 || ayahNum < 1) return@withContext null
+        val db = getDb() ?: return@withContext null
+        try {
+            val cursor = db.rawQuery(
+                "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number FROM ayat WHERE surah = ? AND ayah = ? LIMIT 1",
+                arrayOf(surahId.toString(), ayahNum.toString())
+            )
+            cursor.use { c ->
+                if (c.moveToNext()) {
+                    Ayah(
+                        id = c.getInt(0),
+                        surah = surahId,
+                        ayah = ayahNum,
+                        textUthmani = sanitizeUthmanicText(c.getString(3) ?: ""),
+                        textUthmaniPlain = c.getString(4) ?: "",
+                        textImlaei = c.getString(5) ?: "",
+                        wordCount = c.getInt(6),
+                        juz = if (c.isNull(7)) null else c.getInt(7),
+                        hizb = if (c.isNull(8)) null else c.getInt(8),
+                        rubElHizb = if (c.isNull(9)) null else c.getInt(9),
+                        pageNumber = if (c.isNull(10)) null else c.getInt(10)
+                    )
+                } else null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    override suspend fun getSurahForPage(pageNumber: Int): Pair<Int, Int>? = withContext(ioDispatcher) {
+        val db = getDb() ?: return@withContext null
+        try {
+            val cursor = db.rawQuery(
+                "SELECT surah, ayah FROM ayat WHERE page_number = ? ORDER BY surah ASC, ayah ASC LIMIT 1",
+                arrayOf(pageNumber.toString())
+            )
+            cursor.use { c ->
+                if (c.moveToNext()) c.getInt(0) to c.getInt(1) else null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    override suspend fun getTopRoots(limit: Int): List<RootItem> = withContext(ioDispatcher) {
+        val db = getDb() ?: return@withContext emptyList()
+        val list = mutableListOf<RootItem>()
+        try {
+            val q = com.quranwords.data.local.search.SearchQueryBuilder.topRootsQuery(limit)
+            val cursor = db.rawQuery(q.sql, q.args.map { it.toString() }.toTypedArray())
+            cursor.use { c ->
+                while (c.moveToNext()) {
+                    list.add(
+                        RootItem(
+                            id = c.getInt(0),
+                            root = c.getString(1) ?: "",
+                            glossAr = c.getString(2),
+                            glossEn = c.getString(3),
+                            aiSummary = c.getString(4),
+                            masadirCount = c.getInt(5),
+                            derivativesCount = c.getInt(6),
+                            occurrencesCount = c.getInt(7)
+                        )
+                    )
+                }
+            }
+        } catch (_: Exception) {
+        }
+        return@withContext list
     }
 
     override suspend fun getPagesForSurah(surahId: Int): List<Int> = withContext(ioDispatcher) {

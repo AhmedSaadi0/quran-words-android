@@ -3,7 +3,9 @@ package com.quranwords.ui.navigation
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -20,11 +22,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
@@ -35,6 +40,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.quranwords.R
+import com.quranwords.core.util.ReadingModePreference
 import com.quranwords.ui.bookmarks.BookmarksRoute
 import com.quranwords.ui.roots.RootsListRoute
 import com.quranwords.ui.roots.detail.RootDetailRoute
@@ -46,6 +52,8 @@ import com.quranwords.ui.surah.detail.SurahDetailRoute
 import com.quranwords.ui.search.SearchRoute
 import com.quranwords.ui.surah.SurahIndexRoute
 import com.quranwords.ui.theme.AppMotion
+import com.quranwords.ui.update.AppUpdateFlowLauncher
+import com.quranwords.ui.update.InAppUpdateHandler
 
 data class BottomNavItem(
     val route: Any,
@@ -66,10 +74,17 @@ private fun NavDestination?.isTopLevelDestination(item: BottomNavItem): Boolean 
     this?.hasRoute(item.route::class) == true
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    updateFlowStarter: AppUpdateFlowLauncher,
+    readingMode: Int = ReadingModePreference.DEFAULT
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = navBackStackEntry?.destination
+    // Read once in composition and passed explicitly to the transition rules —
+    // NavHost transition lambdas are not @Composable, so they must receive
+    // layout facts as plain values (like readingMode).
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     val showBottomBar = bottomNavItems.any { currentDestination.isTopLevelDestination(it) }
 
@@ -128,139 +143,152 @@ fun AppNavigation() {
         },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Home,
-            modifier = Modifier.padding(innerPadding),
-            enterTransition = { AppMotion.navEnterTransition() },
-            exitTransition = { AppMotion.navExitTransition() },
-            popEnterTransition = { revealFromAdjacentSwitch() },
-            popExitTransition = { AppMotion.navPopExitTransition() }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
         ) {
-            composable<Home> {
-                HomeRoute(
-                    onNavigateToSurahIndex = { navController.navigate(SurahIndex) },
-                    onNavigateToSurahDetail = { surahId, ayah ->
-                        navController.navigate(SurahDetail(surahId, ayah))
-                    },
-                    onNavigateToRoots = { navController.navigate(Roots) },
-                    onNavigateToRootDetail = { rootId ->
-                        navController.navigate(RootDetail(rootId))
-                    },
-                    onNavigateToSearch = { navController.navigate(Search) },
-                    onNavigateToGuide = { navController.navigate(Guide) },
-                    onNavigateToSetup = { navController.navigate(Setup) },
-                    onNavigateToBookmarks = { navController.navigate(Bookmarks) }
-                )
-            }
+            NavHost(
+                navController = navController,
+                startDestination = Home,
+                modifier = Modifier.fillMaxSize(),
+                enterTransition = { AppMotion.navEnterTransition() },
+                exitTransition = { AppMotion.navExitTransition() },
+                popEnterTransition = { revealFromAdjacentSwitch(readingMode) },
+                popExitTransition = { AppMotion.navPopExitTransition() }
+            ) {
+                composable<Home> {
+                    HomeRoute(
+                        onNavigateToSurahIndex = { navController.navigate(SurahIndex) },
+                        onNavigateToSurahDetail = { surahId, ayah ->
+                            navController.navigate(SurahDetail(surahId, ayah))
+                        },
+                        onNavigateToRoots = { navController.navigate(Roots) },
+                        onNavigateToRootDetail = { rootId ->
+                            navController.navigate(RootDetail(rootId))
+                        },
+                        onNavigateToSearch = { navController.navigate(Search) },
+                        onNavigateToGuide = { navController.navigate(Guide) },
+                        onNavigateToSetup = { navController.navigate(Setup) },
+                        onNavigateToBookmarks = { navController.navigate(Bookmarks) }
+                    )
+                }
 
-            composable<SurahIndex> {
-                SurahIndexRoute(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSurahDetail = { surahId, ayah ->
-                        navController.navigate(SurahDetail(surahId, ayah))
-                    }
-                )
-            }
-
-            composable<SurahDetail>(
-                enterTransition = { surahDetailEnter() },
-                exitTransition = { surahDetailExit() },
-                popEnterTransition = { surahDetailPopEnter() },
-                popExitTransition = { surahDetailPopExit() }
-            ) { backStackEntry ->
-                val route: SurahDetail = backStackEntry.toRoute()
-                SurahDetailRoute(
-                    surahId = route.surahId,
-                    targetAyah = route.ayah,
-                    enter = route.enter,
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToAdjacentSurah = { targetSurahId, ayah, fromNext ->
-                        navController.navigate(
-                            SurahDetail(
-                                surahId = targetSurahId,
-                                ayah = ayah,
-                                enter = if (fromNext) SurahEnter.FromNext else SurahEnter.FromPrev
-                            )
-                        ) {
-                            // Adjacent switches replace the current entry, so
-                            // back always returns to where reading started.
-                            popUpTo<SurahDetail> { inclusive = true }
+                composable<SurahIndex> {
+                    SurahIndexRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToSurahDetail = { surahId, ayah ->
+                            navController.navigate(SurahDetail(surahId, ayah))
                         }
-                    },
-                    onNavigateToRootDetail = { rootId ->
-                        navController.navigate(RootDetail(rootId))
-                    }
-                )
+                    )
+                }
+
+                composable<SurahDetail>(
+                    enterTransition = { surahDetailEnter(readingMode, isRtl) },
+                    exitTransition = { surahDetailExit(readingMode, isRtl) },
+                    popEnterTransition = { surahDetailPopEnter(readingMode, isRtl) },
+                    popExitTransition = { surahDetailPopExit(readingMode, isRtl) }
+                ) { backStackEntry ->
+                    val route: SurahDetail = backStackEntry.toRoute()
+                    SurahDetailRoute(
+                        surahId = route.surahId,
+                        targetAyah = route.ayah,
+                        enter = route.enter,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToAdjacentSurah = { targetSurahId, ayah, fromNext ->
+                            navController.navigate(
+                                SurahDetail(
+                                    surahId = targetSurahId,
+                                    ayah = ayah,
+                                    enter = if (fromNext) SurahEnter.FromNext else SurahEnter.FromPrev
+                                )
+                            ) {
+                                // Adjacent switches replace the current entry, so
+                                // back always returns to where reading started.
+                                popUpTo<SurahDetail> { inclusive = true }
+                            }
+                        },
+                        onNavigateToRootDetail = { rootId ->
+                            navController.navigate(RootDetail(rootId))
+                        }
+                    )
+                }
+
+                composable<Roots> {
+                    RootsListRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToRootDetail = { rootId ->
+                            navController.navigate(RootDetail(rootId))
+                        }
+                    )
+                }
+
+                composable<RootDetail> { backStackEntry ->
+                    val route: RootDetail = backStackEntry.toRoute()
+                    RootDetailRoute(
+                        rootId = route.rootId,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToSurahDetail = { surahId, ayahNum ->
+                            navController.navigate(SurahDetail(surahId, ayahNum))
+                        },
+                        onNavigateToWordAyat = { rId, wId ->
+                            navController.navigate(WordAyat(rId, wId))
+                        }
+                    )
+                }
+
+                composable<WordAyat> { backStackEntry ->
+                    val route: WordAyat = backStackEntry.toRoute()
+                    WordAyatRoute(
+                        rootId = route.rootId,
+                        wordId = route.wordId,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToSurahDetail = { surahId, ayahNum ->
+                            navController.navigate(SurahDetail(surahId, ayahNum))
+                        }
+                    )
+                }
+
+                composable<Search> {
+                    SearchRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToRootDetail = { rootId ->
+                            navController.navigate(RootDetail(rootId))
+                        },
+                        onNavigateToSurahDetail = { surahId, ayahNum ->
+                            navController.navigate(SurahDetail(surahId, ayahNum))
+                        }
+                    )
+                }
+
+                composable<Guide> {
+                    MorphologyGuideScreen(
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable<Setup> {
+                    DatabaseSetupRoute(
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable<Bookmarks> {
+                    BookmarksRoute(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToSurahDetail = { surahId, ayah ->
+                            navController.navigate(SurahDetail(surahId, ayah))
+                        }
+                    )
+                }
             }
 
-            composable<Roots> {
-                RootsListRoute(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToRootDetail = { rootId ->
-                        navController.navigate(RootDetail(rootId))
-                    }
-                )
-            }
-
-            composable<RootDetail> { backStackEntry ->
-                val route: RootDetail = backStackEntry.toRoute()
-                RootDetailRoute(
-                    rootId = route.rootId,
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSurahDetail = { surahId, ayahNum ->
-                        navController.navigate(SurahDetail(surahId, ayahNum))
-                    },
-                    onNavigateToWordAyat = { rId, wId ->
-                        navController.navigate(WordAyat(rId, wId))
-                    }
-                )
-            }
-
-            composable<WordAyat> { backStackEntry ->
-                val route: WordAyat = backStackEntry.toRoute()
-                WordAyatRoute(
-                    rootId = route.rootId,
-                    wordId = route.wordId,
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSurahDetail = { surahId, ayahNum ->
-                        navController.navigate(SurahDetail(surahId, ayahNum))
-                    }
-                )
-            }
-
-            composable<Search> {
-                SearchRoute(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToRootDetail = { rootId ->
-                        navController.navigate(RootDetail(rootId))
-                    },
-                    onNavigateToSurahDetail = { surahId, ayahNum ->
-                        navController.navigate(SurahDetail(surahId, ayahNum))
-                    }
-                )
-            }
-
-            composable<Guide> {
-                MorphologyGuideScreen(
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-
-            composable<Setup> {
-                DatabaseSetupRoute(
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-
-            composable<Bookmarks> {
-                BookmarksRoute(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToSurahDetail = { surahId, ayah ->
-                        navController.navigate(SurahDetail(surahId, ayah))
-                    }
-                )
-            }
+            // Global in-app update banner (Decision #29): hosted once above the
+            // NavHost so every screen sees the prompt.
+            InAppUpdateHandler(
+                updateFlowStarter = updateFlowStarter,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
         }
     }
 }

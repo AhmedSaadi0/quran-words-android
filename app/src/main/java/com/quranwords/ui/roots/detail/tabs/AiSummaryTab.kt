@@ -33,10 +33,10 @@ fun AiSummaryTab(
     val state = listState ?: rememberLazyListState()
     val refsLabel = stringResource(R.string.ai_refs_label)
     val sections = listOf(
-        Triple(extended.furuq, R.string.ai_section_furuq, "furuq"),
-        Triple(extended.shabaka, R.string.ai_section_shabaka, "shabaka"),
         Triple(extended.hissi, R.string.ai_section_hissi, "hissi"),
         Triple(extended.tatawwur, R.string.ai_section_tatawwur, "tatawwur"),
+        Triple(extended.furuq, R.string.ai_section_furuq, "furuq"),
+        Triple(extended.shabaka, R.string.ai_section_shabaka, "shabaka"),
         Triple(extended.tashrih, R.string.ai_section_tashrih, "tashrih")
     )
     val visible = sections.filter { it.first.isNotBlank() }

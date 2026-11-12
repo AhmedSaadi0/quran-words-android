@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -19,8 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.core.util.SurahMetadata
@@ -28,37 +32,66 @@ import com.quranwords.ui.theme.AppMotion
 
 /**
  * Both edge badges for the surah screen: `direction` -1 shows the next-surah
- * badge at the bottom edge, +1 the previous-surah badge at the top edge, 0
- * hides both. Neighbor names come from static Arabic reference data.
+ * badge, +1 the previous-surah badge, 0 hides both. Placement follows the
+ * ACTIVE page-turn axis:
+ *
+ *  - vertical: next at the bottom edge (arrow down), previous at the top edge
+ *    (arrow up) — up/down arrows never mirror under RTL.
+ *  - horizontal: the badge sits at the physical edge the content moves
+ *    toward (RTL mushaf: right = next, left = previous; mirrored for LTR),
+ *    with a matching left/right arrow.
+ *
+ * Neighbor names come from static Arabic reference data.
  */
 @Composable
-fun BoxScope.SurahSwitchHints(direction: Int, surahId: Int) {
-    SurahSwitchHint(
-        visible = direction == -1,
-        isNext = true,
-        name = SurahMetadata.SURAHS.getOrNull(surahId)?.nameAr,
-        modifier = Modifier.align(Alignment.BottomCenter)
-    )
-    SurahSwitchHint(
-        visible = direction == 1,
-        isNext = false,
-        name = SurahMetadata.SURAHS.getOrNull(surahId - 2)?.nameAr,
-        modifier = Modifier.align(Alignment.TopCenter)
-    )
+fun BoxScope.SurahSwitchHints(direction: Int, surahId: Int, horizontal: Boolean = false) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    if (horizontal) {
+        SurahSwitchHint(
+            visible = direction == -1,
+            isNext = true,
+            horizontal = true,
+            rtl = rtl,
+            name = SurahMetadata.SURAHS.getOrNull(surahId)?.nameAr,
+            modifier = Modifier.align(if (rtl) Alignment.CenterStart else Alignment.CenterEnd)
+        )
+        SurahSwitchHint(
+            visible = direction == 1,
+            isNext = false,
+            horizontal = true,
+            rtl = rtl,
+            name = SurahMetadata.SURAHS.getOrNull(surahId - 2)?.nameAr,
+            modifier = Modifier.align(if (rtl) Alignment.CenterEnd else Alignment.CenterStart)
+        )
+    } else {
+        SurahSwitchHint(
+            visible = direction == -1,
+            isNext = true,
+            name = SurahMetadata.SURAHS.getOrNull(surahId)?.nameAr,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
+        SurahSwitchHint(
+            visible = direction == 1,
+            isNext = false,
+            name = SurahMetadata.SURAHS.getOrNull(surahId - 2)?.nameAr,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
+    }
 }
 
 /**
  * Edge badge shown while the user pulls at a surah boundary: the neighbor
- * surah name fades in at the edge the content is moving toward (bottom badge =
- * next surah, top badge = previous surah). Display-only overlay — it never
- * intercepts touches.
+ * surah name fades in near the boundary being crossed. Display-only overlay —
+ * it never intercepts touches.
  */
 @Composable
 fun SurahSwitchHint(
     visible: Boolean,
     isNext: Boolean,
     name: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    horizontal: Boolean = false,
+    rtl: Boolean = false
 ) {
     AnimatedVisibility(
         visible = visible && name != null,
@@ -86,12 +119,24 @@ fun SurahSwitchHint(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Icon(
-                    // Up/Down keyboard arrows have no AutoMirrored variant —
-                    // vertical direction does not mirror under RTL.
-                    imageVector = if (isNext) {
-                        Icons.Filled.KeyboardArrowDown
-                    } else {
-                        Icons.Filled.KeyboardArrowUp
+                    // Directional arrows have no AutoMirrored variant — the
+                    // physical direction is chosen explicitly below.
+                    imageVector = when {
+                        !horizontal -> if (isNext) {
+                            Icons.Filled.KeyboardArrowDown
+                        } else {
+                            Icons.Filled.KeyboardArrowUp
+                        }
+                        rtl -> if (isNext) {
+                            Icons.Filled.KeyboardArrowRight
+                        } else {
+                            Icons.Filled.KeyboardArrowLeft
+                        }
+                        else -> if (isNext) {
+                            Icons.Filled.KeyboardArrowLeft
+                        } else {
+                            Icons.Filled.KeyboardArrowRight
+                        }
                     },
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,

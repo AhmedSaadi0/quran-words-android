@@ -1,6 +1,7 @@
 package com.quranwords.ui.surah.detail.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -29,7 +30,7 @@ private val RingSize = 36.dp
 private val RingStroke = 3.dp
 
 /**
- * Pinned top-bar pair: the mushaf page at the viewport top with its position
+ * Reading-chrome pair: the mushaf page at the viewport top with its position
  * within the surah (left), and the current juz with how far the reader has
  * advanced inside it (right). Both arcs GROW as the reader advances.
  *
@@ -41,7 +42,9 @@ private val RingStroke = 3.dp
 @Composable
 fun ReadingProgressRings(
     readingProgress: () -> ReadingProgress?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Optional: opens the page-jump menu; attached to the PAGE ring only. */
+    onPageRingClick: (() -> Unit)? = null
 ) {
     val progress = readingProgress() ?: return
     Row(
@@ -49,16 +52,30 @@ fun ReadingProgressRings(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ProgressRing(
-            progress = progress.pageFraction,
-            centerText = progress.currentPage.toEasternArabicDigits(),
-            contentDescription = stringResource(
-                R.string.cd_page_progress,
-                progress.currentPage,
-                progress.totalPages
-            ),
-            modifier = Modifier.testTag("page_progress_ring")
-        )
+        // Clickable wrapper: the ring itself clears and sets its semantics
+        // (TalkBack description), so the click action must live one level up —
+        // the merging wrapper keeps both the description and the click label.
+        Box(
+            modifier = if (onPageRingClick != null) {
+                Modifier.clickable(
+                    onClickLabel = stringResource(R.string.cd_page_menu_open),
+                    onClick = onPageRingClick
+                )
+            } else {
+                Modifier
+            }
+        ) {
+            ProgressRing(
+                progress = progress.pageFraction,
+                centerText = progress.currentPage.toEasternArabicDigits(),
+                contentDescription = stringResource(
+                    R.string.cd_page_progress,
+                    progress.currentPage,
+                    progress.totalPages
+                ),
+                modifier = Modifier.testTag("page_progress_ring")
+            )
+        }
         ProgressRing(
             progress = progress.juzFraction,
             centerText = progress.juz.toEasternArabicDigits(),

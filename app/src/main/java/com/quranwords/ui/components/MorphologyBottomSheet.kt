@@ -202,10 +202,10 @@ fun MorphologyBottomSheet(
                     mutableStateOf(emptyList<String>())
                 }
                 val sections = listOf(
-                    Triple(aiExtended.furuq, R.string.ai_section_furuq, "furuq"),
-                    Triple(aiExtended.shabaka, R.string.ai_section_shabaka, "shabaka"),
                     Triple(aiExtended.hissi, R.string.ai_section_hissi, "hissi"),
                     Triple(aiExtended.tatawwur, R.string.ai_section_tatawwur, "tatawwur"),
+                    Triple(aiExtended.furuq, R.string.ai_section_furuq, "furuq"),
+                    Triple(aiExtended.shabaka, R.string.ai_section_shabaka, "shabaka"),
                     Triple(aiExtended.tashrih, R.string.ai_section_tashrih, "tashrih")
                 )
                 sections.filter { it.first.isNotBlank() }.forEach { (section, titleRes, tag) ->

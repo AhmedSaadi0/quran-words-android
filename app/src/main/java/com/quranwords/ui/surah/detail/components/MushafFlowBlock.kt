@@ -15,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -34,14 +35,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.LineBreak
-import androidx.compose.ui.text.style.LineHeightStyle
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -55,9 +54,7 @@ import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.QuranFont
 
 private const val FLOW_WORD_TAG = "word_id"
-private const val FLOW_AYAH_TAG = "ayah_num"
-/** Sub-pixel tolerance (px) below which the last line counts as full. */
-private const val LAST_LINE_EPS_PX = 0.5f
+internal const val FLOW_AYAH_TAG = "ayah_num"
 
 /**
  * Continuous-flow Mushaf block: every ayah of [group] concatenated into ONE
@@ -108,6 +105,9 @@ fun MushafFlowBlock(
         bookmarkMarkerColor,
         quranFont
     ) {
+        // NOTE: the character content of this builder is mirrored by
+        // mushafBlockLayoutText in MushafFontSizeFit.kt (pages-mode auto-fit
+        // measures this exact text with TextMeasurer). Keep both in sync.
         buildAnnotatedString {
             group.ayat.forEachIndexed { ayahIndex, ayah ->
                 // Inter-ayah space belongs to neither range: highlights stay isolated.
@@ -134,8 +134,10 @@ fun MushafFlowBlock(
                         fontWeight = FontWeight.Bold
                     )
                 ) {
-                    // استخدام مسافة غير قابلة للكسر (\u00A0) حتى لا ينفصل رقم الآية منفرداً في سطر مستقل
-                    append("\u00A0${ayah.ayah.toEasternArabicDigits()}")
+                    // استخدام مسافة غير قابلة للكسر (\u00A0) حتى لا ينفصل رقم الآية منفرداً في سطر مستقل.
+                    // الأقواس المزخرفة ﴿ ﴾ هي عرف التطبيق الموحد (البحث/العلامات/النسخ) وتُعرض
+                    // مؤطرة في كل الخطوط الأربعة، بما فيها خط مصحف المدينة.
+                    append("\u00A0﴿${ayah.ayah.toEasternArabicDigits()}﴾")
                 }
                 addStringAnnotation(FLOW_AYAH_TAG, ayah.ayah.toString(), ayahStart, length)
                 if (isSelected) {
@@ -147,13 +149,29 @@ fun MushafFlowBlock(
         }
     }
 
+    // Canonical block style — also the reference style the last-line
+    // justification re-lays-out tokens with, so measure == render.
+    val blockStyle = mushafBlockTextStyle(LocalTextStyle.current, fontSize, quranFont)
+    val textMeasurer = rememberTextMeasurer()
+    // Word-gap justification of the last line (uniform rectangle). Computed
+    // once per layout/annotation change; drawing applies per-token shifts
+    // with no text relayout. Null keeps the centered-last-line fallback.
+    val justification = remember(layoutResult, annotated, blockStyle) {
+        val result = layoutResult
+        if (result == null) null
+        else computeLastLineJustification(annotated, result, blockStyle, textMeasurer)
+    }
+    // pointerInput's keys never change with the layout, so its lambda would
+    // capture a stale justification — read it fresh per tap instead.
+    val currentJustification by rememberUpdatedState(justification)
+
     // Line bands covering the pulse target, split for the centered last line.
     // Pure geometry over the static text: no span changes, no relayout.
-    val pulseGeo = remember(layoutResult, annotated, pulseAyah) {
+    val pulseGeo = remember(layoutResult, annotated, pulseAyah, justification) {
         val target = pulseAyah
         val result = layoutResult
         if (target == null || result == null) null
-        else result.pulseGeometry(annotated, target)
+        else result.pulseGeometry(annotated, target, justification)
     }
 
     // Two soft fades (~1s total). Keys cover late layout delivery; the effect
@@ -178,9 +196,10 @@ fun MushafFlowBlock(
                 detectTapGestures(
                     onTap = { offset ->
                         val result = layoutResult ?: return@detectTapGestures
-                        // Last line is drawn centered (see drawWithContent below):
-                        // re-map the visual tap back to layout coordinates.
-                        val position = result.remapForCenteredLastLine(offset)
+                        // Last line is drawn shifted (justified per-token or
+                        // centered fallback): re-map the visual tap back to
+                        // layout coordinates.
+                        val position = result.remapForLastLine(currentJustification, offset)
                         val ayahNum = result.ayahAt(annotated, position) ?: return@detectTapGestures
                         if (isSelectionMode) {
                             onToggleSelection(ayahNum)
@@ -194,7 +213,7 @@ fun MushafFlowBlock(
                     },
                     onLongPress = { offset ->
                         val result = layoutResult ?: return@detectTapGestures
-                        val position = result.remapForCenteredLastLine(offset)
+                        val position = result.remapForLastLine(currentJustification, offset)
                         val ayahNum = result.ayahAt(annotated, position) ?: return@detectTapGestures
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onEnterSelection(ayahNum)
@@ -248,10 +267,11 @@ fun MushafFlowBlock(
                     .padding(horizontal = 4.dp, vertical = 2.dp)
                     .drawWithContent {
                         // Pulse overlay (behind text): per-line rounded bands over
-                        // the target ayah with GPU-animated alpha. Same two-pass
-                        // clip/translate split as the content below so the
-                        // centered last line stays aligned. Zero text relayout:
-                        // the AnnotatedString never changes during the pulse.
+                        // the target ayah with GPU-animated alpha. The bands are
+                        // pre-split exactly like the content below (justified
+                        // per-token or centered two-pass) so the last line stays
+                        // aligned. Zero text relayout: the AnnotatedString never
+                        // changes during the pulse.
                         // (If the ayah also carries a static span wash, that
                         // opaque wash covers the overlay there — but such an
                         // ayah is already marked, so no cue is lost.)
@@ -269,7 +289,15 @@ fun MushafFlowBlock(
                                     cornerRadius = radius
                                 )
                             }
-                            if (geo.centered) {
+                            if (justification != null) {
+                                // Justified rectangle: bands above the last line
+                                // live in original coordinates; the last line's
+                                // bands are already re-positioned per token.
+                                clipRect(top = 0f, bottom = justification.lineTop) {
+                                    geo.above.forEach(::drawBand)
+                                }
+                                geo.lastLine.forEach(::drawBand)
+                            } else if (geo.centered) {
                                 clipRect(top = 0f, bottom = geo.lastLineTop) {
                                     geo.above.forEach(::drawBand)
                                 }
@@ -283,47 +311,54 @@ fun MushafFlowBlock(
                                 geo.lastLine.forEach(::drawBand)
                             }
                         }
-                        // Madinah Mushaf page effect: Compose has no
-                        // `text-align-last: center`, so the last line is drawn
-                        // shifted to the center while taps are re-mapped back
-                        // (see remapForCenteredLastLine).
+                        // Uniform rectangle: when the last line is justified,
+                        // everything above it is drawn unshifted and the last
+                        // line's tokens are re-drawn at their gap-widened
+                        // positions (word spacing only — glyph size/shape
+                        // untouched). Otherwise the Madinah Mushaf page effect
+                        // applies: Compose has no `text-align-last: center`,
+                        // so the last line is drawn shifted to the center while
+                        // taps are re-mapped back (see remapForCenteredLastLine).
                         val result = layoutResult
                         if (result != null && result.lineCount > 0) {
-                            val lastLineIndex = result.lineCount - 1
-                            val emptySpace = result.lastLineEmptySpace()
-                            if (emptySpace > LAST_LINE_EPS_PX) {
-                                val lastLineTop = result.getLineTop(lastLineIndex)
-                                clipRect(top = 0f, bottom = lastLineTop) {
+                            val just = justification
+                            if (just != null) {
+                                clipRect(top = 0f, bottom = just.lineTop) {
                                     this@drawWithContent.drawContent()
                                 }
-                                clipRect(top = lastLineTop, bottom = size.height) {
-                                    translate(left = -emptySpace / 2f) {
-                                        this@drawWithContent.drawContent()
-                                    }
+                                just.tokens.forEach { token ->
+                                    drawText(
+                                        token.layout,
+                                        topLeft = Offset(token.finalLeft, just.lineTop)
+                                    )
                                 }
                             } else {
-                                drawContent()
+                                val lastLineIndex = result.lineCount - 1
+                                val emptySpace = result.lastLineEmptySpace()
+                                if (emptySpace > LAST_LINE_EPS_PX) {
+                                    val lastLineTop = result.getLineTop(lastLineIndex)
+                                    clipRect(top = 0f, bottom = lastLineTop) {
+                                        this@drawWithContent.drawContent()
+                                    }
+                                    clipRect(top = lastLineTop, bottom = size.height) {
+                                        translate(left = -emptySpace / 2f) {
+                                            this@drawWithContent.drawContent()
+                                        }
+                                    }
+                                } else {
+                                    drawContent()
+                                }
                             }
                         } else {
                             drawContent()
                         }
                     },
-                fontSize = fontSize.sp,
-                fontFamily = quranFont.fontFamily,
-                lineHeight = (fontSize * quranFont.lineHeightMultiplier).sp,
-                fontWeight = FontWeight.Normal,
                 color = MaterialTheme.colorScheme.onSurface,
-                // 1. تفعيل المحاذاة المتساوية للأطراف
-                textAlign = TextAlign.Justify,
-                style = LocalTextStyle.current.copy(
-                    platformStyle = PlatformTextStyle(includeFontPadding = false),
-                    // 2. تفعيل خوارزمية تكسير وتوزيع الأسطر المتناسقة (Paragraph Balancing)
-                    lineBreak = LineBreak.Paragraph,
-                    lineHeightStyle = LineHeightStyle(
-                        alignment = LineHeightStyle.Alignment.Center,
-                        trim = LineHeightStyle.Trim.None
-                    )
-                ),
+                // Canonical block style (mushafBlockTextStyle): justify +
+                // paragraph balancing + no font padding + the cut's leading —
+                // the exact style the auto-fit and the last-line justification
+                // measure with.
+                style = blockStyle,
                 onTextLayout = { layoutResult = it }
             )
         }
@@ -331,8 +366,10 @@ fun MushafFlowBlock(
 }
 
 /**
- * Overlay bands covering one ayah's characters, pre-split for the centered
- * last-line two-pass drawing (mirrors the content clip/translate split).
+ * Overlay bands covering one ayah's characters. In the centered fallback the
+ * bands are pre-split for the two-pass clip/translate drawing; in the
+ * justified rectangle the last-line bands are already re-positioned with
+ * their tokens.
  */
 private data class PulseGeometry(
     val above: List<Rect>,
@@ -351,17 +388,25 @@ private data class PulseGeometry(
  * each other. Returns null when the layout is empty or the ayah is not in
  * this block.
  */
-private fun TextLayoutResult.pulseGeometry(text: AnnotatedString, ayahNum: Int): PulseGeometry? {
+private fun TextLayoutResult.pulseGeometry(
+    text: AnnotatedString,
+    ayahNum: Int,
+    justification: LastLineJustification?
+): PulseGeometry? {
     if (lineCount == 0 || text.isEmpty()) return null
     val span = text.getStringAnnotations(FLOW_AYAH_TAG, 0, text.length)
         .firstOrNull { it.item.toIntOrNull() == ayahNum } ?: return null
     val lastLineIndex = lineCount - 1
     val emptySpace = lastLineEmptySpace()
-    val centered = emptySpace > LAST_LINE_EPS_PX
+    val centered = justification == null && emptySpace > LAST_LINE_EPS_PX
     val lastLineTop = getLineTop(lastLineIndex)
     val above = mutableListOf<Rect>()
     val lastLine = mutableListOf<Rect>()
+    val just = justification
     for (line in 0 until lineCount) {
+        // Justified rectangle: the last line is owned by the re-positioned
+        // tokens below.
+        if (just != null && line == lastLineIndex) continue
         if (getLineEnd(line) <= span.start || getLineStart(line) >= span.end) continue
         // Character-range intersection: the ayah may start/end mid-line.
         // (segStart < segEnd is guaranteed by the filter above, so both box
@@ -389,36 +434,20 @@ private fun TextLayoutResult.pulseGeometry(text: AnnotatedString, ayahNum: Int):
         )
         if (centered && line == lastLineIndex) lastLine.add(rect) else above.add(rect)
     }
+    // Justified rectangle: the target ayah's tokens re-positioned in place.
+    if (just != null) {
+        just.tokens.filter { it.ayah == ayahNum }.forEach { token ->
+            lastLine.add(
+                Rect(
+                    left = token.finalLeft,
+                    top = just.lineTop,
+                    right = token.finalRight,
+                    bottom = getLineBottom(lastLineIndex)
+                )
+            )
+        }
+    }
     return PulseGeometry(above, lastLine, centered, lastLineTop, emptySpace)
-}
-
-/**
- * Unused width on the last line, in pixels. Uses the text layout width
- * ([TextLayoutResult.size]) rather than the draw-scope size so the centered
- * shift stays pixel-perfect regardless of the [Text] padding.
- */
-private fun TextLayoutResult.lastLineEmptySpace(): Float {
-    if (lineCount == 0) return 0f
-    // getLineWidth() exists only on newer Compose; this BOM (2024.09.00)
-    // provides getLineLeft()/getLineRight() — equivalent width.
-    val last = lineCount - 1
-    return size.width - (getLineRight(last) - getLineLeft(last))
-}
-
-/**
- * Re-maps a visual tap/long-press position back to text-layout coordinates.
- * The last line is drawn shifted left by `emptySpace / 2` (centering an
- * RTL start-aligned line), so taps on it must be shifted back right by the
- * same amount before querying [ayahAt]/[wordAt]. Positions above the last
- * line pass through untouched.
- */
-private fun TextLayoutResult.remapForCenteredLastLine(position: Offset): Offset {
-    if (lineCount == 0) return position
-    val lastLineIndex = lineCount - 1
-    val emptySpace = lastLineEmptySpace()
-    if (emptySpace <= LAST_LINE_EPS_PX) return position
-    if (position.y < getLineTop(lastLineIndex)) return position
-    return position.copy(x = position.x + emptySpace / 2f)
 }
 
 /**

@@ -57,13 +57,16 @@ class SearchViewModelTest {
         )
     )
 
+    private fun viewModel(repo: FakeQuranRepository) =
+        SearchViewModel(repo, com.quranwords.domain.usecase.SearchUseCase(repo), com.quranwords.fake.FakeUserPreferences())
+
     @Test
-    fun `query debounce delays the search until 300ms pass`() = runTest {
-        val vm = SearchViewModel(repository())
+    fun `query debounce delays the search until 200ms pass`() = runTest {
+        val vm = viewModel(repository())
         vm.onEvent(SearchEvent.QueryChanged("كتب"))
 
         // Before the debounce window elapses nothing was searched yet.
-        advanceTimeBy(299)
+        advanceTimeBy(199)
         runCurrent()
         assertEquals(0, vm.uiState.value.results.roots.size)
 
@@ -74,9 +77,9 @@ class SearchViewModelTest {
 
     @Test
     fun `first page sets per-tab hasMore and near-end loads the next page`() = runTest {
-        val vm = SearchViewModel(repository(size = pageSize + 3))
+        val vm = viewModel(repository(size = pageSize + 3))
         vm.onEvent(SearchEvent.QueryChanged("كتب"))
-        advanceTimeBy(300)
+        advanceTimeBy(200)
         advanceUntilIdle()
         assertEquals(pageSize, vm.uiState.value.results.roots.size)
 
@@ -87,9 +90,9 @@ class SearchViewModelTest {
 
     @Test
     fun `blank query resets results`() = runTest {
-        val vm = SearchViewModel(repository())
+        val vm = viewModel(repository())
         vm.onEvent(SearchEvent.QueryChanged("كتب"))
-        advanceTimeBy(300)
+        advanceTimeBy(200)
         advanceUntilIdle()
 
         vm.onEvent(SearchEvent.QueryChanged(""))
@@ -101,15 +104,15 @@ class SearchViewModelTest {
     @Test
     fun `search failure surfaces an error and retry recovers`() = runTest {
         val repo = FakeQuranRepository(failSearch = true)
-        val vm = SearchViewModel(repo)
+        val vm = viewModel(repo)
         vm.onEvent(SearchEvent.QueryChanged("كتب"))
-        advanceTimeBy(300)
+        advanceTimeBy(200)
         advanceUntilIdle()
         assertNotNull(vm.uiState.value.error)
 
         repo.failSearch = false
         vm.onEvent(SearchEvent.Retry)
-        advanceTimeBy(300)
+        advanceTimeBy(200)
         advanceUntilIdle()
 
         vm.uiState.test {

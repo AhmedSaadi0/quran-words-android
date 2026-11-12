@@ -9,7 +9,9 @@ import com.quranwords.domain.model.Surah
  * `SurahDetailScreen` so the screen stays focused on composition/effects.
  *
  * Both are pure reads of [LazyListState] + the flow-block groups; callers wrap
- * them in `derivedStateOf` so only the consuming node recomposes.
+ * them in `derivedStateOf` so only the consuming node recomposes. The `*Pager`
+ * variants read a settled pager page instead (book-pages reading mode), where
+ * a whole mushaf page is visible at once — no scroll fraction.
  */
 
 /**
@@ -59,4 +61,33 @@ fun currentPageFor(
         .coerceIn(0, groups.size - 1)
     return groups[groupIndex].pageNumber
         ?: groups.take(groupIndex + 1).lastOrNull { it.pageNumber != null }?.pageNumber
+}
+
+/** Rings position for a settled pager page: the whole mushaf page is visible, fraction 0. */
+fun readingProgressOfPager(
+    page: Int,
+    groups: List<AyahFlowGroup>,
+    surah: Surah?,
+    surahPages: List<Int>
+): ReadingProgress? {
+    val surahId = surah?.id ?: return null
+    val group = groups.getOrNull(page) ?: return null
+    return ReadingProgress.of(
+        surahId = surahId,
+        blockFirstAyah = group.ayat.first().ayah,
+        blockAyahCount = group.ayat.size,
+        scrolledFraction = 0f,
+        currentPage = group.pageNumber,
+        surahPages = surahPages
+    )
+}
+
+/** Mushaf page chip for a settled pager page (unpaged chunks report the nearest preceding page). */
+fun currentPageForPager(
+    groups: List<AyahFlowGroup>,
+    page: Int
+): Int? {
+    if (groups.isEmpty() || page !in groups.indices) return null
+    return groups[page].pageNumber
+        ?: groups.take(page + 1).lastOrNull { it.pageNumber != null }?.pageNumber
 }

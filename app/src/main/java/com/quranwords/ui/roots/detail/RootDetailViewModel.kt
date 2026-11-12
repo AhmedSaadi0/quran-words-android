@@ -4,7 +4,6 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import com.quranwords.core.util.FontSizePreference
 import com.quranwords.core.util.QuranCopyFormatter
 import com.quranwords.core.util.Result
 import com.quranwords.core.util.SelectionState
@@ -449,8 +448,6 @@ class RootDetailViewModel @Inject constructor(
             is RootDetailEvent.OccurrenceClicked ->
                 _effect.tryEmit(RootDetailEffect.NavigateToSurah(event.surahId, event.ayahNum))
             is RootDetailEvent.AyatNearingEnd -> loadMoreOccurrencesIfNeeded(event.lastVisibleIndex)
-            is RootDetailEvent.SetFontSize ->
-                viewModelScope.launch { preferences.setFontSize(FontSizePreference.clamp(event.size)) }
             RootDetailEvent.ShowReport -> setReportVisible(true)
             RootDetailEvent.DismissReport -> setReportVisible(false)
             RootDetailEvent.Retry -> currentRootIdForOcc?.let { loadRootDetail(it) }

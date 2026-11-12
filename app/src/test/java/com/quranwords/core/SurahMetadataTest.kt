@@ -54,4 +54,53 @@ class SurahMetadataTest {
             assertTrue("Rub ${i + 1} regresses", keys[i] > keys[i - 1])
         }
     }
+
+    @Test
+    fun `juz range ends right before the next juz start`() {
+        // Juz 1: next starts 2:142 → ends 2:141.
+        assertEquals(
+            SurahMetadata.JuzRange(1, 1, 2, 141),
+            SurahMetadata.juzRange(1)
+        )
+        // Juz 13 starts 12:53; next starts 15:1 → ends at surah 14's last ayah.
+        assertEquals(
+            SurahMetadata.JuzRange(12, 53, 14, SurahMetadata.SURAHS[13].ayahCount),
+            SurahMetadata.juzRange(13)
+        )
+    }
+
+    @Test
+    fun `juz 30 range runs to the mushaf end`() {
+        assertEquals(
+            SurahMetadata.JuzRange(78, 1, 114, SurahMetadata.SURAHS[113].ayahCount),
+            SurahMetadata.juzRange(30)
+        )
+    }
+
+    @Test
+    fun `juz range is contiguous across all juzes`() {
+        // Each range ends exactly one ayah before the next one starts
+        // (ayah must wrap to surah end + 1 across surah boundaries).
+        fun ayahCountOf(surahId: Int) = SurahMetadata.SURAHS[surahId - 1].ayahCount
+        for (juzId in 1 until 30) {
+            val range = SurahMetadata.juzRange(juzId)!!
+            val next = SurahMetadata.juzRange(juzId + 1)!!
+            val endSurah = range.endSurahId
+            val endAyah = range.endAyah
+            val expectedNext =
+                if (endAyah < ayahCountOf(endSurah)) endSurah to (endAyah + 1)
+                else (endSurah + 1) to 1
+            assertEquals(
+                "Juz $juzId is not contiguous with ${juzId + 1}",
+                expectedNext,
+                next.startSurahId to next.startAyah
+            )
+        }
+    }
+
+    @Test
+    fun `juz range is null for unknown id`() {
+        assertEquals(null, SurahMetadata.juzRange(0))
+        assertEquals(null, SurahMetadata.juzRange(31))
+    }
 }

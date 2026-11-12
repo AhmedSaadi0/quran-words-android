@@ -36,9 +36,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.core.util.MorphologyMaps
+import com.quranwords.ui.guide.components.GuideReferencesCard
 import com.quranwords.ui.theme.AppMotion
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -225,34 +225,11 @@ fun MorphologyGuideScreen(
 
             // References Card - M3 large banner 20dp
             item {
-                Card(
+                GuideReferencesCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .animateItem(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    border = CardDefaults.outlinedCardBorder()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.guide_refs_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = stringResource(R.string.guide_refs_body),
-                            style = MaterialTheme.typography.bodySmall,
-                            lineHeight = 22.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                        .animateItem()
+                )
             }
 
             item {

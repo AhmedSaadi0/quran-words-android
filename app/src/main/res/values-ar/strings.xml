@@ -3,7 +3,7 @@
     <string name="home_subtitle">المعجم والتحليل الصرفي الشامل لألفاظ التنزيل</string>
     <string name="home_search_hint">ابحث عن جذر، كلمة، مصدر، أو نص آية...</string>
 
-    <string name="home_db_title">قاعدة البيانات الكاملة (118 ميجابايت)</string>
+    <string name="home_db_title">قاعدة البيانات الكاملة (~30 ميجابايت)</string>
     <string name="home_db_body">يمكنك تنزيل المعجم الكامل وقاعدة الصرف للعمل محلياً دون اتصال بالإنترنت، أو الاستمرار ببيانات المعاينة السريعة.</string>
     <string name="home_db_action">تنزيل قاعدة البيانات</string>
 
@@ -92,6 +92,21 @@
     <string name="cd_page_progress">الصفحة %1$d من %2$d</string>
     <string name="cd_juz_progress">الجزء %1$d — مكتمل بنسبة %2$d%%</string>
 
+    <!-- شريط القراءة العلوي (بأسلوب Obsidian) -->
+    <string name="reading_options_cd">خيارات القراءة</string>
+    <string name="reading_menu_settings">إعدادات</string>
+    <string name="reading_font_size_title">حجم خط المصحف</string>
+    <string name="reading_font_pages_auto_note">في وضع «صفحات» يُحسب حجم خط المصحف تلقائيًا بحيث تظهر الصفحة كاملة على الشاشة؛ ويؤثر هذا المتزلج على وضع «تمرير» فقط.</string>
+    <string name="reading_font_preview_sample">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</string>
+    <string name="cd_page_menu_open">فتح قائمة الصفحات</string>
+    <string name="reading_pill_transparency_label">شفافية المؤشرات</string>
+    <string name="reading_pill_transparency_hint">تُطبَّق عند إخفاء شريط النظام أثناء القراءة؛ وتظل المؤشرات مصمتة تمامًا كلما ظهر الشريط.</string>
+    <string name="reading_pill_transparency_percent">%1$d%%</string>
+    <string name="reading_mode_title">وضع القراءة</string>
+    <string name="reading_mode_hint">اقرأ السورة تدفقًا متواصلًا بالنزول، أو قلّب صفحات المصحف يمينًا ويسارًا كالكتاب الورقي.</string>
+    <string name="reading_mode_scroll">تمرير</string>
+    <string name="reading_mode_pages">صفحات</string>
+
     <string name="surah_switch_next_hint">التالي: سورة %1$s</string>
     <string name="surah_switch_prev_hint">السابق: سورة %1$s</string>
 
@@ -112,6 +127,9 @@
     <string name="surah_index_filter_medinan">مدنية (%1$d)</string>
     <string name="surah_index_empty_filter">لا توجد سور مطابقة للفلتر</string>
     <string name="surah_index_empty_query">لا توجد نتائج لـ \"%1$s\"</string>
+    <string name="juz_range_label">%1$s %2$d – %3$s %4$d</string>
+    <string name="cd_bookmark_surah">علامة مرجعية للسورة</string>
+    <string name="cd_unbookmark_surah">إزالة العلامة المرجعية</string>
 
     <string name="roots_title">معجم الجذور القرآنية</string>
     <string name="roots_search_hint">ابحث عن جذر (مثال: كتب، علم، رحم)...</string>
@@ -140,6 +158,40 @@
     <string name="search_masdar_line">جذر: %1$s • وزن: %2$s</string>
     <string name="search_derivative_line">%1$s • وزن: %2$s</string>
     <string name="search_ayah_ref">سورة رقم %1$d • الآية %2$d</string>
+    <string name="search_scope_all">الكل</string>
+    <string name="search_scope_ayahs">الآيات</string>
+    <string name="search_scope_words">الكلمات والمعاني</string>
+    <string name="search_scope_surahs">السور</string>
+    <string name="search_scope_lexicon">المعجم والتأصيل</string>
+    <string name="search_exact_title">انتقال فوري إلى الموضع</string>
+    <string name="search_exact_subtitle">سورة %1$s (رقم %2$d) • آية %3$d</string>
+    <string name="search_recent_title">عمليات البحث الأخيرة</string>
+    <string name="search_recent_clear">مسح الكل</string>
+    <string name="search_explorer_roots">الجذور الأكثر وروداً (%1$d)</string>
+    <string name="search_explorer_prompt">اكتب كلمة أو آية أو اسم سورة أو جذراً للبحث الفوري</string>
+    <string name="search_see_all">عرض الكل (%1$d)</string>
+    <string name="search_section_words">الكلمات والمعاني القرآنية (%1$d)</string>
+    <string name="search_section_surahs">السور المطابقة (%1$d)</string>
+    <string name="search_section_roots">معجم الجذور والتأصيل (%1$d)</string>
+    <string name="search_section_ayat">الآيات الكريمة (%1$d)</string>
+    <string name="search_word_root_label">جذر</string>
+    <string name="search_filter_all_quran">كامل المصحف</string>
+    <string name="search_filter_surah">تحديد سورة...</string>
+    <string name="search_filter_clear">إلغاء</string>
+    <string name="search_no_words">لا توجد كلمات مطابقة</string>
+    <string name="search_no_surahs">لا توجد سور مطابقة</string>
+    <string name="search_hint_unified">ابحث بالآية، السورة، الكلمة، أو الجذر...</string>
+    <string name="quick_jump_title">انتقال سريع</string>
+    <string name="quick_jump_page_label">رقم الصفحة</string>
+    <string name="quick_jump_surah_label">رقم السورة</string>
+    <string name="quick_jump_ayah_label">رقم الآية</string>
+    <string name="quick_jump_go">الانتقال إلى الصفحة</string>
+    <string name="quick_jump_go_surah">الانتقال إلى الآية</string>
+    <string name="quick_jump_cancel">إلغاء</string>
+    <string name="quick_jump_invalid">تتحقق من النطاق</string>
+    <string name="surah_banner_count">%1$s</string>
+    <string name="page_header_juz">الجزء %1$s</string>
+    <string name="page_header_page">الصفحة %1$s</string>
 
     <string name="surah_unnamed">سورة</string>
     <string name="db_missing_title">قاعدة البيانات غير متوفرة</string>
@@ -204,7 +256,17 @@
     <string name="guide_example_label">شاهد قرآني:</string>
     <string name="guide_example_ref">%1$s (الآية: %2$s)</string>
     <string name="guide_refs_title">المراجع والمصادر التوثيقية</string>
-    <string name="guide_refs_body">• مدونة القرآن الكريم اللغوية (Quranic Arabic Corpus - Kais Dukes, University of Leeds)\n• المصحف الإلكتروني لمشروع تنزيل (Tanzil.net Project)\n• لسان العرب لابن منظور الإفريقي\n• الصحاح في اللغة للجوهري\n• معجم مقاييس اللغة لابن فارس\n• مكتبة CAMeL اللغوية لتحليل الصرف العربي</string>
+    <string name="guide_refs_intro">مصادر الملخص الذكي للجذور (المنهجية 2.1) موزعة على الأقسام الدلالية الخمسة. يُوثق الشاهد القرآني بصيغة [اسم السورة: رقم الآية].</string>
+    <string name="guide_refs_hissi_title">الأصل الحسي</string>
+    <string name="guide_refs_hissi_body">• معجم مقاييس اللغة لابن فارس\n• المحكم لابن سيده\n• الصحاح في اللغة للجوهري\n• لسان العرب لابن منظور\n• تاج العروس للزبيدي\n• معجم لين الإنجليزي (Lane)\n• كتاب العين للخليل بن أحمد\n• أساس البلاغة للزمخشري</string>
+    <string name="guide_refs_tatawwur_title">التطور الدلالي</string>
+    <string name="guide_refs_tatawwur_body">• المفردات في غريب القرآن للراغب الأصفهاني\n• تفسير التحرير والتنوير لابن عاشور</string>
+    <string name="guide_refs_tashrih_title">التشريح الصرفي</string>
+    <string name="guide_refs_tashrih_body">• عمدة الحفاظ للسمين الحلبي\n• بصائر ذوي التمييز للفيروزآبادي\n• جداول الصرف (المصادر والمشتقات)\n• مدونة ليدز الصرفية (corpus_leeds) — مدونة القرآن الكريم اللغوية، كايز ديوكس، جامعة ليدز</string>
+    <string name="guide_refs_shabaka_title">الشبكة القرآنية</string>
+    <string name="guide_refs_shabaka_body">• إحصاء جدول word_morphology والآيات\n• نزهة الأعين ونواظر المصاحف لابن الجوزي\n• إصلاح الوجوه والنظائر للدامغاني\n• المصحف الإلكتروني لمشروع تنزيل (Tanzil.net)</string>
+    <string name="guide_refs_furuq_title">الفروق</string>
+    <string name="guide_refs_furuq_body">• الفروق اللغوية لأبي هلال العسكري\n• الفروق المضمنة في المفردات للراغب\n• المتشابه النظمي: درة التنزيل للإسكافي • الغرناطي • السامرائي</string>
 
     <string name="db_setup_title">إدارة قاعدة البيانات</string>
     <string name="db_setup_heading">قاعدة بيانات كلمات القرآن</string>
@@ -285,4 +347,15 @@
     <string name="show_less">عرض أقل</string>
     <string name="no_meanings_copy">لا توجد معانٍ للنسخ</string>
     <string name="no_meanings_share">لا توجد معانٍ للمشاركة</string>
+
+    <!-- App update banner (Play in-app updates) -->
+    <string name="update_available_title">يتوفر إصدار جديد</string>
+    <string name="update_available_message">حدِّث التطبيق للحصول على أحدث المزايا والإصلاحات</string>
+    <string name="update_banner_update_now">تحديث</string>
+    <string name="update_banner_downloading">جارٍ تنزيل التحديث %1$d%%</string>
+    <string name="update_banner_restart_title">اكتمل تنزيل التحديث</string>
+    <string name="update_banner_restart_message">أعد تشغيل التطبيق للبدء بالإصدار الجديد</string>
+    <string name="update_banner_restart_now">أعد التشغيل الآن</string>
+    <string name="update_banner_failed_message">تعثّرت عملية التحديث، سنحاول مرة أخرى لاحقاً</string>
+    <string name="cd_update_banner_close">إخفاء إشعار التحديث</string>
 </resources>

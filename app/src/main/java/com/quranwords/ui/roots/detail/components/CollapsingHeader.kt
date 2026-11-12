@@ -2,8 +2,8 @@ package com.quranwords.ui.roots.detail.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.gestures.rememberScrollableState
+import androidx.compose.foundation.gestures.scrollable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.core.util.MarkdownBlocks
-import com.quranwords.ui.components.FontSizeControls
 import com.quranwords.ui.roots.detail.components.cards.CitedBodyText
 import com.quranwords.ui.roots.detail.util.RootDetailTab
 import kotlin.math.roundToInt
@@ -72,8 +71,9 @@ private const val SUMMARY_COLLAPSED_BLOCKS = 3
  *
  * The AI summary wraps its full natural height (no viewport cap, no dialog);
  * collapse in `onPreScroll`, expand in `onPostScroll` (leftover deltas only,
- * i.e. list at top). Direct `draggable` on the header is the fail-safe for
- * over-viewport summaries.
+ * i.e. list at top). Direct `scrollable` on the header is the fail-safe for
+ * over-viewport summaries (plain `draggable` was replaced: it drops
+ * finger-lift velocity, so header-originated swipes stopped dead).
  *
  * All text is precomputed by the ViewModel ([RootDetailUiState.subtitleText],
  * [RootDetailUiState.aiMetaLine]) — no date cleaning or string building here.
@@ -97,7 +97,6 @@ fun RootDetailHeader(
     fontSize: Float,
     onNavigateBack: () -> Unit,
     onReportClick: () -> Unit,
-    onFontSizeChange: (Float) -> Unit,
     onCopyAiSummary: () -> Unit,
     onShareAiSummary: () -> Unit,
     onTabClick: (Int) -> Unit,
@@ -150,11 +149,6 @@ fun RootDetailHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                FontSizeControls(
-                    fontSize = fontSize,
-                    onFontSizeChange = onFontSizeChange,
-                    modifier = Modifier.size(width = 180.dp, height = 38.dp)
-                )
                 IconButton(
                     onClick = onReportClick,
                     modifier = Modifier.testTag("report_help_button")
@@ -170,8 +164,10 @@ fun RootDetailHeader(
 
         // Collapsible subtitle: full natural height + offset (no layout-write).
         // No viewport cap — the AI summary always shows in full. Direct
-        // draggable drive fixes touch starvation when the summary fills the
-        // screen (plain Columns dispatch no nested scroll).
+        // scrollable drive fixes touch starvation when the summary fills the
+        // screen (plain Columns dispatch no nested scroll); unlike draggable
+        // it also tracks lift velocity, so the fling continues into the list
+        // via onPostFling instead of stopping dead.
         if (hasSubtitle || hasAiMeta) {
             Box(
                 modifier = Modifier
@@ -187,10 +183,10 @@ fun RootDetailHeader(
                     .graphicsLayer {
                         alpha = state.collapseProgress
                     }
-                    .draggable(
+                    .scrollable(
                         orientation = Orientation.Vertical,
                         enabled = !state.isSelectionMode && state.subtitleHeightPx > 0,
-                        state = rememberDraggableState { delta -> state.onHandledDrag(delta) }
+                        state = rememberScrollableState { delta -> state.onHandledDrag(delta) }
                     )
             ) {
                 Column(

@@ -45,3 +45,24 @@
 ```
 
 Manual: 5 tabs + counts, header collapse/expand fling, ayat paginate to total, copy/share all 5 paths + report, word→WordAyat, occurrence→SurahDetail, rotation + font-scale header, back-nav restores.
+
+---
+
+## Unified Search + Surah Chrome — Full Plan v2 (2026-11-09, Decision #30)
+
+> Execution plan of record: `/home/ahmed/.opencode/plan/FULL_PLAN_V2.md`
+> (single source; this section is the repo mirror).
+
+- [x] Phase 1 Domain: `VerseReferenceParser` (Arabic/Eastern digits + Longest-Prefix)
+  + `SearchResult(words/surahs/exactReference)` + `SearchUseCase` + `QuranRepository`/`UserPreferencesRepository` extension.
+- [x] Phase 2 Data: MRU ordered via `stringPreferencesKey` (never StringSet, cap 10)
+  + `SearchQueryBuilder` + `SearchDao(@RawQuery, SimpleSQLiteQuery, bindArgs)` + searchWords/getTopRoots/getSurahForPage.
+- [x] Phase 3 Presentation: `SearchViewModel` 200ms debounce + parallel + 5 scopes + sub-scopes + surah filter + bookmarkedAyat combine.
+- [x] Phase 4 UI: `SearchScreen` decomposed to 7 files <300 lines (419 → 222) + Scopes/Chips/Explorer/AllSections/Cards/Banner/FilterBar/Loading/Error/Lexicon+Words bodies; SurahIndex interleaved Juz headers + QuickJump; reader `SurahCardBanner` + `PageHeaderRow` (listOffset = 1 pinned, banner always index 0); EN/AR strings.
+- [x] Phase 5 Verification: `VerseReferenceParserTest` (14 cases) + `SearchViewModelTest` ctor/debounce update + Fake fixtures + stale `getAyatBySurahPaged` removal. **User runs** `./gradlew ktlintCheck detekt lintDebug testDebugUnitTest assembleDebug`.
+
+## Limitations / Debt (follow-up)
+
+1. Word search returns minimal `WordToken` (no location joins) — card click records recent only.
+2. Room `SearchDao` coexists with raw SQLite path until full Room cutover (AGENTS §8.1 debt).
+3. Search ALL duplicates ayat query via UseCase (1 extra round-trip, acceptable for 20-row page).

@@ -68,3 +68,35 @@ fun buildBlockIndexOfAyah(groups: List<AyahFlowGroup>, listOffset: Int): Map<Int
             group.ayat.forEach { ayah -> put(ayah.ayah, lazyIndex) }
         }
     }
+
+/**
+ * Chrome visibility flags for one flow group inside its surah — precomputed
+ * by [mushafPageChrome] and shared by the vertical list renderer
+ * ([MushafPageContent]) and the book-pages pager, so both render
+ * byte-identical chrome.
+ */
+data class MushafPageChromeFlags(
+    /** Surah | juz | page header row above the block. */
+    val showHeader: Boolean,
+    /** Whether this group opens a new hizb (surfaces in the page header). */
+    val isHizbStart: Boolean,
+    /** Page-number separator below the block. */
+    val showPageNumber: Boolean
+)
+
+/**
+ * Pure chrome-flag resolution for [group] within the full [ayat] list:
+ * the page-number boundary is detected from the ayah preceding the group's
+ * first ayah, and a hizb start surfaces in the page header (the standalone
+ * juz/hizb separator was removed — juz/hizb live in the header line).
+ */
+fun mushafPageChrome(group: AyahFlowGroup, ayat: List<Ayah>): MushafPageChromeFlags {
+    val first = group.ayat.first()
+    val prevAyah = ayat.getOrNull(group.firstAyahIndex - 1)
+    val isPageStart = prevAyah?.pageNumber != first.pageNumber
+    return MushafPageChromeFlags(
+        showHeader = first.pageNumber != null,
+        isHizbStart = prevAyah?.hizb != first.hizb,
+        showPageNumber = isPageStart && first.pageNumber != null
+    )
+}

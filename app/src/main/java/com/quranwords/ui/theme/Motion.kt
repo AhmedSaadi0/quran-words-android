@@ -71,6 +71,22 @@ object AppMotion {
         animationSpec = tween(DurationMedium, easing = EasingStandard)
     ) + fadeOut(animationSpec = tween(180))
 
+    /**
+     * Horizontal page-turn slide (same motion family as the vertical one,
+     * rotated to the X axis). Offsets are RAW pixels, not layout-direction
+     * aware: callers resolve RTL themselves in [RouteTransitions]
+     * (`fromLeft`/`toLeft` are physical sides).
+     */
+    fun horizontalEnter(fromLeft: Boolean) = slideInHorizontally(
+        initialOffsetX = { if (fromLeft) -it else it },
+        animationSpec = tween(DurationMedium, easing = EasingStandard)
+    ) + fadeIn(animationSpec = tween(DurationMedium, easing = EasingStandard))
+
+    fun horizontalExit(toLeft: Boolean) = slideOutHorizontally(
+        targetOffsetX = { if (toLeft) -it else it },
+        animationSpec = tween(DurationMedium, easing = EasingStandard)
+    ) + fadeOut(animationSpec = tween(180))
+
     // Stagger for list appearance like Telegram
     const val StaggerDelay = 30
     const val StaggerDelayStep = 20L

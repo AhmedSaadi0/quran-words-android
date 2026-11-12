@@ -1,7 +1,6 @@
 package com.quranwords.ui.surah.detail.components
 
 import androidx.compose.animation.core.animate
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -13,9 +12,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import com.quranwords.core.util.ReadingModePreference
 import com.quranwords.ui.theme.AppMotion
 import kotlin.math.abs
 
@@ -38,24 +40,26 @@ private const val PullResistance = 0.4f
 /**
  * The single nested-scroll connection of the surah reading screen.
  *
- * Two connections used to share this job (one for the collapsing header, one
- * for the adjacent-surah pull), and the framework always offers a reverse drag
- * to the header first — so cancelling a pull expanded the header while the pull
- * stayed frozen. Merging them makes the priority explicit and order-proof:
+ * Chrome show/hide no longer lives here — the reading top bar is a persistent
+ * overlay driven by the screen's own scroll observer — so this connection has
+ * one job: the adjacent-surah rubber-band pull with explicit priority.
  *
- * `onPreScroll` phases, in order:
+ * `onPreScroll` phase:
  * 1. **Cancel a live pull** (touch only): unwind `accumulated` 1:1, taking only
  *    `min(|delta|, |accumulated|)`; the remainder keeps flowing so cancelling
- *    never locks the view.
- * 2. **Quick-return header**: collapse on scroll down, reappear on scroll up
- *    (frozen while selection is active) — same physics as before.
- * 3. Anything left reaches the list.
+ *    never locks the view. Anything left reaches the list untouched.
  *
  * `onPostScroll` only observes the *unconsumed* remainder at a real edge
  * (`!canScrollForward` → next surah, `!canScrollBackward` → previous) and never
  * consumes, so the reading position is never hijacked mid-list. The switch
  * itself fires on **release** in [onPreFling], never mid-drag; fling leftovers
  * are ignored, so momentum never auto-advances.
+ *
+ * The pull AXIS follows [ReadingModePreference]: vertical (up/down past the
+ * list edges, default) or horizontal book-style flip at the same edges, with
+ * the raw direction mirrored by the layout direction. Internally every delta
+ * is normalized to "negative = toward the next surah", so gates, thresholds
+ * and the hint badge are axis-agnostic; only the visual mapping differs.
  *
  * Requires overscroll to be disabled for the list (see `SurahDetailScreen`):
  * the Android 12+ stretch effect sits in front of parent connections and eats
@@ -64,21 +68,26 @@ private const val PullResistance = 0.4f
 class SurahReadingScrollConnection internal constructor(
     private val canScrollForward: () -> Boolean,
     private val canScrollBackward: () -> Boolean,
-    private val collapseState: SurahCollapsingHeaderState,
-    private val isSelectionActive: () -> Boolean,
     private val canSwitchDown: () -> Boolean,
     private val canSwitchUp: () -> Boolean,
     private val onSwitch: (forward: Boolean) -> Unit,
     private val thresholdPx: Float,
     private val maxPullPx: Float,
-    private val hintMinPx: Float
+    private val hintMinPx: Float,
+    /** Active pull axis: false = vertical pull, true = horizontal book flip. */
+    private val horizontal: () -> Boolean,
+    /** Layout direction, which mirrors the horizontal swipe directions. */
+    private val rtl: () -> Boolean
 ) : NestedScrollConnection {
 
     /** Visual pull applied by the screen; read in the draw phase only. */
     var pullPx by mutableFloatStateOf(0f)
         private set
 
-    /** 0 = hidden, -1 = next-surah badge at the bottom, +1 = previous at the top. */
+    /**
+     * 0 = hidden, -1 = next-surah badge, +1 = previous-surah badge. Sign only —
+     * the badge's EDGE (bottom/top vs end/start) is the screen's choice per axis.
+     */
     var hintDirection by mutableIntStateOf(0)
         private set
 
@@ -90,9 +99,27 @@ class SurahReadingScrollConnection internal constructor(
 
     private val maxRawPx: Float = maxPullPx * 4f
 
+    /**
+     * Normalized axis delta from a raw [offset]: negative means "toward the
+     * next surah" on the ACTIVE axis. Vertical: up is next. Horizontal RTL
+     * (mushaf convention): right is next; LTR mirrors it.
+     */
+    private fun axisDelta(offset: Offset): Float = when {
+        !horizontal() -> offset.y
+        rtl() -> -offset.x
+        else -> offset.x
+    }
+
+    /** Inverse of [axisDelta]: reports a normalized consumption on the real axis. */
+    private fun consumeOnAxis(normalized: Float): Offset = when {
+        !horizontal() -> Offset(0f, normalized)
+        rtl() -> Offset(-normalized, 0f)
+        else -> Offset(normalized, 0f)
+    }
+
     override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
         if (switched) return Offset.Zero
-        var remaining = available.y
+        val remaining = axisDelta(available)
         if (remaining == 0f) return Offset.Zero
         var consumed = 0f
 
@@ -105,40 +132,19 @@ class SurahReadingScrollConnection internal constructor(
                 val unwound = if (remaining > 0f) take else -take
                 accumulated += unwound
                 consumed += unwound
-                remaining -= unwound
                 syncVisual()
-                if (remaining == 0f) return Offset(0f, consumed)
+                if (remaining - unwound == 0f) return consumeOnAxis(consumed)
             }
         }
 
-        // Phase 2 — quick-return header (all sources, as before).
-        if (!isSelectionActive()) {
-            consumed += consumeCollapse(remaining)
-        }
-        return Offset(0f, consumed)
-    }
-
-    /**
-     * Collapses the header on scroll down, re-expands it on scroll up.
-     * Returns the consumed Y so the caller can keep forwarding the remainder.
-     */
-    private fun consumeCollapse(delta: Float): Float {
-        val state = collapseState
-        if (state.collapsibleHeightPx <= 0) return 0f
-        if ((delta < 0f && state.headerOffsetPx > -state.collapsibleHeightPx) ||
-            (delta > 0f && state.headerOffsetPx < 0f)
-        ) {
-            val prevOffset = state.headerOffsetPx
-            state.headerOffsetPx = (state.headerOffsetPx + delta)
-                .coerceIn(-state.collapsibleHeightPx.toFloat(), 0f)
-            return state.headerOffsetPx - prevOffset
-        }
-        return 0f
+        // No header phase remains: reading chrome is a persistent overlay,
+        // its visibility driven by the screen's scroll observer — never here.
+        return consumeOnAxis(consumed)
     }
 
     override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
         if (source != NestedScrollSource.UserInput || switched) return Offset.Zero
-        val delta = available.y
+        val delta = axisDelta(available)
         if (delta == 0f) return Offset.Zero
 
         val pullNext = delta < 0f && !canScrollForward() && canSwitchDown()
@@ -163,7 +169,7 @@ class SurahReadingScrollConnection internal constructor(
         if (abs(from) >= thresholdPx && allowed) {
             switched = true
             // pullPx stays frozen: the outgoing screen keeps its offset while
-            // the vertical slide takes over.
+            // the axis slide takes over.
             onSwitch(forward)
         } else {
             val fromPx = pullPx
@@ -203,37 +209,42 @@ class SurahReadingScrollConnection internal constructor(
 /**
  * Remembers the screen's scroll connection.
  *
- * Only [listState] and [collapseState] are keys: the instance must survive
- * every gate flip (pagination, selection, sheet) so a drag in progress can
- * never lose its accumulated travel. Gates and the callback are read through
- * [rememberUpdatedState], so they are always the latest without recreation.
+ * No keys: the instance must survive every gate flip so a drag in progress can
+ * never lose its accumulated travel. The scroll-edge gates are plain lambdas
+ * (list state in SCROLL mode, pager state in PAGES mode) and everything else
+ * is read through [rememberUpdatedState], so the connection is always fed the
+ * latest values without recreation.
  */
 @Composable
 fun rememberSurahReadingScroll(
-    listState: LazyListState,
-    collapseState: SurahCollapsingHeaderState,
-    isSelectionActive: Boolean,
+    canScrollForward: () -> Boolean,
+    canScrollBackward: () -> Boolean,
+    readingMode: Int,
     canSwitchDown: Boolean,
     canSwitchUp: Boolean,
     onSwitch: (forward: Boolean) -> Unit
 ): SurahReadingScrollConnection {
     val density: Density = LocalDensity.current
-    val selectionState = rememberUpdatedState(isSelectionActive)
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val horizontalState = rememberUpdatedState(readingMode == ReadingModePreference.PAGES)
+    val rtlState = rememberUpdatedState(isRtl)
+    val canScrollForwardState = rememberUpdatedState(canScrollForward)
+    val canScrollBackwardState = rememberUpdatedState(canScrollBackward)
     val canSwitchDownState = rememberUpdatedState(canSwitchDown)
     val canSwitchUpState = rememberUpdatedState(canSwitchUp)
     val onSwitchState = rememberUpdatedState(onSwitch)
-    return remember(listState, collapseState) {
+    return remember {
         SurahReadingScrollConnection(
-            canScrollForward = { listState.canScrollForward },
-            canScrollBackward = { listState.canScrollBackward },
-            collapseState = collapseState,
-            isSelectionActive = { selectionState.value },
+            canScrollForward = { canScrollForwardState.value() },
+            canScrollBackward = { canScrollBackwardState.value() },
             canSwitchDown = { canSwitchDownState.value },
             canSwitchUp = { canSwitchUpState.value },
             onSwitch = { forward -> onSwitchState.value(forward) },
             thresholdPx = with(density) { SwitchThreshold.toPx() },
             maxPullPx = with(density) { MaxPull.toPx() },
-            hintMinPx = with(density) { HintMin.toPx() }
+            hintMinPx = with(density) { HintMin.toPx() },
+            horizontal = { horizontalState.value },
+            rtl = { rtlState.value }
         )
     }
 }

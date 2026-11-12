@@ -8,6 +8,7 @@ import com.quranwords.data.local.dao.AyahDao
 import com.quranwords.data.local.dao.DerivativeDao
 import com.quranwords.data.local.dao.MasdarDao
 import com.quranwords.data.local.dao.RootDao
+import com.quranwords.data.local.dao.SearchDao
 import com.quranwords.data.local.dao.SurahDao
 import com.quranwords.data.local.dao.WordDao
 import com.quranwords.data.local.entities.AyahEntity
@@ -46,6 +47,7 @@ abstract class QuranDatabase : RoomDatabase() {
     abstract fun rootDao(): RootDao
     abstract fun masdarDao(): MasdarDao
     abstract fun derivativeDao(): DerivativeDao
+    abstract fun searchDao(): SearchDao
 
     companion object {
         @Volatile

@@ -94,4 +94,7 @@ class SurahIndexViewModel @Inject constructor(
     private fun toggleSurahBookmark(surahId: Int) {
         viewModelScope.launch { preferences.toggleSurahBookmark(surahId) }
     }
+
+    /** QuickJump page resolution — never silently falls back; null means unknown page. */
+    suspend fun surahForPage(page: Int): Pair<Int, Int>? = repository.getSurahForPage(page)
 }
