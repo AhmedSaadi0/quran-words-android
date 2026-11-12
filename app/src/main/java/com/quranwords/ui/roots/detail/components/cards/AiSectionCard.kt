@@ -45,7 +45,9 @@ fun AiSectionCard(
     expanded: Boolean,
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
-    testTagSuffix: String
+    testTagSuffix: String,
+    /** Optional custom body (summary cards with meta/actions). Falls back to the standard cited body. */
+    bodyContent: (@Composable () -> Unit)? = null
 ) {
     Card(
         modifier = modifier
@@ -75,13 +77,18 @@ fun AiSectionCard(
                     animationSpec = tween(AppMotion.DurationShort, easing = AppMotion.EasingStandard)
                 )
             ) {
-                AiSectionBody(
-                    body = body,
-                    refs = refs,
-                    refsLabel = refsLabel,
-                    fontSize = fontSize,
-                    testTagSuffix = testTagSuffix
-                )
+                val content = bodyContent
+                if (content != null) {
+                    content()
+                } else {
+                    AiSectionBody(
+                        body = body,
+                        refs = refs,
+                        refsLabel = refsLabel,
+                        fontSize = fontSize,
+                        testTagSuffix = testTagSuffix
+                    )
+                }
             }
         }
     }

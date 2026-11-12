@@ -233,8 +233,9 @@ fun RootSearchCard(root: RootItem, onClick: () -> Unit, modifier: Modifier = Mod
 }
 
 @Composable
-fun MasdarSearchCard(masdar: MasdarModel, modifier: Modifier = Modifier) {
+fun MasdarSearchCard(masdar: MasdarModel, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
+        onClick = onClick,
         modifier = modifier.fillMaxWidth().testTag("masdar_result_${masdar.id}"),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
@@ -252,8 +253,9 @@ fun MasdarSearchCard(masdar: MasdarModel, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun DerivativeSearchCard(derivative: DerivativeModel, modifier: Modifier = Modifier) {
+fun DerivativeSearchCard(derivative: DerivativeModel, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
+        onClick = onClick,
         modifier = modifier.fillMaxWidth().testTag("derivative_result_${derivative.id}"),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),

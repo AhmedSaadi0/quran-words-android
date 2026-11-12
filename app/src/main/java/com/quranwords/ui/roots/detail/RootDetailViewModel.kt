@@ -376,7 +376,7 @@ class RootDetailViewModel @Inject constructor(
                 !detail?.aiGeneratedAt.isNullOrBlank(),
             aiSummaryRefs = detail?.aiExtended?.summaryRefs.orEmpty(),
             tabs = listOf(
-                RootDetailTabUi(RootDetailTab.AI_SUMMARY, detail?.aiExtended?.sections()?.count { it.isNotBlank() } ?: 0),
+                RootDetailTabUi(RootDetailTab.AI_SUMMARY, (detail?.aiExtended?.sections()?.count { it.isNotBlank() } ?: 0) + (if (!subtitle.isNullOrBlank()) 1 else 0)),
                 RootDetailTabUi(RootDetailTab.MEANINGS, detail?.meanings?.size ?: 0),
                 RootDetailTabUi(RootDetailTab.AYAT, detail?.item?.occurrencesCount ?: 0),
                 RootDetailTabUi(RootDetailTab.WORDS, words.size),
@@ -453,6 +453,7 @@ class RootDetailViewModel @Inject constructor(
             RootDetailEvent.Retry -> currentRootIdForOcc?.let { loadRootDetail(it) }
             // Platform events (copy/share/report markdown) are handled by the Route.
             RootDetailEvent.CopyAiSummary, RootDetailEvent.ShareAiSummary,
+            is RootDetailEvent.CopyAiSection, RootDetailEvent.CopyAllAiSections,
             RootDetailEvent.CopyAllMeanings, RootDetailEvent.ShareAllMeanings,
             RootDetailEvent.CopySelectedMeanings, RootDetailEvent.ShareSelectedMeanings,
             RootDetailEvent.CopySelectedWords, RootDetailEvent.ShareSelectedWords,

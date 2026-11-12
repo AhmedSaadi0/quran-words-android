@@ -175,6 +175,7 @@
     <string name="search_section_roots">معجم الجذور والتأصيل (%1$d)</string>
     <string name="search_section_ayat">الآيات الكريمة (%1$d)</string>
     <string name="search_word_root_label">جذر</string>
+    <string name="search_item_no_root">لا يوجد جذر محفوظ لهذا العنصر في قاعدة البيانات</string>
     <string name="search_filter_all_quran">كامل المصحف</string>
     <string name="search_filter_surah">تحديد سورة...</string>
     <string name="search_filter_clear">إلغاء</string>
@@ -213,7 +214,8 @@
     <string name="cd_unselected">غير محدد</string>
     <string name="tab_meanings">معاجم</string>
     <string name="tab_ai_summary">الملخص الذكي</string>
-    <string name="ai_section_hissi">الأصل الحسي</string>
+    <string name="ai_section_hissi">المعنى الأصلي</string>
+    <string name="ai_section_summary">الملخص الذكي</string>
     <string name="ai_section_tatawwur">التطور الدلالي</string>
     <string name="ai_section_tashrih">التشريح الصرفي</string>
     <string name="ai_section_shabaka">الشبكة القرآنية</string>
@@ -257,7 +259,7 @@
     <string name="guide_example_ref">%1$s (الآية: %2$s)</string>
     <string name="guide_refs_title">المراجع والمصادر التوثيقية</string>
     <string name="guide_refs_intro">مصادر الملخص الذكي للجذور (المنهجية 2.1) موزعة على الأقسام الدلالية الخمسة. يُوثق الشاهد القرآني بصيغة [اسم السورة: رقم الآية].</string>
-    <string name="guide_refs_hissi_title">الأصل الحسي</string>
+    <string name="guide_refs_hissi_title">المعنى الأصلي</string>
     <string name="guide_refs_hissi_body">• معجم مقاييس اللغة لابن فارس\n• المحكم لابن سيده\n• الصحاح في اللغة للجوهري\n• لسان العرب لابن منظور\n• تاج العروس للزبيدي\n• معجم لين الإنجليزي (Lane)\n• كتاب العين للخليل بن أحمد\n• أساس البلاغة للزمخشري</string>
     <string name="guide_refs_tatawwur_title">التطور الدلالي</string>
     <string name="guide_refs_tatawwur_body">• المفردات في غريب القرآن للراغب الأصفهاني\n• تفسير التحرير والتنوير لابن عاشور</string>
@@ -341,10 +343,12 @@
     <string name="copy_meanings">نسخ المعاني</string>
     <string name="share_meanings">مشاركة المعاني</string>
     <string name="ai_summary_copied">تم نسخ الملخص الذكي</string>
+    <string name="copied_text">تم النسخ</string>
+    <string name="ai_copy_all">نسخ الكل</string>
+    <string name="cd_copy_all_ai">نسخ الملخص الذكي كاملًا</string>
     <string name="share_ai_summary">مشاركة الملخص</string>
     <string name="cd_copy_ai_summary">نسخ الملخص الذكي</string>
     <string name="read_more">عرض المزيد</string>
-    <string name="show_less">عرض أقل</string>
     <string name="no_meanings_copy">لا توجد معانٍ للنسخ</string>
     <string name="no_meanings_share">لا توجد معانٍ للمشاركة</string>
 

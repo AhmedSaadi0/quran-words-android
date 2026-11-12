@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.core.util.cleanAiDate
+import com.quranwords.core.util.formatAiMetaLine
 import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.domain.model.Ayah
 import com.quranwords.domain.model.WordToken
@@ -53,6 +53,10 @@ import com.quranwords.ui.roots.detail.components.cards.CitedBodyText
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.ShapeMedium
 import com.quranwords.ui.theme.ShapeSmall
+
+/** Expanded-tags list keys for the sheet's foldable AI cards (Decision #33). */
+private const val SECTION_HISSI = "hissi"
+private const val SECTION_SUMMARY = "summary"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -182,27 +186,79 @@ fun MorphologyBottomSheet(
                 }
             }
 
-            // AI Summary Card - stateless, data supplied by ViewModel (Clean Arch §10.3)
-            AiSummarySection(
-                word = word,
-                aiSummary = aiSummary,
-                summaryRefs = aiExtended?.summaryRefs.orEmpty(),
-                aiModel = aiModel,
-                aiDate = aiGeneratedAt,
-                isLoading = isAiLoading,
-                fontSize = fontSize
+            // Extended-section foldable cards (Decision #33): الأصل الحسي sits
+            // first and is the only card opened by default; the smart summary
+            // follows as a collapsed card; the rest stay closed. Single
+            // expanded-tags list (resets per word) instead of one remember per
+            // card, so blank-filtering can't shift saved state.
+            var expandedSections by rememberSaveable(word.rootId) {
+                mutableStateOf(listOf(SECTION_HISSI))
+            }
+
+            // Model/date line shown at the end of every section card,
+            // matching the AI tab cards (Decision #35).
+            val refsLabel = stringResource(R.string.ai_refs_label)
+            val sectionMetaLine = formatAiMetaLine(aiModel, aiGeneratedAt)
+
+            if (!isAiLoading && aiExtended != null && aiExtended.hissi.isNotBlank()) {
+                val expanded = SECTION_HISSI in expandedSections
+                AiSectionCard(
+                    title = stringResource(R.string.ai_section_hissi),
+                    body = "",
+                    refs = emptyList(),
+                    refsLabel = refsLabel,
+                    fontSize = fontSize,
+                    expanded = expanded,
+                    onToggle = {
+                        expandedSections = if (expanded) expandedSections - SECTION_HISSI
+                        else expandedSections + SECTION_HISSI
+                    },
+                    testTagSuffix = "morpho_hissi",
+                    bodyContent = {
+                        SheetSectionBody(
+                            body = aiExtended.hissi.text?.trim().orEmpty(),
+                            refs = aiExtended.hissi.refs,
+                            refsLabel = refsLabel,
+                            fontSize = fontSize,
+                            testTagPrefix = "ai_ref_morpho_hissi",
+                            metaLine = sectionMetaLine
+                        )
+                    }
+                )
+            }
+
+            // Smart summary card — collapsed by default; force-opened while
+            // loading so the spinner shows where the text will land.
+            val summaryExpanded = isAiLoading || SECTION_SUMMARY in expandedSections
+            AiSectionCard(
+                title = stringResource(R.string.morpho_ai_title),
+                body = "",
+                refs = emptyList(),
+                refsLabel = stringResource(R.string.ai_refs_label),
+                fontSize = fontSize,
+                expanded = summaryExpanded,
+                onToggle = {
+                    expandedSections = if (summaryExpanded) expandedSections - SECTION_SUMMARY
+                    else expandedSections + SECTION_SUMMARY
+                },
+                testTagSuffix = "morpho_summary",
+                bodyContent = {
+                    SummaryBody(
+                        word = word,
+                        aiSummary = aiSummary,
+                        summaryRefs = aiExtended?.summaryRefs.orEmpty(),
+                        aiModel = aiModel,
+                        aiDate = aiGeneratedAt,
+                        isLoading = isAiLoading,
+                        fontSize = fontSize
+                    )
+                }
             )
 
-            // Extended-section foldable cards below the summary — same order
-            // as the root detail tab (فروق، شبكة، حسي، تطور، تشريح).
-            // Single expanded-tags list (resets per word) instead of one
-            // remember per card, so blank-filtering can't shift saved state.
+            // Remaining sections below the summary — same order as the root
+            // detail tab (تطور، فروق، شبكة، تشريح), all collapsed by default.
             if (!isAiLoading && aiExtended != null) {
-                var expandedSections by rememberSaveable(word.rootId) {
-                    mutableStateOf(emptyList<String>())
-                }
                 val sections = listOf(
-                    Triple(aiExtended.hissi, R.string.ai_section_hissi, "hissi"),
                     Triple(aiExtended.tatawwur, R.string.ai_section_tatawwur, "tatawwur"),
                     Triple(aiExtended.furuq, R.string.ai_section_furuq, "furuq"),
                     Triple(aiExtended.shabaka, R.string.ai_section_shabaka, "shabaka"),
@@ -212,16 +268,26 @@ fun MorphologyBottomSheet(
                     val expanded = tag in expandedSections
                     AiSectionCard(
                         title = stringResource(titleRes),
-                        body = section.text?.trim().orEmpty(),
-                        refs = section.refs,
-                        refsLabel = stringResource(R.string.ai_refs_label),
+                        body = "",
+                        refs = emptyList(),
+                        refsLabel = refsLabel,
                         fontSize = fontSize,
                         expanded = expanded,
                         onToggle = {
                             expandedSections = if (expanded) expandedSections - tag
                             else expandedSections + tag
                         },
-                        testTagSuffix = "morpho_$tag"
+                        testTagSuffix = "morpho_$tag",
+                        bodyContent = {
+                            SheetSectionBody(
+                                body = section.text?.trim().orEmpty(),
+                                refs = section.refs,
+                                refsLabel = refsLabel,
+                                fontSize = fontSize,
+                                testTagPrefix = "ai_ref_morpho_$tag",
+                                metaLine = sectionMetaLine
+                            )
+                        }
                     )
                 }
             }
@@ -232,7 +298,7 @@ fun MorphologyBottomSheet(
 }
 
 @Composable
-private fun AiSummarySection(
+private fun SummaryBody(
     word: WordToken,
     aiSummary: String?,
     summaryRefs: List<String>,
@@ -242,22 +308,9 @@ private fun AiSummarySection(
     fontSize: Float
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 90.dp)
-            .clip(ShapeMedium)
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, ShapeMedium)
-            .padding(14.dp),
+        modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Text(
-            text = stringResource(R.string.morpho_ai_title),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-
         when {
             isLoading -> {
                 Box(
@@ -331,6 +384,40 @@ private fun AiSummarySection(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+        }
+    }
+}
+
+/**
+ * Section-card body for the sheet: cited text + the model/date line at the
+ * end, mirroring the AI tab cards (Decision #35).
+ */
+@Composable
+private fun SheetSectionBody(
+    body: String,
+    refs: List<String>,
+    refsLabel: String,
+    fontSize: Float,
+    testTagPrefix: String,
+    metaLine: String?
+) {
+    Column(
+        modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        CitedBodyText(
+            body = body,
+            refs = refs,
+            refsLabel = refsLabel,
+            fontSize = fontSize,
+            testTagPrefix = testTagPrefix
+        )
+        if (!metaLine.isNullOrBlank()) {
+            Text(
+                text = metaLine,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }

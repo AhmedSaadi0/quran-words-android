@@ -2,12 +2,16 @@ package com.quranwords.ui.search
 
 import com.quranwords.domain.model.SearchResult
 
-/** Result tabs in pager order (index == ordinal) — replaces magic ints 0..3. */
+/**
+ * Pagination keys in pager order (index == ordinal). WORDS appended last —
+ * keys for the four legacy tabs stay stable; not a UI tab list.
+ */
 enum class SearchTab {
     ROOTS,
     MASADIR,
     DERIVATIVES,
-    AYAT
+    AYAT,
+    WORDS
 }
 
 /**

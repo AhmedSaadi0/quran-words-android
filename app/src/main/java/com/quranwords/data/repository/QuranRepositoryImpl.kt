@@ -573,7 +573,8 @@ class QuranRepositoryImpl @Inject constructor(
                                     masdarAr = it.getString(2) ?: "",
                                     pattern = it.getString(3),
                                     isAttested = it.getInt(4) == 1,
-                                    source = it.getString(5)
+                                    source = it.getString(5),
+                                    rootId = rootId
                                 )
                             )
                         }
@@ -594,7 +595,8 @@ class QuranRepositoryImpl @Inject constructor(
                                     pattern = it.getString(2) ?: "",
                                     derivativeType = it.getString(3) ?: "",
                                     isQuranic = it.getInt(4) == 1,
-                                    source = it.getString(5)
+                                    source = it.getString(5),
+                                    rootId = rootId
                                 )
                             )
                         }
@@ -1020,7 +1022,7 @@ class QuranRepositoryImpl @Inject constructor(
         val list = mutableListOf<MasdarModel>()
         try {
             val cursor = db.rawQuery(
-                "SELECT id, form, masdar_ar, pattern, is_attested, source FROM masadir WHERE masdar_plain LIKE ? OR masdar_ar LIKE ? LIMIT ? OFFSET ?",
+                "SELECT id, form, masdar_ar, pattern, is_attested, source, root_id FROM masadir WHERE masdar_plain LIKE ? OR masdar_ar LIKE ? LIMIT ? OFFSET ?",
                 arrayOf("%$normalized%", "%$trimmed%", limit.toString(), offset.toString())
             )
             cursor.use {
@@ -1032,7 +1034,8 @@ class QuranRepositoryImpl @Inject constructor(
                             masdarAr = it.getString(2) ?: "",
                             pattern = it.getString(3),
                             isAttested = it.getInt(4) == 1,
-                            source = it.getString(5)
+                            source = it.getString(5),
+                            rootId = if (it.isNull(6)) null else it.getInt(6)
                         )
                     )
                 }
@@ -1051,7 +1054,7 @@ class QuranRepositoryImpl @Inject constructor(
         val list = mutableListOf<DerivativeModel>()
         try {
             val cursor = db.rawQuery(
-                "SELECT id, form_ar, pattern, derivative_type, is_quranic, source FROM derivatives WHERE form_plain LIKE ? OR form_ar LIKE ? LIMIT ? OFFSET ?",
+                "SELECT id, form_ar, pattern, derivative_type, is_quranic, source, root_id FROM derivatives WHERE form_plain LIKE ? OR form_ar LIKE ? LIMIT ? OFFSET ?",
                 arrayOf("%$normalized%", "%$trimmed%", limit.toString(), offset.toString())
             )
             cursor.use {
@@ -1063,7 +1066,8 @@ class QuranRepositoryImpl @Inject constructor(
                             pattern = it.getString(2) ?: "",
                             derivativeType = it.getString(3) ?: "",
                             isQuranic = it.getInt(4) == 1,
-                            source = it.getString(5)
+                            source = it.getString(5),
+                            rootId = if (it.isNull(6)) null else it.getInt(6)
                         )
                     )
                 }
@@ -1134,7 +1138,11 @@ class QuranRepositoryImpl @Inject constructor(
                             position = 0,
                             text = sanitizeUthmanicText(c.getString(1) ?: ""),
                             textClean = sanitizeUthmanicText(c.getString(2) ?: (c.getString(3) ?: "")),
-                            translation = c.getString(4) ?: ""
+                            translation = c.getString(4) ?: "",
+                            // The root probe (wordsSearchQuery): words without a
+                            // morphology row stay null and the UI explains it.
+                            rootId = if (c.isNull(5)) null else c.getInt(5),
+                            rootText = if (c.isNull(6)) null else c.getString(6)
                         )
                     )
                 }

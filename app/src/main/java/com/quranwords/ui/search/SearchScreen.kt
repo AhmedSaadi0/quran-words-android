@@ -22,12 +22,16 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -35,6 +39,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
+import com.quranwords.domain.model.WordToken
 import com.quranwords.ui.search.components.AyahSurahFilterBar
 import com.quranwords.ui.search.components.AyahSearchCard
 import com.quranwords.ui.search.components.EmptySearchNotice
@@ -48,6 +53,7 @@ import com.quranwords.ui.search.components.SearchWordsBody
 import com.quranwords.ui.search.components.SectionHeader
 import com.quranwords.ui.search.components.SurahSearchCard
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -63,6 +69,23 @@ fun SearchScreen(
 ) {
     val listState = rememberLazyListState()
     val searchError = uiState.error
+    // Every result opens something: surahs/ayat → the ayah, roots/masadir/
+    // derivatives/words → the root detail. Items with no root recorded still
+    // get an explicit response (never a silent no-op click).
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val noRootMessage = stringResource(R.string.search_item_no_root)
+    val onRootOpened: (Int?) -> Unit = { rootId ->
+        if (rootId != null) {
+            onNavigateToRootDetail(rootId)
+        } else {
+            scope.launch { snackbarHostState.showSnackbar(noRootMessage) }
+        }
+    }
+    val onWordSelected: (WordToken) -> Unit = { word ->
+        onRecordRecent(uiState.query)
+        onRootOpened(word.rootId)
+    }
 
     LaunchedEffect(listState, uiState.scope) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1 }
@@ -71,6 +94,7 @@ fun SearchScreen(
                 if (lastIdx == -1) return@collect
                 val tab = when (uiState.scope) {
                     SearchScope.AYAHS -> SearchTab.AYAT
+                    SearchScope.WORDS -> SearchTab.WORDS
                     SearchScope.LEXICON -> when (uiState.lexiconSubScope) {
                         LexiconSubScope.ROOTS -> SearchTab.ROOTS
                         LexiconSubScope.MASADIR -> SearchTab.MASADIR
@@ -95,6 +119,7 @@ fun SearchScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { innerPadding ->
@@ -143,7 +168,9 @@ fun SearchScreen(
                     onNavigateToRootDetail = onNavigateToRootDetail,
                     onNavigateToSurahDetail = onNavigateToSurahDetail,
                     onToggleAyahBookmark = onToggleAyahBookmark,
-                    onRecordRecent = onRecordRecent
+                    onRecordRecent = onRecordRecent,
+                    onSelectWord = onWordSelected,
+                    onOpenRoot = onRootOpened
                 )
             }
         }
@@ -159,7 +186,9 @@ private fun SearchBody(
     onNavigateToRootDetail: (Int) -> Unit,
     onNavigateToSurahDetail: (Int, Int) -> Unit,
     onToggleAyahBookmark: (Int, Int) -> Unit,
-    onRecordRecent: (String) -> Unit
+    onRecordRecent: (String) -> Unit,
+    onSelectWord: (WordToken) -> Unit,
+    onOpenRoot: (Int?) -> Unit
 ) {
     when (uiState.scope) {
         SearchScope.ALL -> SearchAllSectionsView(
@@ -171,7 +200,7 @@ private fun SearchBody(
             onSelectAyah = { s, a -> onRecordRecent(uiState.query); onNavigateToSurahDetail(s, a) },
             onToggleAyahBookmark = onToggleAyahBookmark,
             onSelectRoot = { id -> onRecordRecent(uiState.query); onNavigateToRootDetail(id) },
-            onSelectWord = { onRecordRecent(uiState.query) },
+            onSelectWord = onSelectWord,
             onSeeAllAyahs = { onEvent(SearchEvent.ScopeChanged(SearchScope.AYAHS)) },
             onSeeAllWords = { onEvent(SearchEvent.ScopeChanged(SearchScope.WORDS)) },
             modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 10.dp).testTag("search_results_list")
@@ -200,7 +229,7 @@ private fun SearchBody(
                 }
             }
         }
-        SearchScope.WORDS -> SearchWordsBody(uiState = uiState, listState = listState, onSelectWord = { onRecordRecent(uiState.query) })
+        SearchScope.WORDS -> SearchWordsBody(uiState = uiState, listState = listState, onSelectWord = onSelectWord)
         SearchScope.SURAHS -> {
             if (uiState.results.surahs.isEmpty()) {
                 EmptySearchNotice(text = stringResource(R.string.search_no_surahs))
@@ -216,6 +245,7 @@ private fun SearchBody(
             listState = listState,
             onSubScope = { onEvent(SearchEvent.LexiconSubScopeChanged(it)) },
             onNavigateToRootDetail = onNavigateToRootDetail,
+            onOpenRoot = onOpenRoot,
             onRecordRecent = onRecordRecent
         )
     }

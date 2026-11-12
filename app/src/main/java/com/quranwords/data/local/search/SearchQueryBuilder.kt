@@ -56,13 +56,27 @@ object SearchQueryBuilder {
         return BuiltQuery(sql.toString(), args.toTypedArray())
     }
 
-    /** Words search: clean/plain/translation + English LIKE (D5). */
+    /**
+     * Words search: clean/plain/translation + English LIKE (D5), plus the
+     * word's root via a correlated probe through the morphology chain
+     * (word_ayah → word_morphology → roots) so every result row can open its
+     * root detail. The filtered words run as an inner subselect first, so the
+     * probe executes only for the page's ≤limit rows (indexed by word_ayah's
+     * word_id) — never a per-full-table join.
+     */
     fun wordsSearchQuery(trimmed: String, normalized: String, limit: Int, offset: Int): BuiltQuery =
         BuiltQuery(
-            "SELECT w.id, w.text, w.text_clean, w.text_plain, w.translation " +
-                "FROM words w WHERE " +
-                "(w.text_plain LIKE ? OR w.text_clean LIKE ? OR w.text LIKE ? " +
-                "OR w.translation LIKE ?) LIMIT ? OFFSET ?",
+            "SELECT t.id, t.text, t.text_clean, t.text_plain, t.translation, r.id, r.root " +
+                "FROM (" +
+                "SELECT w.id, w.text, w.text_clean, w.text_plain, w.translation FROM words w " +
+                "WHERE (w.text_plain LIKE ? OR w.text_clean LIKE ? OR w.text LIKE ? " +
+                "OR w.translation LIKE ?) LIMIT ? OFFSET ?" +
+                ") t " +
+                "LEFT JOIN roots r ON r.id = (" +
+                "SELECT wm.root_id FROM word_morphology wm " +
+                "JOIN word_ayah wa ON wa.id = wm.word_ayah_id " +
+                "WHERE wa.word_id = t.id AND wm.root_id IS NOT NULL LIMIT 1" +
+                ")",
             arrayOf(
                 likeArg(normalized),
                 likeArg(normalized),

@@ -78,6 +78,10 @@ sealed interface RootDetailEvent {
     data class Load(val rootId: Int) : RootDetailEvent
     data object CopyAiSummary : RootDetailEvent
     data object ShareAiSummary : RootDetailEvent
+    /** Copy one AI card (tag: "summary" or a section tag like "hissi"). */
+    data class CopyAiSection(val tag: String) : RootDetailEvent
+    /** Copy all AI cards in a single payload. */
+    data object CopyAllAiSections : RootDetailEvent
     data object ShowReport : RootDetailEvent
     data object DismissReport : RootDetailEvent
     data class CopyReport(val markdown: String) : RootDetailEvent

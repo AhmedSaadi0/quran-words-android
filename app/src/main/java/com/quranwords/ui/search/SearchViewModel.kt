@@ -184,6 +184,7 @@ class SearchViewModel @Inject constructor(
         SearchTab.MASADIR -> masadirHasMore.value
         SearchTab.DERIVATIVES -> derivativesHasMore.value
         SearchTab.AYAT -> ayatHasMore.value
+        SearchTab.WORDS -> wordsHasMore.value
     }
 
     private fun sizeFor(tab: SearchTab): Int = when (tab) {
@@ -191,6 +192,7 @@ class SearchViewModel @Inject constructor(
         SearchTab.MASADIR -> _results.value.masadir.size
         SearchTab.DERIVATIVES -> _results.value.derivatives.size
         SearchTab.AYAT -> _results.value.ayat.size
+        SearchTab.WORDS -> _results.value.words.size
     }
 
     fun loadMoreIfNeeded(tab: SearchTab, lastVisibleIndex: Int) {
@@ -240,6 +242,14 @@ class SearchViewModel @Inject constructor(
                         }
                         next.size
                     }
+                    SearchTab.WORDS -> {
+                        val next = repository.searchWordsPaged(q, pageSize, wordsOffset)
+                        if (next.isNotEmpty()) {
+                            _results.value = _results.value.copy(words = _results.value.words + next)
+                            wordsOffset += next.size
+                        }
+                        next.size
+                    }
                 }
             }
             when (fetched) {
@@ -256,6 +266,7 @@ class SearchViewModel @Inject constructor(
             SearchTab.MASADIR -> masadirHasMore.value = hasMore
             SearchTab.DERIVATIVES -> derivativesHasMore.value = hasMore
             SearchTab.AYAT -> ayatHasMore.value = hasMore
+            SearchTab.WORDS -> wordsHasMore.value = hasMore
         }
     }
 }

@@ -2,6 +2,7 @@ package com.quranwords.ui.roots.detail
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,17 +17,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.quranwords.ui.components.ReportMeaningDialog
 import com.quranwords.ui.roots.detail.components.RootDetailHeader
-import com.quranwords.ui.roots.detail.components.rememberCollapsingHeaderState
 import com.quranwords.ui.roots.detail.tabs.AiSummaryTab
 import com.quranwords.ui.roots.detail.tabs.AyatTab
 import com.quranwords.ui.roots.detail.tabs.DerivativesTab
@@ -42,6 +39,9 @@ import kotlinx.coroutines.launch
  * Pure stateless coordinator: Scaffold + [RootDetailHeader] + pager of tabs.
  * Zero references to ViewModel, Context, clipboard or intents — all platform
  * work flows through [onEvent] to the Route. Previewable with mock [uiState].
+ *
+ * Static header (no collapsing toolbar, Decision #33): the AI summary lives
+ * inside the AI_SUMMARY tab cards, so there is no scroll-linked header state.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -56,34 +56,12 @@ fun RootDetailScreen(
     val pagerTabs = remember { RootDetailTab.entries.toList() }
     val pagerState = rememberPagerState(initialPage = 0, pageCount = { pagerTabs.size })
     val scope = rememberCoroutineScope()
-    val headerState = rememberCollapsingHeaderState()
-    val nestedScroll = remember(headerState) { headerState.nestedScrollConnection }
-    // Freeze the collapsing header while multi-selecting (words/meanings).
     val meaningsState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val aiSummaryState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val masadirState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val derivativesState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val ayatState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     val wordsState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-    // Target for header-originated flings: leftover velocity after the header
-    // hits its clamp continues into the visible tab's list (see onPostFling).
-    val activeTabListState = remember(
-        pagerState.currentPage, pagerTabs,
-        aiSummaryState, meaningsState, masadirState, derivativesState, wordsState, ayatState
-    ) {
-        when (pagerTabs[pagerState.currentPage]) {
-            RootDetailTab.AI_SUMMARY -> aiSummaryState
-            RootDetailTab.MEANINGS -> meaningsState
-            RootDetailTab.MASADIR -> masadirState
-            RootDetailTab.DERIVATIVES -> derivativesState
-            RootDetailTab.WORDS -> wordsState
-            RootDetailTab.AYAT -> ayatState
-        }
-    }
-    SideEffect {
-        headerState.isSelectionMode = uiState.words.isSelectionMode || uiState.meanings.isSelectionMode
-        headerState.activeListProvider = { activeTabListState }
-    }
     val copying = uiState.copyingAction
     val copyMeaningsAll = copying == CopyAction.COPY_MEANINGS_ALL || copying == CopyAction.SHARE_MEANINGS_ALL
     val copyMeaningsSel = copying == CopyAction.COPY_MEANINGS_SELECTED || copying == CopyAction.SHARE_MEANINGS_SELECTED
@@ -103,28 +81,32 @@ fun RootDetailScreen(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
-            Column(Modifier.fillMaxSize().padding(innerPadding).nestedScroll(nestedScroll)) {
+            Column(Modifier.fillMaxSize().padding(innerPadding)) {
                 RootDetailHeader(
-                    state = headerState,
                     rootText = uiState.rootText,
-                    subtitleText = uiState.subtitleText,
-                    hasSubtitle = uiState.hasSubtitle,
-                    aiMetaLine = uiState.aiMetaLine,
-                    hasAiMeta = uiState.hasAiMeta,
-                    summaryRefs = uiState.aiSummaryRefs,
                     tabCounts = tabCounts,
                     pagerTabs = pagerTabs,
                     selectedTabIndex = pagerState.currentPage,
-                    fontSize = uiState.fontSize,
                     onNavigateBack = onNavigateBack,
                     onReportClick = { onEvent(RootDetailEvent.ShowReport) },
-                    onCopyAiSummary = { onEvent(RootDetailEvent.CopyAiSummary) },
-                    onShareAiSummary = { onEvent(RootDetailEvent.ShareAiSummary) },
                     onTabClick = { i -> scope.launch { pagerState.animateScrollToPage(i, animationSpec = tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard)) } }
                 )
                 HorizontalPager(state = pagerState, modifier = Modifier.weight(1f).fillMaxWidth(), beyondViewportPageCount = 1) { page ->
                     when (pagerTabs[page]) {
-                        RootDetailTab.AI_SUMMARY -> AiSummaryTab(extended = detail.aiExtended, fontSize = uiState.fontSize, listState = aiSummaryState)
+                        RootDetailTab.AI_SUMMARY -> AiSummaryTab(
+                            extended = detail.aiExtended,
+                            summaryText = uiState.subtitleText,
+                            hasSummary = uiState.hasSubtitle,
+                            aiMetaLine = uiState.aiMetaLine,
+                            hasAiMeta = uiState.hasAiMeta,
+                            summaryRefs = uiState.aiSummaryRefs,
+                            fontSize = uiState.fontSize,
+                            onCopyAiSummary = { onEvent(RootDetailEvent.CopyAiSummary) },
+                            onShareAiSummary = { onEvent(RootDetailEvent.ShareAiSummary) },
+                            onCopySection = { onEvent(RootDetailEvent.CopyAiSection(it)) },
+                            onCopyAll = { onEvent(RootDetailEvent.CopyAllAiSections) },
+                            listState = aiSummaryState
+                        )
                         RootDetailTab.MEANINGS -> MeaningsTab(meanings = uiState.meanings.meanings, selectedIds = uiState.meanings.selectedIds, isSelectionMode = uiState.meanings.isSelectionMode, isCopyingAll = copyMeaningsAll, isCopyingSelected = copyMeaningsSel, fontSize = uiState.fontSize, onCopyAll = { onEvent(RootDetailEvent.CopyAllMeanings) }, onShareAll = { onEvent(RootDetailEvent.ShareAllMeanings) }, onCopySelected = { onEvent(RootDetailEvent.CopySelectedMeanings) }, onShareSelected = { onEvent(RootDetailEvent.ShareSelectedMeanings) }, onSelectAll = { onEvent(RootDetailEvent.SelectAllMeanings) }, onClearSelection = { onEvent(RootDetailEvent.ClearMeaningSelection) }, onToggleSelection = { onEvent(RootDetailEvent.ToggleMeaning(it)) }, onEnterSelection = { onEvent(RootDetailEvent.EnterMeaningSelection(it)) }, listState = meaningsState)
                         RootDetailTab.MASADIR -> MasadirTab(masadir = detail.masadir, fontSize = uiState.fontSize, quranFont = uiState.quranFont, listState = masadirState)
                         RootDetailTab.DERIVATIVES -> DerivativesTab(derivatives = detail.derivatives, fontSize = uiState.fontSize, quranFont = uiState.quranFont, listState = derivativesState)

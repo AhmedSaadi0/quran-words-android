@@ -67,7 +67,15 @@ private fun handleRootDetailEvent(
     scope: kotlinx.coroutines.CoroutineScope,
 ) {
     when (event) {
+        // Card 1 only: the smart summary itself (without the section cards).
         RootDetailEvent.CopyAiSummary -> {
+            val formatted = QuranCopyFormatter.formatAiSummary(
+                uiState.rootText, uiState.detail?.aiSummary ?: ""
+            )
+            shareHandler.copyImmediate(formatted, context.getString(R.string.ai_summary_copied))
+        }
+        // All cards in one payload (meaning + section cards + refs).
+        RootDetailEvent.CopyAllAiSections -> {
             val detail = uiState.detail
             val formatted = QuranCopyFormatter.formatAiSummary(
                 uiState.rootText, detail?.aiSummary ?: "",
@@ -81,6 +89,11 @@ private fun handleRootDetailEvent(
                 )
             )
             shareHandler.copyImmediate(formatted, context.getString(R.string.ai_summary_copied))
+        }
+        is RootDetailEvent.CopyAiSection -> {
+            val (title, section) = aiSectionFor(event.tag, uiState.detail?.aiExtended, context)
+            val formatted = QuranCopyFormatter.formatAiSection(title, section)
+            shareHandler.copyImmediate(formatted, context.getString(R.string.copied_text))
         }
         RootDetailEvent.ShareAiSummary -> {
             val detail = uiState.detail
@@ -177,4 +190,18 @@ private fun handleRootDetailEvent(
         // State + navigation-decision events go to the ViewModel (nav via Effect).
         else -> viewModel.onEvent(event)
     }
+}
+
+/** Tag → (display title, section) for per-card copy payloads. */
+private fun aiSectionFor(
+    tag: String,
+    extended: com.quranwords.domain.model.AiExtendedSummary?,
+    context: android.content.Context,
+): Pair<String, com.quranwords.domain.model.AiExtendedSection?> = when (tag) {
+    "hissi" -> context.getString(R.string.ai_section_hissi) to extended?.hissi
+    "tatawwur" -> context.getString(R.string.ai_section_tatawwur) to extended?.tatawwur
+    "furuq" -> context.getString(R.string.ai_section_furuq) to extended?.furuq
+    "shabaka" -> context.getString(R.string.ai_section_shabaka) to extended?.shabaka
+    "tashrih" -> context.getString(R.string.ai_section_tashrih) to extended?.tashrih
+    else -> "" to null
 }

@@ -32,6 +32,7 @@ fun SearchLexiconBody(
     listState: androidx.compose.foundation.lazy.LazyListState,
     onSubScope: (LexiconSubScope) -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
+    onOpenRoot: (Int?) -> Unit,
     onRecordRecent: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -53,14 +54,24 @@ fun SearchLexiconBody(
             LexiconSubScope.MASADIR -> {
                 if (uiState.results.masadir.isEmpty()) EmptySearchNotice(text = stringResource(R.string.search_no_masadir))
                 else LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(uiState.results.masadir, key = { it.id }) { MasdarSearchCard(masdar = it) }
+                    items(uiState.results.masadir, key = { it.id }) { masdar ->
+                        MasdarSearchCard(
+                            masdar = masdar,
+                            onClick = { onRecordRecent(uiState.query); onOpenRoot(masdar.rootId) }
+                        )
+                    }
                     if (uiState.isLoadingMore) item(key = "lm") { SearchLoadingView() }
                 }
             }
             LexiconSubScope.DERIVATIVES -> {
                 if (uiState.results.derivatives.isEmpty()) EmptySearchNotice(text = stringResource(R.string.search_no_derivatives))
                 else LazyColumn(state = listState, modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    items(uiState.results.derivatives, key = { it.id }) { DerivativeSearchCard(derivative = it) }
+                    items(uiState.results.derivatives, key = { it.id }) { derivative ->
+                        DerivativeSearchCard(
+                            derivative = derivative,
+                            onClick = { onRecordRecent(uiState.query); onOpenRoot(derivative.rootId) }
+                        )
+                    }
                     if (uiState.isLoadingMore) item(key = "lm") { SearchLoadingView() }
                 }
             }

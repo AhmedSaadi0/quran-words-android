@@ -112,7 +112,9 @@ data class MasdarModel(
     val masdarAr: String,
     val pattern: String?,
     val isAttested: Boolean,
-    val source: String? = null
+    val source: String? = null,
+    /** Owning root — lets search results open the root detail directly. */
+    val rootId: Int? = null
 )
 
 data class DerivativeModel(
@@ -121,7 +123,9 @@ data class DerivativeModel(
     val pattern: String,
     val derivativeType: String,
     val isQuranic: Boolean,
-    val source: String? = null
+    val source: String? = null,
+    /** Owning root — lets search results open the root detail directly. */
+    val rootId: Int? = null
 )
 
 data class AyahOccurrenceModel(

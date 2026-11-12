@@ -1,5 +1,6 @@
 package com.quranwords.core.util
 
+import com.quranwords.domain.model.AiExtendedSection
 import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.domain.model.Ayah
 import com.quranwords.domain.model.AyahOccurrenceModel
@@ -116,26 +117,40 @@ object QuranCopyFormatter {
             val sections = listOf(
                 extended.furuq to (sectionTitles.getOrNull(0) ?: "الفروق"),
                 extended.shabaka to (sectionTitles.getOrNull(1) ?: "الشبكة القرآنية"),
-                extended.hissi to (sectionTitles.getOrNull(2) ?: "الأصل الحسي"),
+                extended.hissi to (sectionTitles.getOrNull(2) ?: "المعنى الأصلي"),
                 extended.tatawwur to (sectionTitles.getOrNull(3) ?: "التطور الدلالي"),
                 extended.tashrih to (sectionTitles.getOrNull(4) ?: "التشريح الصرفي")
             )
             sections.forEach { (section, title) ->
-                val raw = section.text?.trim().orEmpty()
-                if (raw.isBlank()) return@forEach
-                // Strip Markdown markers so the clipboard never carries `- `,
-                // `**` or backticks. Citation numbering still spans the whole
-                // section, so the clipboard matches what the screen shows.
-                val cited = CitationMatcher.cite(MarkdownBlocks.renderPlain(raw), section.refs)
-                val body = CitationMatcher.renderPlain(cited)
-                if (body.isNotBlank()) {
-                    base.append("\n\n▪ $title\n$body")
-                    appendNumberedRefs(base, cited.orderedRefs)
-                }
+                formatSectionInto(base, title, section)
             }
         }
         val result = base.toString()
         return if (result == header) "" else result
+    }
+
+    /**
+     * One AI card as an independent copy payload: [title] + body + refs.
+     * Returns "" when the section is absent/blank — [ShareHandler] no-ops.
+     */
+    fun formatAiSection(title: String, section: AiExtendedSection?): String {
+        val base = StringBuilder()
+        formatSectionInto(base, title, section ?: return "")
+        return base.toString().trim()
+    }
+
+    private fun formatSectionInto(base: StringBuilder, title: String, section: AiExtendedSection) {
+        val raw = section.text?.trim().orEmpty()
+        if (raw.isBlank()) return
+        // Strip Markdown markers so the clipboard never carries `- `,
+        // `**` or backticks. Citation numbering still spans the whole
+        // section, so the clipboard matches what the screen shows.
+        val cited = CitationMatcher.cite(MarkdownBlocks.renderPlain(raw), section.refs)
+        val body = CitationMatcher.renderPlain(cited)
+        if (body.isNotBlank()) {
+            base.append("\n\n▪ $title\n$body")
+            appendNumberedRefs(base, cited.orderedRefs)
+        }
     }
 
     private fun appendNumberedRefs(base: StringBuilder, refs: List<String>) {
