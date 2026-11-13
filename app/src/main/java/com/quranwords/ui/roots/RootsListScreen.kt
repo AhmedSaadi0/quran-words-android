@@ -40,6 +40,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.ui.components.RootItemCard
+import com.quranwords.ui.roots.components.RootsFilterBar
+import com.quranwords.ui.roots.components.RootsSortMenu
 import com.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
 import com.quranwords.ui.theme.AppMotion
 
@@ -70,6 +72,12 @@ fun RootsListScreen(
                             contentDescription = stringResource(R.string.cd_back)
                         )
                     }
+                },
+                actions = {
+                    RootsSortMenu(
+                        current = uiState.sort,
+                        onSelect = { sort -> onEvent(RootsListEvent.SortChanged(sort)) }
+                    )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface
@@ -106,6 +114,14 @@ fun RootsListScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 10.dp)
                     .testTag("root_search_input")
+            )
+
+            // Model chips — narrow the lexicon by the AI model behind each summary.
+            RootsFilterBar(
+                availableModels = uiState.availableModels,
+                selectedModels = uiState.selectedModels,
+                onToggleModel = { model -> onEvent(RootsListEvent.ModelFilterToggled(model)) },
+                onClearModels = { onEvent(RootsListEvent.ModelFiltersCleared) }
             )
 
             val loadError = uiState.error

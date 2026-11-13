@@ -135,6 +135,15 @@
     <string name="roots_search_hint">ابحث عن جذر (مثال: كتب، علم، رحم)...</string>
     <string name="roots_empty_results">لا توجد جذور مطابقة لبحثك.</string>
     <string name="roots_error_load">تعذر تحميل معجم الجذور.</string>
+    <string name="roots_filter_all_models">كل المودلات</string>
+    <string name="roots_sort_default">ترتيب المعجم</string>
+    <string name="roots_sort_model">حسب المودل</string>
+    <string name="roots_sort_occurrences">حسب التكرار</string>
+    <string name="roots_sort_masadir">حسب المصادر</string>
+    <string name="roots_sort_derivatives">حسب المشتقات</string>
+    <string name="roots_sort_alphabetical">أبجديًا</string>
+    <string name="roots_sort_cd">ترتيب الجذور</string>
+    <string name="roots_model_badge_cd">المودل: %1$s</string>
     <string name="word_ayat_error">تعذر تحميل مواضع الكلمة.</string>
 
     <string name="bookmarks_empty_title">لا توجد إشارات مرجعية بعد</string>

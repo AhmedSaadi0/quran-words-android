@@ -3,7 +3,6 @@ package com.quranwords.ui.roots
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import com.quranwords.core.util.ArabicNormalizer
 import com.quranwords.core.util.Result
 import com.quranwords.core.util.runCatchingResult
 import com.quranwords.domain.model.RootItem
@@ -14,6 +13,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -23,8 +23,10 @@ class RootsListViewModel @Inject constructor(
 
     private val _roots = MutableStateFlow<List<RootItem>>(emptyList())
     private val _isLoading = MutableStateFlow(true)
-    private val _query = MutableStateFlow("")
     private val _error = MutableStateFlow<String?>(null)
+
+    /** Query + model chips + sort order — one flow so the state stays typed. */
+    private val _filters = MutableStateFlow(RootsFilters())
 
     init {
         loadRoots()
@@ -32,35 +34,43 @@ class RootsListViewModel @Inject constructor(
 
     /**
      * Arabic-normalized search filtering lives here (AGENTS §9), not in the
-     * composable — matches root text or Arabic gloss.
+     * composable — matches the root text, the Arabic gloss or the AI model,
+     * then narrows by the model chips and sorts.
      */
     val uiState: StateFlow<RootsListUiState> = combine(
         _isLoading,
-        _query,
         _error,
+        _filters,
         _roots
-    ) { isLoading, query, error, roots ->
-        val normalized = ArabicNormalizer.normalizeAr(query)
-        val filtered = if (normalized.isBlank()) {
-            roots
-        } else {
-            roots.filter {
-                ArabicNormalizer.normalizeAr(it.root).contains(normalized) ||
-                    (it.glossAr != null && ArabicNormalizer.normalizeAr(it.glossAr).contains(normalized))
-            }
-        }
+    ) { isLoading, error, filters, roots ->
         RootsListUiState(
             isLoading = isLoading,
-            query = query,
-            filteredRoots = filtered,
+            query = filters.query,
+            filteredRoots = RootsListFilter.filter(
+                roots = roots,
+                query = filters.query,
+                selectedModels = filters.selectedModels,
+                sort = filters.sort
+            ),
             totalCount = roots.size,
-            error = error
+            error = error,
+            availableModels = RootsListFilter.modelOptions(roots),
+            selectedModels = filters.selectedModels,
+            sort = filters.sort
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, RootsListUiState())
 
     fun onEvent(event: RootsListEvent) {
         when (event) {
-            is RootsListEvent.QueryChanged -> _query.value = event.query
+            is RootsListEvent.QueryChanged -> _filters.update { it.copy(query = event.query) }
+            is RootsListEvent.ModelFilterToggled -> _filters.update { filters ->
+                val selected = filters.selectedModels.toMutableSet()
+                if (!selected.add(event.model)) selected.remove(event.model)
+                filters.copy(selectedModels = selected)
+            }
+            RootsListEvent.ModelFiltersCleared ->
+                _filters.update { it.copy(selectedModels = emptySet()) }
+            is RootsListEvent.SortChanged -> _filters.update { it.copy(sort = event.sort) }
             RootsListEvent.Retry -> loadRoots()
         }
     }
@@ -76,4 +86,10 @@ class RootsListViewModel @Inject constructor(
             _isLoading.value = false
         }
     }
+
+    private data class RootsFilters(
+        val query: String = "",
+        val selectedModels: Set<String> = emptySet(),
+        val sort: RootsSort = RootsSort.Default
+    )
 }

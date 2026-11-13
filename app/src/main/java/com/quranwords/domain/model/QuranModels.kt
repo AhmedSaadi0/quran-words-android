@@ -56,6 +56,12 @@ data class RootItem(
     val glossAr: String? = null,
     val glossEn: String? = null,
     val aiSummary: String? = null,
+    /**
+     * AI model that produced [aiSummary] (`root_ai_summary.model`) — the
+     * raw value as stored in the database, never mapped to friendly names
+     * because the model list changes with every corpus release.
+     */
+    val aiModel: String? = null,
     val masadirCount: Int = 0,
     val derivativesCount: Int = 0,
     val occurrencesCount: Int = 0

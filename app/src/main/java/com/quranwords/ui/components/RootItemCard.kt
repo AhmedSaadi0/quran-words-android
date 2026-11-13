@@ -8,6 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,6 +26,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
@@ -143,46 +148,84 @@ fun RootItemCard(
                 }
             }
 
-            // Statistics Badges - M3 Small 12dp unified
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (rootItem.masadirCount > 0) {
-                    Box(
-                        modifier = Modifier
-                            .clip(ShapeSmall)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = pluralStringResource(
-                                R.plurals.root_masadir_count,
-                                rootItem.masadirCount,
-                                rootItem.masadirCount
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+            RootStatsBadges(rootItem = rootItem)
+        }
+    }
+}
 
-                if (rootItem.derivativesCount > 0) {
-                    Box(
+/**
+ * Statistics badges (masadir / derivatives / AI model) — M3 Small 12dp
+ * unified. FlowRow (not Row) so a long model name wraps to the next line
+ * instead of squeezing the other badges on narrow screens.
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RootStatsBadges(rootItem: RootItem) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        if (rootItem.masadirCount > 0) {
+            Box(
+                modifier = Modifier
+                    .clip(ShapeSmall)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.root_masadir_count,
+                        rootItem.masadirCount,
+                        rootItem.masadirCount
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        if (rootItem.derivativesCount > 0) {
+            Box(
+                modifier = Modifier
+                    .clip(ShapeSmall)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.root_derivatives_count,
+                        rootItem.derivativesCount,
+                        rootItem.derivativesCount
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        // AI model behind the summary — raw database value, Latin, so it is
+        // forced LTR and truncated to one line.
+        val model = rootItem.aiModel?.trim()
+        if (!model.isNullOrEmpty()) {
+            val modelDescription = stringResource(R.string.roots_model_badge_cd, model)
+            Box(
+                modifier = Modifier
+                    .clip(ShapeSmall)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Text(
+                        text = model,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
-                            .clip(ShapeSmall)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = pluralStringResource(
-                                R.plurals.root_derivatives_count,
-                                rootItem.derivativesCount,
-                                rootItem.derivativesCount
-                            ),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                            .testTag("root_model_badge_${rootItem.id}")
+                            .semantics { contentDescription = modelDescription }
+                    )
                 }
             }
         }

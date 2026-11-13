@@ -1,5 +1,7 @@
 package com.quranwords.data.local.search
 
+import com.quranwords.data.local.db.RootProjection
+
 /**
  * Safe dynamic query builder (Full Plan v2, Fix #2).
  *
@@ -89,11 +91,31 @@ object SearchQueryBuilder {
 
     fun topRootsQuery(limit: Int): BuiltQuery =
         BuiltQuery(
-            "SELECT r.id, r.root, rg.gloss_ar, rg.gloss_en, ra.summary_ar, " +
-                "r.masadir_count, r.derivatives_count, r.occurrences_count FROM roots r " +
-                "LEFT JOIN root_glosses rg ON rg.root_id = r.id " +
-                "LEFT JOIN root_ai_summary ra ON ra.root_id = r.id " +
+            "SELECT ${RootProjection.COLUMNS} ${RootProjection.FROM} " +
                 "ORDER BY r.occurrences_count DESC LIMIT ?",
             arrayOf(limit.toString())
+        )
+
+    /**
+     * Roots search: root text OR the AI model that produced the summary.
+     *
+     * The model column (`root_ai_summary.model`) is Latin ("muse-spark-1.3"),
+     * and SQLite's `LIKE` is case-insensitive for ASCII by default — so
+     * "muse" matches "Muse Spark 1.3 …" without any extra lowering. Every
+     * term goes through bind args (never concatenated).
+     */
+    fun rootsSearchQuery(trimmed: String, normalized: String, limit: Int, offset: Int): BuiltQuery =
+        BuiltQuery(
+            "SELECT ${RootProjection.COLUMNS} ${RootProjection.FROM} " +
+                "WHERE r.root LIKE ? OR r.root LIKE ? OR ra.model LIKE ? OR ra.model LIKE ? " +
+                "ORDER BY r.id ASC LIMIT ? OFFSET ?",
+            arrayOf(
+                likeArg(normalized),
+                likeArg(trimmed),
+                likeArg(normalized),
+                likeArg(trimmed),
+                limit.toString(),
+                offset.toString()
+            )
         )
 }

@@ -159,6 +159,16 @@
     <string name="roots_search_hint">Search roots (e.g. كتب، علم، رحم)…</string>
     <string name="roots_empty_results">No roots match your search.</string>
     <string name="roots_error_load">Could not load the roots lexicon.</string>
+    <string name="roots_filter_all_models">All models</string>
+    <string name="roots_model_chip" translatable="false">%1$s · %2$d</string>
+    <string name="roots_sort_default">Lexicon order</string>
+    <string name="roots_sort_model">By model</string>
+    <string name="roots_sort_occurrences">By occurrences</string>
+    <string name="roots_sort_masadir">By masadirs</string>
+    <string name="roots_sort_derivatives">By derivatives</string>
+    <string name="roots_sort_alphabetical">Alphabetical</string>
+    <string name="roots_sort_cd">Sort roots</string>
+    <string name="roots_model_badge_cd">Model: %1$s</string>
     <string name="word_ayat_error">Could not load word occurrences.</string>
 
     <!-- Bookmarks -->

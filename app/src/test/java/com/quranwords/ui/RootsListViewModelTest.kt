@@ -5,6 +5,7 @@ import com.quranwords.domain.model.RootItem
 import com.quranwords.fake.FakeQuranRepository
 import com.quranwords.ui.roots.RootsListEvent
 import com.quranwords.ui.roots.RootsListViewModel
+import com.quranwords.ui.roots.RootsSort
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -25,9 +26,9 @@ class RootsListViewModelTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private val roots = listOf(
-        RootItem(id = 1, root = "كتب", glossAr = "كتب الكتاب"),
-        RootItem(id = 2, root = "علم", glossAr = "علم الشيء"),
-        RootItem(id = 3, root = "رحم", glossAr = "رحمة بالله")
+        RootItem(id = 1, root = "كتب", glossAr = "كتب الكتاب", aiModel = "muse-spark-1.3"),
+        RootItem(id = 2, root = "علم", glossAr = "علم الشيء", aiModel = "Muse Spark 1.3"),
+        RootItem(id = 3, root = "رحم", glossAr = "رحمة بالله", aiModel = null)
     )
 
     @Before
@@ -102,6 +103,70 @@ class RootsListViewModelTest {
             val recovered = awaitItem()
             assertEquals(null, recovered.error)
             assertEquals(3, recovered.totalCount)
+        }
+    }
+
+    @Test
+    fun `available models skip blank values and are counted`() = runTest {
+        val vm = RootsListViewModel(FakeQuranRepository(roots = roots))
+        advanceUntilIdle()
+
+        vm.uiState.test {
+            val state = awaitItem()
+            assertEquals(listOf("Muse Spark 1.3", "muse-spark-1.3"), state.availableModels.map { it.model })
+            assertEquals(listOf(1, 1), state.availableModels.map { it.count })
+        }
+    }
+
+    @Test
+    fun `query matches the model name case insensitively`() = runTest {
+        val vm = RootsListViewModel(FakeQuranRepository(roots = roots))
+        advanceUntilIdle()
+
+        vm.onEvent(RootsListEvent.QueryChanged("muse"))
+        advanceUntilIdle()
+
+        vm.uiState.test {
+            assertEquals(listOf(1, 2), awaitItem().filteredRoots.map { it.id })
+        }
+    }
+
+    @Test
+    fun `model chip toggles the filter and clears it again`() = runTest {
+        val vm = RootsListViewModel(FakeQuranRepository(roots = roots))
+        advanceUntilIdle()
+
+        vm.onEvent(RootsListEvent.ModelFilterToggled("muse-spark-1.3"))
+        advanceUntilIdle()
+
+        vm.uiState.test {
+            val filtered = awaitItem()
+            assertEquals(setOf("muse-spark-1.3"), filtered.selectedModels)
+            assertEquals(listOf(1), filtered.filteredRoots.map { it.id })
+        }
+
+        vm.onEvent(RootsListEvent.ModelFiltersCleared)
+        advanceUntilIdle()
+
+        vm.uiState.test {
+            val cleared = awaitItem()
+            assertTrue(cleared.selectedModels.isEmpty())
+            assertEquals(3, cleared.filteredRoots.size)
+        }
+    }
+
+    @Test
+    fun `sort by model pushes missing models last`() = runTest {
+        val vm = RootsListViewModel(FakeQuranRepository(roots = roots))
+        advanceUntilIdle()
+
+        vm.onEvent(RootsListEvent.SortChanged(RootsSort.ByModel))
+        advanceUntilIdle()
+
+        vm.uiState.test {
+            val state = awaitItem()
+            assertEquals(RootsSort.ByModel, state.sort)
+            assertEquals(listOf(2, 1, 3), state.filteredRoots.map { it.id })
         }
     }
 }

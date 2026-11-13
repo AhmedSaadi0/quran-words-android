@@ -3,6 +3,8 @@ package com.quranwords.data.repository
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
+import com.quranwords.data.local.db.RootProjection
+import com.quranwords.data.local.search.SearchQueryBuilder
 import com.quranwords.data.remote.DatabaseDownloadManager
 import com.quranwords.core.util.ArabicNormalizer
 import com.quranwords.core.util.sanitizeUthmanicText
@@ -417,18 +419,8 @@ class QuranRepositoryImpl @Inject constructor(
             val list = mutableListOf<RootItem>()
             try {
                 val sql = """
-                    SELECT 
-                        r.id, 
-                        r.root, 
-                        rg.gloss_ar, 
-                        rg.gloss_en, 
-                        ra.summary_ar,
-                        r.masadir_count,
-                        r.derivatives_count,
-                        r.occurrences_count
-                    FROM roots r
-                    LEFT JOIN root_glosses rg ON rg.root_id = r.id
-                    LEFT JOIN root_ai_summary ra ON ra.root_id = r.id
+                    SELECT ${RootProjection.COLUMNS}
+                    ${RootProjection.FROM}
                     ORDER BY r.id ASC
                     LIMIT ? OFFSET ?
                 """.trimIndent()
@@ -436,18 +428,7 @@ class QuranRepositoryImpl @Inject constructor(
                 val cursor = db.rawQuery(sql, arrayOf(limit.toString(), offset.toString()))
                 cursor.use { c ->
                     while (c.moveToNext()) {
-                        list.add(
-                            RootItem(
-                                id = c.getInt(0),
-                                root = c.getString(1) ?: "",
-                                glossAr = c.getString(2),
-                                glossEn = c.getString(3),
-                                aiSummary = c.getString(4),
-                                masadirCount = c.getInt(5),
-                                derivativesCount = c.getInt(6),
-                                occurrencesCount = c.getInt(7)
-                            )
-                        )
+                        list.add(readRootItem(c))
                     }
                 }
             } catch (e: Exception) {
@@ -465,36 +446,15 @@ class QuranRepositoryImpl @Inject constructor(
             val list = mutableListOf<RootItem>()
             try {
                 val sql = """
-                    SELECT
-                        r.id,
-                        r.root,
-                        rg.gloss_ar,
-                        rg.gloss_en,
-                        ra.summary_ar,
-                        r.masadir_count,
-                        r.derivatives_count,
-                        r.occurrences_count
-                    FROM roots r
-                    LEFT JOIN root_glosses rg ON rg.root_id = r.id
-                    LEFT JOIN root_ai_summary ra ON ra.root_id = r.id
+                    SELECT ${RootProjection.COLUMNS}
+                    ${RootProjection.FROM}
                     ORDER BY r.id ASC
                 """.trimIndent()
 
                 val cursor = db.rawQuery(sql, null)
                 cursor.use { c ->
                     while (c.moveToNext()) {
-                        list.add(
-                            RootItem(
-                                id = c.getInt(0),
-                                root = c.getString(1) ?: "",
-                                glossAr = c.getString(2),
-                                glossEn = c.getString(3),
-                                aiSummary = c.getString(4),
-                                masadirCount = c.getInt(5),
-                                derivativesCount = c.getInt(6),
-                                occurrencesCount = c.getInt(7)
-                            )
-                        )
+                        list.add(readRootItem(c))
                     }
                 }
             } catch (e: Exception) {
@@ -505,6 +465,23 @@ class QuranRepositoryImpl @Inject constructor(
 
         getSeedRoots()
     }
+
+    /**
+     * Single roots mapper — every roots cursor uses the shared projection
+     * ([RootProjection]) so the model column can never be read from the
+     * wrong index (AGENTS §8.4).
+     */
+    private fun readRootItem(c: Cursor): RootItem = RootItem(
+        id = c.getInt(RootProjection.Col.ID),
+        root = c.getString(RootProjection.Col.ROOT) ?: "",
+        glossAr = c.getString(RootProjection.Col.GLOSS_AR),
+        glossEn = c.getString(RootProjection.Col.GLOSS_EN),
+        aiSummary = c.getString(RootProjection.Col.SUMMARY_AR),
+        aiModel = c.getString(RootProjection.Col.MODEL),
+        masadirCount = c.getInt(RootProjection.Col.MASADIR_COUNT),
+        derivativesCount = c.getInt(RootProjection.Col.DERIVATIVES_COUNT),
+        occurrencesCount = c.getInt(RootProjection.Col.OCCURRENCES_COUNT)
+    )
 
     override suspend fun getRootDetail(rootId: Int): RootDetail? = withContext(ioDispatcher) {
         val db = getDb()
@@ -676,6 +653,7 @@ class QuranRepositoryImpl @Inject constructor(
                         glossAr = glossAr,
                         glossEn = glossEn,
                         aiSummary = summaryAr,
+                        aiModel = summaryModel,
                         masadirCount = masadir.size,
                         derivativesCount = derivatives.size,
                         occurrencesCount = totalOccurrences
@@ -976,32 +954,11 @@ class QuranRepositoryImpl @Inject constructor(
         if (db != null) {
             val list = mutableListOf<RootItem>()
             try {
-                val cursor = db.rawQuery(
-                    """
-                    SELECT r.id, r.root, rg.gloss_ar, rg.gloss_en, ra.summary_ar,
-                    r.masadir_count,
-                    r.derivatives_count
-                    FROM roots r
-                    LEFT JOIN root_glosses rg ON rg.root_id = r.id
-                    LEFT JOIN root_ai_summary ra ON ra.root_id = r.id
-                    WHERE r.root LIKE ? OR r.root LIKE ?
-                    LIMIT ? OFFSET ?
-                    """.trimIndent(),
-                    arrayOf("%$trimmed%", "%$normalized%", limit.toString(), offset.toString())
-                )
+                val built = SearchQueryBuilder.rootsSearchQuery(trimmed, normalized, limit, offset)
+                val cursor = db.rawQuery(built.sql, built.args.map { it.toString() }.toTypedArray())
                 cursor.use {
                     while (it.moveToNext()) {
-                        list.add(
-                            RootItem(
-                                id = it.getInt(0),
-                                root = it.getString(1) ?: "",
-                                glossAr = it.getString(2),
-                                glossEn = it.getString(3),
-                                aiSummary = it.getString(4),
-                                masadirCount = it.getInt(5),
-                                derivativesCount = it.getInt(6)
-                            )
-                        )
+                        list.add(readRootItem(it))
                     }
                 }
                 return@withContext list
@@ -1010,7 +967,9 @@ class QuranRepositoryImpl @Inject constructor(
             }
         }
         getSeedRoots().filter {
-            it.root.contains(trimmed) || it.root.contains(normalized)
+            it.root.contains(trimmed) ||
+                it.root.contains(normalized) ||
+                it.aiModel?.contains(trimmed, ignoreCase = true) == true
         }.drop(offset).take(limit)
     }
 
@@ -1201,22 +1160,11 @@ class QuranRepositoryImpl @Inject constructor(
         val db = getDb() ?: return@withContext emptyList()
         val list = mutableListOf<RootItem>()
         try {
-            val q = com.quranwords.data.local.search.SearchQueryBuilder.topRootsQuery(limit)
+            val q = SearchQueryBuilder.topRootsQuery(limit)
             val cursor = db.rawQuery(q.sql, q.args.map { it.toString() }.toTypedArray())
             cursor.use { c ->
                 while (c.moveToNext()) {
-                    list.add(
-                        RootItem(
-                            id = c.getInt(0),
-                            root = c.getString(1) ?: "",
-                            glossAr = c.getString(2),
-                            glossEn = c.getString(3),
-                            aiSummary = c.getString(4),
-                            masadirCount = c.getInt(5),
-                            derivativesCount = c.getInt(6),
-                            occurrencesCount = c.getInt(7)
-                        )
-                    )
+                    list.add(readRootItem(c))
                 }
             }
         } catch (_: Exception) {
@@ -1306,16 +1254,16 @@ class QuranRepositoryImpl @Inject constructor(
 
     private fun getSeedRoots(): List<RootItem> {
         return listOf(
-            RootItem(1, "كتب", "الكِتابة والخَطّ وفرض الشيء وإيجابه", "To write, prescribe, record", "جذر يدل على جمع الشيء إلى الشيء، ومنه الكتابة والكتيبة، وورد في القرآن بمعنى الفريضة والإلزام والتسجيل.", 6, 18, 319),
-            RootItem(2, "علم", "إدراك الشيء بحقيقته واليقين والمعرفة", "To know, perceive, learn", "أصل صحيح يدل على أثر بالشيء يتميز به عن غيره، ومنه العلم وهو نقيض الجهل، والعلامة والعالم.", 9, 24, 854),
-            RootItem(3, "رحم", "الرِّقَّةُ والعَطْفُ والمَغْفِرَةُ والإحسان", "To show mercy, have compassion", "يدل على الرقة والعطف والشفقة، ومنه أسماء الله الحسنى: الرحمن الرحيم، والرحم القرابة.", 4, 12, 339),
-            RootItem(4, "حمد", "الثَّناءُ بالجَمِيلِ على جِهَةِ التَّعْظِيم", "To praise, commend, thank", "نقيض الذم، وهو الثناء على المحمود بجميل صفاته وأفعاله، والحمد أعم من الشكر.", 3, 8, 68),
-            RootItem(5, "قرا", "الجَمْعُ والضَّمُّ وتِلاوَةُ الكَلام", "To read, recite, proclaim", "أصله الجمع والضم، ومنه قراءة القرآن لأن القارئ يضم الحروف والكلمات بعضها إلى بعض في النطق.", 4, 10, 88),
-            RootItem(6, "هدي", "الإرْشادُ والدَّلالَةُ والتَّوْجِيهُ للحق", "To guide, direct, lead", "يدل على التقدم للإرشاد والدلالة على طريق الرشاد، ومنه الهدى والهدية.", 5, 15, 316),
-            RootItem(7, "نزل", "الانْحِطاطُ مِن عُلْوٍ والوُرُودُ والضِّيافة", "To descend, send down, reveal", "يدل على هبوط الشيء من علو إلى سفل، ومنه تنزيل القرآن وإنزاله والمنزل.", 7, 21, 293),
-            RootItem(8, "عبد", "الخُضُوعُ والتَّذَلُّلُ والطَّاعَة", "To worship, serve, obey", "أصل يدل على الذل والانقياد، ومنه طريق معبد، والعبادة أقصى غايات الخضوع لله وحده.", 4, 14, 275),
-            RootItem(9, "خلق", "التَّقْدِيرُ وإيجادُ الشَّيْءِ على غَيْرِ مِثال", "To create, measure, fashion", "أصلان: أحدهما تقدير الشيء، والآخر ملاسة الشيء، ومنه خلق الله تعالى المخلوقات.", 5, 16, 261),
-            RootItem(10, "أمن", "السَّكِينَةُ وطُمَأْنِينَةُ النَّفْسِ والتَّصْدِيق", "To be safe, trust, believe", "أصل يدل على سكون القلب وطمأنينته ونفي الخوف، ومنه الإيمان والأمانة والأمن.", 8, 22, 879)
+            RootItem(id = 1, root = "كتب", glossAr = "الكِتابة والخَطّ وفرض الشيء وإيجابه", glossEn = "To write, prescribe, record", aiSummary = "جذر يدل على جمع الشيء إلى الشيء، ومنه الكتابة والكتيبة، وورد في القرآن بمعنى الفريضة والإلزام والتسجيل.", masadirCount = 6, derivativesCount = 18, occurrencesCount = 319),
+            RootItem(id = 2, root = "علم", glossAr = "إدراك الشيء بحقيقته واليقين والمعرفة", glossEn = "To know, perceive, learn", aiSummary = "أصل صحيح يدل على أثر بالشيء يتميز به عن غيره، ومنه العلم وهو نقيض الجهل، والعلامة والعالم.", masadirCount = 9, derivativesCount = 24, occurrencesCount = 854),
+            RootItem(id = 3, root = "رحم", glossAr = "الرِّقَّةُ والعَطْفُ والمَغْفِرَةُ والإحسان", glossEn = "To show mercy, have compassion", aiSummary = "يدل على الرقة والعطف والشفقة، ومنه أسماء الله الحسنى: الرحمن الرحيم، والرحم القرابة.", masadirCount = 4, derivativesCount = 12, occurrencesCount = 339),
+            RootItem(id = 4, root = "حمد", glossAr = "الثَّناءُ بالجَمِيلِ على جِهَةِ التَّعْظِيم", glossEn = "To praise, commend, thank", aiSummary = "نقيض الذم، وهو الثناء على المحمود بجميل صفاته وأفعاله، والحمد أعم من الشكر.", masadirCount = 3, derivativesCount = 8, occurrencesCount = 68),
+            RootItem(id = 5, root = "قرا", glossAr = "الجَمْعُ والضَّمُّ وتِلاوَةُ الكَلام", glossEn = "To read, recite, proclaim", aiSummary = "أصله الجمع والضم، ومنه قراءة القرآن لأن القارئ يضم الحروف والكلمات بعضها إلى بعض في النطق.", masadirCount = 4, derivativesCount = 10, occurrencesCount = 88),
+            RootItem(id = 6, root = "هدي", glossAr = "الإرْشادُ والدَّلالَةُ والتَّوْجِيهُ للحق", glossEn = "To guide, direct, lead", aiSummary = "يدل على التقدم للإرشاد والدلالة على طريق الرشاد، ومنه الهدى والهدية.", masadirCount = 5, derivativesCount = 15, occurrencesCount = 316),
+            RootItem(id = 7, root = "نزل", glossAr = "الانْحِطاطُ مِن عُلْوٍ والوُرُودُ والضِّيافة", glossEn = "To descend, send down, reveal", aiSummary = "يدل على هبوط الشيء من علو إلى سفل، ومنه تنزيل القرآن وإنزاله والمنزل.", masadirCount = 7, derivativesCount = 21, occurrencesCount = 293),
+            RootItem(id = 8, root = "عبد", glossAr = "الخُضُوعُ والتَّذَلُّلُ والطَّاعَة", glossEn = "To worship, serve, obey", aiSummary = "أصل يدل على الذل والانقياد، ومنه طريق معبد، والعبادة أقصى غايات الخضوع لله وحده.", masadirCount = 4, derivativesCount = 14, occurrencesCount = 275),
+            RootItem(id = 9, root = "خلق", glossAr = "التَّقْدِيرُ وإيجادُ الشَّيْءِ على غَيْرِ مِثال", glossEn = "To create, measure, fashion", aiSummary = "أصلان: أحدهما تقدير الشيء، والآخر ملاسة الشيء، ومنه خلق الله تعالى المخلوقات.", masadirCount = 5, derivativesCount = 16, occurrencesCount = 261),
+            RootItem(id = 10, root = "أمن", glossAr = "السَّكِينَةُ وطُمَأْنِينَةُ النَّفْسِ والتَّصْدِيق", glossEn = "To be safe, trust, believe", aiSummary = "أصل يدل على سكون القلب وطمأنينته ونفي الخوف، ومنه الإيمان والأمانة والأمن.", masadirCount = 8, derivativesCount = 22, occurrencesCount = 879)
         )
     }
 
