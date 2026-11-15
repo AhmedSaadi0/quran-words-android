@@ -25,7 +25,6 @@ private fun previewDetail() = RootDetail(
     aiModel = "gpt-4",
     aiGeneratedAt = "2024-01-02T15:04:05",
     aiExtended = AiExtendedSummary(
-        summaryRefs = listOf("جامع الأقسام"),
         hissi = AiExtendedSection("الأصل الحسي نص تجريبي", listOf("مقاييس اللغة")),
         furuq = AiExtendedSection("فروق نص تجريبي", listOf("الفروق اللغوية"))
     ),
@@ -45,11 +44,8 @@ private fun previewState() = RootDetailUiState(
     isLoading = false,
     detail = previewDetail(),
     rootText = "كتب",
-    subtitleText = "جذر يدل على الجمع والضم، ومنه الكتابة لما فيها من جمع الحروف.",
-    hasSubtitle = true,
     aiMetaLine = "gpt-4  •  2024-01-02 15:04",
     hasAiMeta = true,
-    aiSummaryRefs = listOf("جامع الأقسام"),
     tabs = listOf(
         RootDetailTabUi(RootDetailTab.AI_SUMMARY, 2),
         RootDetailTabUi(RootDetailTab.MEANINGS, 2),

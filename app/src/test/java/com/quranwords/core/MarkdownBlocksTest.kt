@@ -114,7 +114,7 @@ class MarkdownBlocksTest {
 
     @Test
     fun `a non bullet line after a list closes the list`() {
-        // Real `shabaka` shape (root_id = 1): witness bullets then a prose tail.
+        // Real corpus shape (root_id = 1): witness bullets then a prose tail.
         val raw = "- {بِسْمِ ٱللَّهِ} [الفاتحة: 1]\n- {ثُمَّ ٱسْتَوَىٰ} [البقرة: 29]\n" +
             "وَتَتَعَدَّدُ وُجُوهُ السَّماءِ فِي التَّنْزِيلِ [النزهة]."
 

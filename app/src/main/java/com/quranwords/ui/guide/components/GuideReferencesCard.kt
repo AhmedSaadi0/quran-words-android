@@ -20,7 +20,7 @@ import com.quranwords.R
 
 /**
  * References card for the morphology guide: AI root-summary sources from
- * ROOT_SUMMARY_METHODOLOGY.md (v2.1), grouped by the five semantic sections.
+ * ROOT_SUMMARY_METHODOLOGY.md (v2.1), grouped by the three semantic sections.
  * All text comes from string resources (AR/EN); nothing is hardcoded.
  */
 @Composable
@@ -61,16 +61,6 @@ fun GuideReferencesCard(
                 titleRes = R.string.guide_refs_tatawwur_title,
                 bodyRes = R.string.guide_refs_tatawwur_body,
                 testTag = "guide_refs_tatawwur"
-            )
-            GuideReferenceSection(
-                titleRes = R.string.guide_refs_tashrih_title,
-                bodyRes = R.string.guide_refs_tashrih_body,
-                testTag = "guide_refs_tashrih"
-            )
-            GuideReferenceSection(
-                titleRes = R.string.guide_refs_shabaka_title,
-                bodyRes = R.string.guide_refs_shabaka_body,
-                testTag = "guide_refs_shabaka"
             )
             GuideReferenceSection(
                 titleRes = R.string.guide_refs_furuq_title,

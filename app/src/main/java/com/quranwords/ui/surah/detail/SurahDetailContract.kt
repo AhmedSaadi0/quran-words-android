@@ -13,11 +13,9 @@ data class SurahDetailUiState(
     val isLoading: Boolean = true,
     val selectedWord: WordToken? = null,
     val selectedWordAyah: Ayah? = null,
-    val aiSummary: String? = null,
     val aiExtended: AiExtendedSummary? = null,
     val aiModel: String? = null,
     val aiGeneratedAt: String? = null,
-    val isAiLoading: Boolean = false,
     val fontSize: Float = 24f,
     val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
     /**

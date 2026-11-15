@@ -55,9 +55,8 @@ data class RootItem(
     val root: String,
     val glossAr: String? = null,
     val glossEn: String? = null,
-    val aiSummary: String? = null,
     /**
-     * AI model that produced [aiSummary] (`root_ai_summary.model`) — the
+     * AI model that produced the root summary (`root_ai_summary.model`) — the
      * raw value as stored in the database, never mapped to friendly names
      * because the model list changes with every corpus release.
      */
@@ -88,21 +87,11 @@ data class AiExtendedSection(
 }
 
 data class AiExtendedSummary(
-    val summaryRefs: List<String> = emptyList(),
     val hissi: AiExtendedSection = AiExtendedSection(),
     val tatawwur: AiExtendedSection = AiExtendedSection(),
-    val tashrih: AiExtendedSection = AiExtendedSection(),
-    val shabaka: AiExtendedSection = AiExtendedSection(),
     val furuq: AiExtendedSection = AiExtendedSection()
 ) {
-    fun sections(): List<AiExtendedSection> =
-        listOf(hissi, tatawwur, tashrih, shabaka, furuq)
-
-    fun hasContent(summaryAr: String?): Boolean =
-        !summaryAr.isNullOrBlank() || sections().any { it.isNotBlank() }
-
-    fun nonEmptyCount(summaryAr: String?): Int =
-        (if (!summaryAr.isNullOrBlank()) 1 else 0) + sections().count { it.isNotBlank() }
+    fun sections(): List<AiExtendedSection> = listOf(hissi, tatawwur, furuq)
 }
 
 data class RootMeaningModel(

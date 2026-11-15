@@ -151,24 +151,6 @@ class RootMeaningsTest {
     }
 
     @Test
-    fun `setFontSize persists to preferences and surfaces in uiState`() = runTest {
-        val prefs = FakeUserPreferences()
-        val vm = RootDetailViewModel(FakeMeaningsRepository(), prefs, SavedStateHandle())
-        advanceUntilIdle()
-        assertEquals(24f, vm.uiState.value.fontSize)
-
-        vm.onEvent(RootDetailEvent.SetFontSize(30f))
-        advanceUntilIdle()
-        assertEquals(30f, prefs.fontSizeState.value)
-        assertEquals(30f, vm.uiState.value.fontSize)
-
-        // Out-of-range values are coerced to the 1..48 slider range.
-        vm.onEvent(RootDetailEvent.SetFontSize(100f))
-        advanceUntilIdle()
-        assertEquals(48f, vm.uiState.value.fontSize)
-    }
-
-    @Test
     fun `quranFontKey surfaces selected typeface in uiState`() = runTest {
         val prefs = FakeUserPreferences()
         val vm = RootDetailViewModel(FakeMeaningsRepository(), prefs, SavedStateHandle())

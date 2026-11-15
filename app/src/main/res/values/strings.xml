@@ -134,9 +134,6 @@
     <string name="morpho_ayah">Ayah %1$d</string>
     <string name="morpho_root">Root</string>
     <string name="morpho_details">Root details &amp; derivatives</string>
-    <string name="morpho_ai_title">AI root summary</string>
-    <string name="morpho_no_root">This word is not linked to a linguistic root</string>
-    <string name="morpho_no_summary">No AI summary available for this root yet</string>
 
     <!-- Surah index -->
     <string name="surah_index_title">Holy Quran Index</string>
@@ -256,10 +253,7 @@
     <string name="tab_meanings">Lexicons</string>
     <string name="tab_ai_summary">AI summary</string>
     <string name="ai_section_hissi">Original meaning</string>
-    <string name="ai_section_summary">AI summary</string>
     <string name="ai_section_tatawwur">Semantic development</string>
-    <string name="ai_section_tashrih">Morphological breakdown</string>
-    <string name="ai_section_shabaka">Quranic network</string>
     <string name="ai_section_furuq">Distinctions</string>
     <string name="ai_refs_label">References</string>
     <string name="ai_section_expand">Expand section</string>
@@ -301,15 +295,11 @@
     <string name="guide_example_label">Quranic example:</string>
     <string name="guide_example_ref">%1$s (Ayah: %2$s)</string>
     <string name="guide_refs_title">Documentation references</string>
-    <string name="guide_refs_intro">AI root-summary sources (methodology v2.1), grouped by the five semantic sections. Quranic citations use [Surah: Ayah].</string>
+    <string name="guide_refs_intro">AI root-summary sources (methodology v2.1), grouped by the three semantic sections. Quranic citations use [Surah: Ayah].</string>
     <string name="guide_refs_hissi_title">Original meaning</string>
     <string name="guide_refs_hissi_body">• Maqayis al-Lughah by Ibn Faris\n• Al-Muhkam by Ibn Sidah\n• Al-Sihah by Al-Jawhari\n• Lisan al-Arab by Ibn Manzur\n• Taj al-Arus by Al-Zabidi\n• Lane\'s Arabic-English Lexicon\n• Kitab al-Ayn by Al-Khalil\n• Asas al-Balaghah by Al-Zamakhshari</string>
     <string name="guide_refs_tatawwur_title">Semantic development</string>
     <string name="guide_refs_tatawwur_body">• Al-Mufradat by Al-Raghib Al-Asfahani\n• Al-Tahrir wa Al-Tanwir by Ibn Ashur</string>
-    <string name="guide_refs_tashrih_title">Morphological breakdown</string>
-    <string name="guide_refs_tashrih_body">• Umdat al-Huffaz by Al-Samin Al-Halabi\n• Basair Dhawi Al-Tamyiz by Al-Fayruzabadi\n• Sarf tables (masadir &amp; derivatives)\n• Leeds morphological corpus (corpus_leeds) — Quranic Arabic Corpus, Kais Dukes, University of Leeds</string>
-    <string name="guide_refs_shabaka_title">Quranic network</string>
-    <string name="guide_refs_shabaka_body">• word_morphology &amp; ayat statistics\n• Nuzhat al-Ayun by Ibn Al-Jawzi\n• Islah al-Wujuh wa Al-Nazair by Al-Damghani\n• Tanzil.net Project e-Mushaf (ayah text)</string>
     <string name="guide_refs_furuq_title">Distinctions</string>
     <string name="guide_refs_furuq_body">• Al-Furuq Al-Lughawiyyah by Abu Hilal Al-Askari\n• Embedded contrasts in Al-Mufradat by Al-Raghib\n• Nazm similarities: Durrat Al-Tanzil by Al-Iskafi • Al-Gharnati • Al-Samarrai</string>
 
@@ -389,11 +379,7 @@
     <string name="meanings_bar_title">Root meanings</string>
     <string name="copy_meanings">Copy meanings</string>
     <string name="share_meanings">Share meanings</string>
-    <string name="ai_summary_copied">AI summary copied</string>
     <string name="copied_text">Copied</string>
-    <string name="ai_copy_all">Copy all</string>
-    <string name="cd_copy_all_ai">Copy the full AI summary</string>
-    <string name="share_ai_summary">Share summary</string>
     <string name="cd_copy_ai_summary">Copy AI summary</string>
     <string name="read_more">Read more</string>
     <string name="no_meanings_copy">No meanings to copy</string>

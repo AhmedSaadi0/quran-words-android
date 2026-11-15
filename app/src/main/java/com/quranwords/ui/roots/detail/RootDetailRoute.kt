@@ -67,52 +67,10 @@ private fun handleRootDetailEvent(
     scope: kotlinx.coroutines.CoroutineScope,
 ) {
     when (event) {
-        // Card 1 only: the smart summary itself (without the section cards).
-        RootDetailEvent.CopyAiSummary -> {
-            val formatted = QuranCopyFormatter.formatAiSummary(
-                uiState.rootText, uiState.detail?.aiSummary ?: ""
-            )
-            shareHandler.copyImmediate(formatted, context.getString(R.string.ai_summary_copied))
-        }
-        // All cards in one payload (meaning + section cards + refs).
-        RootDetailEvent.CopyAllAiSections -> {
-            val detail = uiState.detail
-            val formatted = QuranCopyFormatter.formatAiSummary(
-                uiState.rootText, detail?.aiSummary ?: "",
-                detail?.aiExtended,
-                listOf(
-                    context.getString(R.string.ai_section_furuq),
-                    context.getString(R.string.ai_section_shabaka),
-                    context.getString(R.string.ai_section_hissi),
-                    context.getString(R.string.ai_section_tatawwur),
-                    context.getString(R.string.ai_section_tashrih)
-                )
-            )
-            shareHandler.copyImmediate(formatted, context.getString(R.string.ai_summary_copied))
-        }
         is RootDetailEvent.CopyAiSection -> {
             val (title, section) = aiSectionFor(event.tag, uiState.detail?.aiExtended, context)
             val formatted = QuranCopyFormatter.formatAiSection(title, section)
             shareHandler.copyImmediate(formatted, context.getString(R.string.copied_text))
-        }
-        RootDetailEvent.ShareAiSummary -> {
-            val detail = uiState.detail
-            val formatted = QuranCopyFormatter.formatAiSummary(
-                uiState.rootText, detail?.aiSummary ?: "",
-                detail?.aiExtended,
-                listOf(
-                    context.getString(R.string.ai_section_furuq),
-                    context.getString(R.string.ai_section_shabaka),
-                    context.getString(R.string.ai_section_hissi),
-                    context.getString(R.string.ai_section_tatawwur),
-                    context.getString(R.string.ai_section_tashrih)
-                )
-            )
-            shareHandler.shareImmediate(
-                formatted,
-                context.getString(R.string.common_share),
-                context.getString(R.string.no_share_app)
-            )
         }
         RootDetailEvent.CopyAllMeanings -> scope.launch {
             shareHandler.copyFormatted(
@@ -201,7 +159,5 @@ private fun aiSectionFor(
     "hissi" -> context.getString(R.string.ai_section_hissi) to extended?.hissi
     "tatawwur" -> context.getString(R.string.ai_section_tatawwur) to extended?.tatawwur
     "furuq" -> context.getString(R.string.ai_section_furuq) to extended?.furuq
-    "shabaka" -> context.getString(R.string.ai_section_shabaka) to extended?.shabaka
-    "tashrih" -> context.getString(R.string.ai_section_tashrih) to extended?.tashrih
     else -> "" to null
 }

@@ -15,8 +15,6 @@ import com.quranwords.ui.theme.QuranFont
  * Old granular flows stay (deprecated) until the UI fully migrates.
  */
 enum class CopyAction {
-    COPY_AI_SUMMARY,
-    SHARE_AI_SUMMARY,
     COPY_MEANINGS_ALL,
     SHARE_MEANINGS_ALL,
     COPY_MEANINGS_SELECTED,
@@ -56,11 +54,8 @@ data class RootDetailUiState(
     val isLoading: Boolean = true,
     val detail: RootDetail? = null,
     val rootText: String = "",
-    val subtitleText: String? = null,
-    val hasSubtitle: Boolean = false,
     val aiMetaLine: String? = null,
     val hasAiMeta: Boolean = false,
-    val aiSummaryRefs: List<String> = emptyList(),
     val fontSize: Float = 24f,
     val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
     val tabs: List<RootDetailTabUi> = emptyList(),
@@ -76,12 +71,8 @@ data class RootDetailUiState(
 
 sealed interface RootDetailEvent {
     data class Load(val rootId: Int) : RootDetailEvent
-    data object CopyAiSummary : RootDetailEvent
-    data object ShareAiSummary : RootDetailEvent
-    /** Copy one AI card (tag: "summary" or a section tag like "hissi"). */
+    /** Copy one AI card (tag: a section tag like "hissi"). */
     data class CopyAiSection(val tag: String) : RootDetailEvent
-    /** Copy all AI cards in a single payload. */
-    data object CopyAllAiSections : RootDetailEvent
     data object ShowReport : RootDetailEvent
     data object DismissReport : RootDetailEvent
     data class CopyReport(val markdown: String) : RootDetailEvent

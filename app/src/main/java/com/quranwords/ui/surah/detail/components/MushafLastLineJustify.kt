@@ -48,7 +48,10 @@ internal data class LastLineJustification(
         val nearest = tokens.minByOrNull {
             if (x < it.finalLeft) it.finalLeft - x else x - it.finalRight
         } ?: return x
-        return x + nearest.shift
+        // Gap/margin taps clamp to the nearest token's layout edge, so the
+        // selection path (ayahAt) never overshoots onto a neighbouring
+        // token's ayah on the last line.
+        return if (x < nearest.finalLeft) nearest.origLeft else nearest.origRight
     }
 }
 

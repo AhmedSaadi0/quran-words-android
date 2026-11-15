@@ -45,17 +45,6 @@ class QuranCopyFormatterTest {
     }
 
     @Test
-    fun `formatAiSummary blank returns empty`() {
-        assertEquals("", QuranCopyFormatter.formatAiSummary("كتب", "  "))
-    }
-
-    @Test
-    fun `formatAiSummary prefixes root header`() {
-        val result = QuranCopyFormatter.formatAiSummary("كتب", "ملخص تجريبي")
-        assertEquals("[الملخص الذكي للجذر: كتب]\n\nملخص تجريبي", result)
-    }
-
-    @Test
     fun `formatMeanings empty returns empty`() {
         assertEquals("", QuranCopyFormatter.formatMeanings("كتب", emptyList()))
     }

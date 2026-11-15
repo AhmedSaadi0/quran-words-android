@@ -476,7 +476,6 @@ class QuranRepositoryImpl @Inject constructor(
         root = c.getString(RootProjection.Col.ROOT) ?: "",
         glossAr = c.getString(RootProjection.Col.GLOSS_AR),
         glossEn = c.getString(RootProjection.Col.GLOSS_EN),
-        aiSummary = c.getString(RootProjection.Col.SUMMARY_AR),
         aiModel = c.getString(RootProjection.Col.MODEL),
         masadirCount = c.getInt(RootProjection.Col.MASADIR_COUNT),
         derivativesCount = c.getInt(RootProjection.Col.DERIVATIVES_COUNT),
@@ -625,21 +624,17 @@ class QuranRepositoryImpl @Inject constructor(
                     var aiExtended = AiExtendedSummary()
                     try {
                         val eCursor = db.rawQuery(
-                            "SELECT hissi, tatawwur, tashrih, shabaka, furuq, " +
-                                "hissi_refs, tatawwur_refs, tashrih_refs, " +
-                                "shabaka_refs, furuq_refs, summary_refs " +
+                            "SELECT hissi, tatawwur, furuq, " +
+                                "hissi_refs, tatawwur_refs, furuq_refs " +
                                 "FROM root_ai_summary WHERE root_id = ? LIMIT 1",
                             arrayOf(rootId.toString())
                         )
                         eCursor.use {
                             if (it.moveToNext()) {
                                 aiExtended = AiExtendedSummary(
-                                    summaryRefs = AiRefsParser.parse(it.getString(10)),
-                                    hissi = AiExtendedSection(it.getString(0), AiRefsParser.parse(it.getString(5))),
-                                    tatawwur = AiExtendedSection(it.getString(1), AiRefsParser.parse(it.getString(6))),
-                                    tashrih = AiExtendedSection(it.getString(2), AiRefsParser.parse(it.getString(7))),
-                                    shabaka = AiExtendedSection(it.getString(3), AiRefsParser.parse(it.getString(8))),
-                                    furuq = AiExtendedSection(it.getString(4), AiRefsParser.parse(it.getString(9)))
+                                    hissi = AiExtendedSection(it.getString(0), AiRefsParser.parse(it.getString(3))),
+                                    tatawwur = AiExtendedSection(it.getString(1), AiRefsParser.parse(it.getString(4))),
+                                    furuq = AiExtendedSection(it.getString(2), AiRefsParser.parse(it.getString(5)))
                                 )
                             }
                         }
@@ -652,10 +647,9 @@ class QuranRepositoryImpl @Inject constructor(
                         root = rootText,
                         glossAr = glossAr,
                         glossEn = glossEn,
-                        aiSummary = summaryAr,
                         aiModel = summaryModel,
                         masadirCount = masadir.size,
-                        derivativesCount = derivatives.size,
+                        derivativesCount = derivatives.size,      
                         occurrencesCount = totalOccurrences
                     )
 
@@ -1254,16 +1248,16 @@ class QuranRepositoryImpl @Inject constructor(
 
     private fun getSeedRoots(): List<RootItem> {
         return listOf(
-            RootItem(id = 1, root = "كتب", glossAr = "الكِتابة والخَطّ وفرض الشيء وإيجابه", glossEn = "To write, prescribe, record", aiSummary = "جذر يدل على جمع الشيء إلى الشيء، ومنه الكتابة والكتيبة، وورد في القرآن بمعنى الفريضة والإلزام والتسجيل.", masadirCount = 6, derivativesCount = 18, occurrencesCount = 319),
-            RootItem(id = 2, root = "علم", glossAr = "إدراك الشيء بحقيقته واليقين والمعرفة", glossEn = "To know, perceive, learn", aiSummary = "أصل صحيح يدل على أثر بالشيء يتميز به عن غيره، ومنه العلم وهو نقيض الجهل، والعلامة والعالم.", masadirCount = 9, derivativesCount = 24, occurrencesCount = 854),
-            RootItem(id = 3, root = "رحم", glossAr = "الرِّقَّةُ والعَطْفُ والمَغْفِرَةُ والإحسان", glossEn = "To show mercy, have compassion", aiSummary = "يدل على الرقة والعطف والشفقة، ومنه أسماء الله الحسنى: الرحمن الرحيم، والرحم القرابة.", masadirCount = 4, derivativesCount = 12, occurrencesCount = 339),
-            RootItem(id = 4, root = "حمد", glossAr = "الثَّناءُ بالجَمِيلِ على جِهَةِ التَّعْظِيم", glossEn = "To praise, commend, thank", aiSummary = "نقيض الذم، وهو الثناء على المحمود بجميل صفاته وأفعاله، والحمد أعم من الشكر.", masadirCount = 3, derivativesCount = 8, occurrencesCount = 68),
-            RootItem(id = 5, root = "قرا", glossAr = "الجَمْعُ والضَّمُّ وتِلاوَةُ الكَلام", glossEn = "To read, recite, proclaim", aiSummary = "أصله الجمع والضم، ومنه قراءة القرآن لأن القارئ يضم الحروف والكلمات بعضها إلى بعض في النطق.", masadirCount = 4, derivativesCount = 10, occurrencesCount = 88),
-            RootItem(id = 6, root = "هدي", glossAr = "الإرْشادُ والدَّلالَةُ والتَّوْجِيهُ للحق", glossEn = "To guide, direct, lead", aiSummary = "يدل على التقدم للإرشاد والدلالة على طريق الرشاد، ومنه الهدى والهدية.", masadirCount = 5, derivativesCount = 15, occurrencesCount = 316),
-            RootItem(id = 7, root = "نزل", glossAr = "الانْحِطاطُ مِن عُلْوٍ والوُرُودُ والضِّيافة", glossEn = "To descend, send down, reveal", aiSummary = "يدل على هبوط الشيء من علو إلى سفل، ومنه تنزيل القرآن وإنزاله والمنزل.", masadirCount = 7, derivativesCount = 21, occurrencesCount = 293),
-            RootItem(id = 8, root = "عبد", glossAr = "الخُضُوعُ والتَّذَلُّلُ والطَّاعَة", glossEn = "To worship, serve, obey", aiSummary = "أصل يدل على الذل والانقياد، ومنه طريق معبد، والعبادة أقصى غايات الخضوع لله وحده.", masadirCount = 4, derivativesCount = 14, occurrencesCount = 275),
-            RootItem(id = 9, root = "خلق", glossAr = "التَّقْدِيرُ وإيجادُ الشَّيْءِ على غَيْرِ مِثال", glossEn = "To create, measure, fashion", aiSummary = "أصلان: أحدهما تقدير الشيء، والآخر ملاسة الشيء، ومنه خلق الله تعالى المخلوقات.", masadirCount = 5, derivativesCount = 16, occurrencesCount = 261),
-            RootItem(id = 10, root = "أمن", glossAr = "السَّكِينَةُ وطُمَأْنِينَةُ النَّفْسِ والتَّصْدِيق", glossEn = "To be safe, trust, believe", aiSummary = "أصل يدل على سكون القلب وطمأنينته ونفي الخوف، ومنه الإيمان والأمانة والأمن.", masadirCount = 8, derivativesCount = 22, occurrencesCount = 879)
+            RootItem(id = 1, root = "كتب", glossAr = "الكِتابة والخَطّ وفرض الشيء وإيجابه", glossEn = "To write, prescribe, record", masadirCount = 6, derivativesCount = 18, occurrencesCount = 319),
+            RootItem(id = 2, root = "علم", glossAr = "إدراك الشيء بحقيقته واليقين والمعرفة", glossEn = "To know, perceive, learn", masadirCount = 9, derivativesCount = 24, occurrencesCount = 854),
+            RootItem(id = 3, root = "رحم", glossAr = "الرِّقَّةُ والعَطْفُ والمَغْفِرَةُ والإحسان", glossEn = "To show mercy, have compassion", masadirCount = 4, derivativesCount = 12, occurrencesCount = 339),
+            RootItem(id = 4, root = "حمد", glossAr = "الثَّناءُ بالجَمِيلِ على جِهَةِ التَّعْظِيم", glossEn = "To praise, commend, thank", masadirCount = 3, derivativesCount = 8, occurrencesCount = 68),
+            RootItem(id = 5, root = "قرا", glossAr = "الجَمْعُ والضَّمُّ وتِلاوَةُ الكَلام", glossEn = "To read, recite, proclaim", masadirCount = 4, derivativesCount = 10, occurrencesCount = 88),
+            RootItem(id = 6, root = "هدي", glossAr = "الإرْشادُ والدَّلالَةُ والتَّوْجِيهُ للحق", glossEn = "To guide, direct, lead", masadirCount = 5, derivativesCount = 15, occurrencesCount = 316),
+            RootItem(id = 7, root = "نزل", glossAr = "الانْحِطاطُ مِن عُلْوٍ والوُرُودُ والضِّيافة", glossEn = "To descend, send down, reveal", masadirCount = 7, derivativesCount = 21, occurrencesCount = 293),
+            RootItem(id = 8, root = "عبد", glossAr = "الخُضُوعُ والتَّذَلُّلُ والطَّاعَة", glossEn = "To worship, serve, obey", masadirCount = 4, derivativesCount = 14, occurrencesCount = 275),
+            RootItem(id = 9, root = "خلق", glossAr = "التَّقْدِيرُ وإيجادُ الشَّيْءِ على غَيْرِ مِثال", glossEn = "To create, measure, fashion", masadirCount = 5, derivativesCount = 16, occurrencesCount = 261),
+            RootItem(id = 10, root = "أمن", glossAr = "السَّكِينَةُ وطُمَأْنِينَةُ النَّفْسِ والتَّصْدِيق", glossEn = "To be safe, trust, believe", masadirCount = 8, derivativesCount = 22, occurrencesCount = 879)
         )
     }
 
@@ -1271,7 +1265,6 @@ class QuranRepositoryImpl @Inject constructor(
         val rootItem = getSeedRoots().firstOrNull { it.id == rootId } ?: getSeedRoots()[0]
         return RootDetail(
             item = rootItem,
-            aiSummary = rootItem.aiSummary,
             aiModel = "seed-preview",
             aiGeneratedAt = "2026-08-25T00:00:00+00:00",
             meanings = listOf(

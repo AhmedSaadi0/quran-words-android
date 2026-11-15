@@ -12,7 +12,7 @@ package com.quranwords.data.local.db
  */
 object RootProjection {
 
-    const val COLUMNS = "r.id, r.root, rg.gloss_ar, rg.gloss_en, ra.summary_ar, ra.model, " +
+    const val COLUMNS = "r.id, r.root, rg.gloss_ar, rg.gloss_en, ra.model, " +
         "r.masadir_count, r.derivatives_count, r.occurrences_count"
 
     const val FROM = "FROM roots r " +
@@ -25,10 +25,9 @@ object RootProjection {
         const val ROOT = 1
         const val GLOSS_AR = 2
         const val GLOSS_EN = 3
-        const val SUMMARY_AR = 4
-        const val MODEL = 5
-        const val MASADIR_COUNT = 6
-        const val DERIVATIVES_COUNT = 7
-        const val OCCURRENCES_COUNT = 8
+        const val MODEL = 4
+        const val MASADIR_COUNT = 5
+        const val DERIVATIVES_COUNT = 6
+        const val OCCURRENCES_COUNT = 7
     }
 }

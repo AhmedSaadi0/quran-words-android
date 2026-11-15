@@ -12,7 +12,7 @@ package com.quranwords.core.util
  * | `- ` bullet      | 3,902 lines, one nesting level via 2-space indent (612)     |
  * | `**bold**`       | inline, always balanced, never spans a newline, never holds `[]` |
  * | `` `code` ``     | 25 lines — table names such as `masadir`                     |
- * | blank line       | paragraph break (`summary_ar`, `tatawwur`, `shabaka`, `furuq`) |
+ * | blank line       | paragraph break (`summary_ar`, `tatawwur`, `furuq`) |
  *
  * **Not** supported on purpose: headings, ordered lists, tables, links,
  * fenced code, block quotes, horizontal rules, and **single-asterisk
@@ -64,7 +64,7 @@ object MarkdownBlocks {
      *   [MdBlock.Paragraph], keeping internal `\n` (soft line breaks).
      * - A blank line closes the current paragraph/list.
      * - A non-bullet line immediately after a bullet list **closes the list**
-     *   (the `shabaka` "witnesses then prose" shape, 138 roots).
+     *   (the "witnesses then prose" shape, 138 roots).
      */
     fun parse(raw: String): List<MdBlock> {
         if (raw.isBlank()) return emptyList()

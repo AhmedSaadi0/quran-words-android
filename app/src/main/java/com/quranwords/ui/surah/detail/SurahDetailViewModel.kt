@@ -49,11 +49,9 @@ class SurahDetailViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(true)
 
-    private val _aiSummary = MutableStateFlow<String?>(null)
     private val _aiExtended = MutableStateFlow<AiExtendedSummary?>(null)
     private val _aiModel = MutableStateFlow<String?>(null)
     private val _aiGeneratedAt = MutableStateFlow<String?>(null)
-    private val _isAiLoading = MutableStateFlow(false)
 
     // Multi-ayah copy selection (contextual TopBar)
     private val _selection = MutableStateFlow(SelectionState())
@@ -79,11 +77,9 @@ class SurahDetailViewModel @Inject constructor(
         _isLoading,
         _selectedWord,
         _selectedWordAyah,
-        _aiSummary,
         _aiExtended,
         _aiModel,
         _aiGeneratedAt,
-        _isAiLoading,
         _selection,
         _surahPages,
         _error
@@ -95,15 +91,13 @@ class SurahDetailViewModel @Inject constructor(
             isLoading = values[2] as Boolean,
             selectedWord = values[3] as WordToken?,
             selectedWordAyah = values[4] as Ayah?,
-            aiSummary = values[5] as String?,
-            aiExtended = values[6] as AiExtendedSummary?,
-            aiModel = values[7] as String?,
-            aiGeneratedAt = values[8] as String?,
-            isAiLoading = values[9] as Boolean,
-            isSelectionMode = (values[10] as SelectionState).isSelectionMode,
-            selectedAyahs = (values[10] as SelectionState).selectedIds,
-            surahPages = values[11] as List<Int>,
-            error = values[12] as String?
+            aiExtended = values[5] as AiExtendedSummary?,
+            aiModel = values[6] as String?,
+            aiGeneratedAt = values[7] as String?,
+            isSelectionMode = (values[8] as SelectionState).isSelectionMode,
+            selectedAyahs = (values[8] as SelectionState).selectedIds,
+            surahPages = values[9] as List<Int>,
+            error = values[10] as String?
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SurahDetailUiState())
 
@@ -252,20 +246,17 @@ class SurahDetailViewModel @Inject constructor(
     private fun selectWord(word: WordToken, ayah: Ayah) {
         _selectedWord.value = word
         _selectedWordAyah.value = ayah
-        // Fetch AI summary via repository (UDF: ViewModel owns data, not Composable)
-        _aiSummary.value = null
+        // Fetch AI sections via repository (UDF: ViewModel owns data, not Composable)
         _aiExtended.value = null
         _aiModel.value = null
         _aiGeneratedAt.value = null
         val rootId = word.rootId
         if (rootId != null && rootId > 0) {
-            _isAiLoading.value = true
             viewModelScope.launch {
-                // AI summary is supplementary: on failure the UI shows its fallback.
+                // AI sections are supplementary: on failure the UI shows its fallback.
                 when (val result = runCatchingResult { repository.getRootDetail(rootId) }) {
                     is Result.Success -> {
                         val detail = result.data
-                        _aiSummary.value = detail?.aiSummary
                         _aiExtended.value = detail?.aiExtended
                             ?.takeIf { ext -> ext.sections().any { it.isNotBlank() } }
                         _aiModel.value = detail?.aiModel
@@ -273,21 +264,16 @@ class SurahDetailViewModel @Inject constructor(
                     }
                     is Result.Error -> Unit
                 }
-                _isAiLoading.value = false
             }
-        } else {
-            _isAiLoading.value = false
         }
     }
 
     fun clearSelectedWord() {
         _selectedWord.value = null
         _selectedWordAyah.value = null
-        _aiSummary.value = null
         _aiExtended.value = null
         _aiModel.value = null
         _aiGeneratedAt.value = null
-        _isAiLoading.value = false
     }
 
     /** Formats the selected ayat for copy/share (consumed by the Route's ShareHandler). */

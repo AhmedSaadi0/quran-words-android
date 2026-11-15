@@ -95,16 +95,10 @@ fun RootDetailScreen(
                     when (pagerTabs[page]) {
                         RootDetailTab.AI_SUMMARY -> AiSummaryTab(
                             extended = detail.aiExtended,
-                            summaryText = uiState.subtitleText,
-                            hasSummary = uiState.hasSubtitle,
                             aiMetaLine = uiState.aiMetaLine,
                             hasAiMeta = uiState.hasAiMeta,
-                            summaryRefs = uiState.aiSummaryRefs,
                             fontSize = uiState.fontSize,
-                            onCopyAiSummary = { onEvent(RootDetailEvent.CopyAiSummary) },
-                            onShareAiSummary = { onEvent(RootDetailEvent.ShareAiSummary) },
                             onCopySection = { onEvent(RootDetailEvent.CopyAiSection(it)) },
-                            onCopyAll = { onEvent(RootDetailEvent.CopyAllAiSections) },
                             listState = aiSummaryState
                         )
                         RootDetailTab.MEANINGS -> MeaningsTab(meanings = uiState.meanings.meanings, selectedIds = uiState.meanings.selectedIds, isSelectionMode = uiState.meanings.isSelectionMode, isCopyingAll = copyMeaningsAll, isCopyingSelected = copyMeaningsSel, fontSize = uiState.fontSize, onCopyAll = { onEvent(RootDetailEvent.CopyAllMeanings) }, onShareAll = { onEvent(RootDetailEvent.ShareAllMeanings) }, onCopySelected = { onEvent(RootDetailEvent.CopySelectedMeanings) }, onShareSelected = { onEvent(RootDetailEvent.ShareSelectedMeanings) }, onSelectAll = { onEvent(RootDetailEvent.SelectAllMeanings) }, onClearSelection = { onEvent(RootDetailEvent.ClearMeaningSelection) }, onToggleSelection = { onEvent(RootDetailEvent.ToggleMeaning(it)) }, onEnterSelection = { onEvent(RootDetailEvent.EnterMeaningSelection(it)) }, listState = meaningsState)

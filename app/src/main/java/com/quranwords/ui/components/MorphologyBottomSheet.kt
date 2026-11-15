@@ -2,26 +2,21 @@ package com.quranwords.ui.components
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +38,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.R
-import com.quranwords.core.util.cleanAiDate
 import com.quranwords.core.util.formatAiMetaLine
 import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.domain.model.Ayah
@@ -56,7 +50,6 @@ import com.quranwords.ui.theme.ShapeSmall
 
 /** Expanded-tags list keys for the sheet's foldable AI cards (Decision #33). */
 private const val SECTION_HISSI = "hissi"
-private const val SECTION_SUMMARY = "summary"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,11 +60,9 @@ fun MorphologyBottomSheet(
     onDismiss: () -> Unit,
     onNavigateToRoot: (rootId: Int, rootText: String) -> Unit,
     modifier: Modifier = Modifier,
-    aiSummary: String? = null,
     aiExtended: AiExtendedSummary? = null,
     aiModel: String? = null,
     aiGeneratedAt: String? = null,
-    isAiLoading: Boolean = false,
     fontSize: Float = 24f
 ) {
     ModalBottomSheet(
@@ -186,11 +177,10 @@ fun MorphologyBottomSheet(
                 }
             }
 
-            // Extended-section foldable cards (Decision #33): الأصل الحسي sits
-            // first and is the only card opened by default; the smart summary
-            // follows as a collapsed card; the rest stay closed. Single
-            // expanded-tags list (resets per word) instead of one remember per
-            // card, so blank-filtering can't shift saved state.
+            // Extended-section foldable cards (Decision #33): المعنى الأصلي sits
+            // first and is the only card opened by default; the rest stay closed.
+            // Single expanded-tags list (resets per word) instead of one remember
+            // per card, so blank-filtering can't shift saved state.
             var expandedSections by rememberSaveable(word.rootId) {
                 mutableStateOf(listOf(SECTION_HISSI))
             }
@@ -200,7 +190,7 @@ fun MorphologyBottomSheet(
             val refsLabel = stringResource(R.string.ai_refs_label)
             val sectionMetaLine = formatAiMetaLine(aiModel, aiGeneratedAt)
 
-            if (!isAiLoading && aiExtended != null && aiExtended.hissi.isNotBlank()) {
+            if (aiExtended != null && aiExtended.hissi.isNotBlank()) {
                 val expanded = SECTION_HISSI in expandedSections
                 AiSectionCard(
                     title = stringResource(R.string.ai_section_hissi),
@@ -227,42 +217,12 @@ fun MorphologyBottomSheet(
                 )
             }
 
-            // Smart summary card — collapsed by default; force-opened while
-            // loading so the spinner shows where the text will land.
-            val summaryExpanded = isAiLoading || SECTION_SUMMARY in expandedSections
-            AiSectionCard(
-                title = stringResource(R.string.morpho_ai_title),
-                body = "",
-                refs = emptyList(),
-                refsLabel = stringResource(R.string.ai_refs_label),
-                fontSize = fontSize,
-                expanded = summaryExpanded,
-                onToggle = {
-                    expandedSections = if (summaryExpanded) expandedSections - SECTION_SUMMARY
-                    else expandedSections + SECTION_SUMMARY
-                },
-                testTagSuffix = "morpho_summary",
-                bodyContent = {
-                    SummaryBody(
-                        word = word,
-                        aiSummary = aiSummary,
-                        summaryRefs = aiExtended?.summaryRefs.orEmpty(),
-                        aiModel = aiModel,
-                        aiDate = aiGeneratedAt,
-                        isLoading = isAiLoading,
-                        fontSize = fontSize
-                    )
-                }
-            )
-
-            // Remaining sections below the summary — same order as the root
-            // detail tab (تطور، فروق، شبكة، تشريح), all collapsed by default.
-            if (!isAiLoading && aiExtended != null) {
+            // Remaining sections — same order as the root detail tab
+            // (تطور، فروق), all collapsed by default.
+            if (aiExtended != null) {
                 val sections = listOf(
                     Triple(aiExtended.tatawwur, R.string.ai_section_tatawwur, "tatawwur"),
-                    Triple(aiExtended.furuq, R.string.ai_section_furuq, "furuq"),
-                    Triple(aiExtended.shabaka, R.string.ai_section_shabaka, "shabaka"),
-                    Triple(aiExtended.tashrih, R.string.ai_section_tashrih, "tashrih")
+                    Triple(aiExtended.furuq, R.string.ai_section_furuq, "furuq")
                 )
                 sections.filter { it.first.isNotBlank() }.forEach { (section, titleRes, tag) ->
                     val expanded = tag in expandedSections
@@ -293,97 +253,6 @@ fun MorphologyBottomSheet(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-        }
-    }
-}
-
-@Composable
-private fun SummaryBody(
-    word: WordToken,
-    aiSummary: String?,
-    summaryRefs: List<String>,
-    aiModel: String?,
-    aiDate: String?,
-    isLoading: Boolean,
-    fontSize: Float
-) {
-    Column(
-        modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 2.dp
-                    )
-                }
-            }
-            !aiSummary.isNullOrBlank() -> {
-                CitedBodyText(
-                    body = aiSummary.trim(),
-                    refs = summaryRefs,
-                    refsLabel = stringResource(R.string.ai_refs_label),
-                    fontSize = fontSize,
-                    testTagPrefix = "ai_ref_morpho_summary"
-                )
-                // Model + date chips - stacked vertically to prevent wrapping, with time included
-                if (!aiModel.isNullOrBlank() || !aiDate.isNullOrBlank()) {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        aiModel?.let { model ->
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(MaterialTheme.colorScheme.surface)
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(6.dp))
-                                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = model,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        aiDate?.let { rawDate ->
-                            val dateTimeFormatted = cleanAiDate(rawDate)
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(MaterialTheme.colorScheme.surface)
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(6.dp))
-                                    .padding(horizontal = 8.dp, vertical = 6.dp)
-                            ) {
-                                Text(
-                                    text = dateTimeFormatted,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            else -> {
-                Text(
-                    text = if (word.rootId == null) stringResource(R.string.morpho_no_root)
-                    else stringResource(R.string.morpho_no_summary),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
         }
     }
 }

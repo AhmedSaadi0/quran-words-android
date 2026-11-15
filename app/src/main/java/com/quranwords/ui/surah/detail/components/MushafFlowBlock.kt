@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
@@ -53,7 +54,7 @@ import com.quranwords.domain.model.WordToken
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.QuranFont
 
-private const val FLOW_WORD_TAG = "word_id"
+internal const val FLOW_WORD_TAG = "word_id"
 internal const val FLOW_AYAH_TAG = "ayah_num"
 
 /**
@@ -76,6 +77,9 @@ fun MushafFlowBlock(
     onPulseDone: () -> Unit = {}
 ) {
     val haptic = LocalHapticFeedback.current
+    // 24dp word-hit margin in px: taps this far past a word's ink still snap
+    // to the nearest word; beyond that, blank margins stay inert.
+    val outerMarginSlopPx = with(LocalDensity.current) { 24.dp.toPx() }
     val endMarkerColor = MaterialTheme.colorScheme.primary
     val selectionBg = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
     // Bookmark wash: tertiary maps to the QuranGold/Amber family in both
@@ -137,7 +141,14 @@ fun MushafFlowBlock(
                     // استخدام مسافة غير قابلة للكسر (\u00A0) حتى لا ينفصل رقم الآية منفرداً في سطر مستقل.
                     // الأقواس المزخرفة ﴿ ﴾ هي عرف التطبيق الموحد (البحث/العلامات/النسخ) وتُعرض
                     // مؤطرة في كل الخطوط الأربعة، بما فيها خط مصحف المدينة.
-                    append("\u00A0﴿${ayah.ayah.toEasternArabicDigits()}﴾")
+                    // \u00A0 stays OUTSIDE the marker annotation on purpose: taps on
+                    // the gluing space fall back to the nearest word (the ayah's
+                    // final word), while taps on ﴿n﴾ itself are inert
+                    // (see wordAtPoint).
+                    append("\u00A0")
+                    val markerStart = length
+                    append("﴿${ayah.ayah.toEasternArabicDigits()}﴾")
+                    addStringAnnotation(FLOW_MARKER_TAG, ayah.ayah.toString(), markerStart, length)
                 }
                 addStringAnnotation(FLOW_AYAH_TAG, ayah.ayah.toString(), ayahStart, length)
                 if (isSelected) {
@@ -196,18 +207,29 @@ fun MushafFlowBlock(
                 detectTapGestures(
                     onTap = { offset ->
                         val result = layoutResult ?: return@detectTapGestures
-                        // Last line is drawn shifted (justified per-token or
-                        // centered fallback): re-map the visual tap back to
-                        // layout coordinates.
-                        val position = result.remapForLastLine(currentJustification, offset)
-                        val ayahNum = result.ayahAt(annotated, position) ?: return@detectTapGestures
                         if (isSelectionMode) {
+                            // Selection taps keep the remap+ayahAt path
+                            // (whole-ayah annotations span the inter-word
+                            // gaps).
+                            val position = result.remapForLastLine(currentJustification, offset)
+                            val ayahNum = result.ayahAt(annotated, position) ?: return@detectTapGestures
                             onToggleSelection(ayahNum)
                         } else {
-                            val word = result.wordAt(annotated, ayahByNumber, position)
-                            if (word != null) {
+                            // Word taps use the RAW visual position: the
+                            // last-line shifts (justified per-token / centered
+                            // fallback) are handled against the drawn geometry
+                            // inside wordAtPoint.
+                            val hit = result.wordAtPoint(
+                                text = annotated,
+                                ayahByNumber = ayahByNumber,
+                                position = offset,
+                                lastLineJustification = currentJustification,
+                                lastLineEmptySpace = result.lastLineEmptySpace(),
+                                outerMarginSlopPx = outerMarginSlopPx
+                            )
+                            if (hit != null) {
                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onWordClick(word, ayahByNumber.getValue(ayahNum))
+                                onWordClick(hit.word, hit.ayah)
                             }
                         }
                     },
@@ -461,18 +483,3 @@ private fun TextLayoutResult.ayahAt(text: AnnotatedString, position: Offset): In
     return text.getStringAnnotations(FLOW_AYAH_TAG, start, end).firstOrNull()?.item?.toIntOrNull()
 }
 
-/** Exact word hit at the tap position, or null (e.g. tap on a ﴿n﴾ marker). */
-private fun TextLayoutResult.wordAt(
-    text: AnnotatedString,
-    ayahByNumber: Map<Int, Ayah>,
-    position: Offset
-): WordToken? {
-    val center = getOffsetForPosition(position).coerceIn(0, text.length)
-    val wordId = text.getStringAnnotations(FLOW_WORD_TAG, center, center)
-        .firstOrNull()?.item?.toIntOrNull() ?: return null
-    val ayahNum = text.getStringAnnotations(FLOW_AYAH_TAG, center, center)
-        .firstOrNull()?.item?.toIntOrNull() ?: return null
-    val ayah = ayahByNumber[ayahNum] ?: return null
-    return ayah.words.find { it.wordAyahId == wordId }
-        ?: ayah.words.find { it.wordId == wordId }
-}

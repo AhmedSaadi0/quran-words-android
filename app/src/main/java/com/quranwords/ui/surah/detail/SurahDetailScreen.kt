@@ -654,11 +654,9 @@ fun SurahDetailScreen(
                 onNavigateToRoot = { rootId, _ ->
                     if (rootId > 0) onNavigateToRootDetail(rootId)
                 },
-                aiSummary = uiState.aiSummary,
                 aiExtended = uiState.aiExtended,
                 aiModel = uiState.aiModel,
                 aiGeneratedAt = uiState.aiGeneratedAt,
-                isAiLoading = uiState.isAiLoading,
                 fontSize = uiState.fontSize
             )
         }

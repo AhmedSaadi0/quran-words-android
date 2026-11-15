@@ -361,22 +361,20 @@ class RootDetailViewModel @Inject constructor(
         val fontSize = args[12] as Float
         val quranFont = args[13] as QuranFont
 
-        val subtitle = detail?.aiSummary?.takeIf { it.isNotBlank() }
-            ?: detail?.item?.glossAr?.takeIf { it.isNotBlank() }
         val metaLine = formatAiMetaLine(detail?.aiModel, detail?.aiGeneratedAt)
         RootDetailUiState(
             isLoading = isLoading,
             detail = detail,
             rootText = detail?.item?.root.orEmpty(),
-            subtitleText = subtitle,
-            hasSubtitle = !subtitle.isNullOrBlank(),
             aiMetaLine = metaLine,
             hasAiMeta = !metaLine.isNullOrBlank() ||
                 !detail?.aiModel.isNullOrBlank() ||
                 !detail?.aiGeneratedAt.isNullOrBlank(),
-            aiSummaryRefs = detail?.aiExtended?.summaryRefs.orEmpty(),
             tabs = listOf(
-                RootDetailTabUi(RootDetailTab.AI_SUMMARY, (detail?.aiExtended?.sections()?.count { it.isNotBlank() } ?: 0) + (if (!subtitle.isNullOrBlank()) 1 else 0)),
+                RootDetailTabUi(
+                    RootDetailTab.AI_SUMMARY,
+                    detail?.aiExtended?.sections()?.count { it.isNotBlank() } ?: 0
+                ),
                 RootDetailTabUi(RootDetailTab.MEANINGS, detail?.meanings?.size ?: 0),
                 RootDetailTabUi(RootDetailTab.AYAT, detail?.item?.occurrencesCount ?: 0),
                 RootDetailTabUi(RootDetailTab.WORDS, words.size),
@@ -452,8 +450,7 @@ class RootDetailViewModel @Inject constructor(
             RootDetailEvent.DismissReport -> setReportVisible(false)
             RootDetailEvent.Retry -> currentRootIdForOcc?.let { loadRootDetail(it) }
             // Platform events (copy/share/report markdown) are handled by the Route.
-            RootDetailEvent.CopyAiSummary, RootDetailEvent.ShareAiSummary,
-            is RootDetailEvent.CopyAiSection, RootDetailEvent.CopyAllAiSections,
+            is RootDetailEvent.CopyAiSection,
             RootDetailEvent.CopyAllMeanings, RootDetailEvent.ShareAllMeanings,
             RootDetailEvent.CopySelectedMeanings, RootDetailEvent.ShareSelectedMeanings,
             RootDetailEvent.CopySelectedWords, RootDetailEvent.ShareSelectedWords,

@@ -113,9 +113,6 @@
     <string name="morpho_ayah">الآية %1$d</string>
     <string name="morpho_root">الجذر اللغوي</string>
     <string name="morpho_details">تفاصيل الجذر والمشتقات</string>
-    <string name="morpho_ai_title">الملخص الذكي للجذر</string>
-    <string name="morpho_no_root">هذه الكلمة غير مرتبطة بجذر لغوي</string>
-    <string name="morpho_no_summary">لا يوجد ملخص ذكي متاح لهذا الجذر حالياً</string>
 
     <string name="surah_index_title">فهرس القرآن الكريم</string>
     <string name="surah_index_subtitle">%1$d سورة • %2$d مكية • %3$d مدنية • %4$d جزء</string>
@@ -224,10 +221,7 @@
     <string name="tab_meanings">معاجم</string>
     <string name="tab_ai_summary">الملخص الذكي</string>
     <string name="ai_section_hissi">المعنى الأصلي</string>
-    <string name="ai_section_summary">الملخص الذكي</string>
     <string name="ai_section_tatawwur">التطور الدلالي</string>
-    <string name="ai_section_tashrih">التشريح الصرفي</string>
-    <string name="ai_section_shabaka">الشبكة القرآنية</string>
     <string name="ai_section_furuq">الفروق</string>
     <string name="ai_refs_label">المراجع</string>
     <string name="ai_section_expand">توسيع القسم</string>
@@ -267,15 +261,11 @@
     <string name="guide_example_label">شاهد قرآني:</string>
     <string name="guide_example_ref">%1$s (الآية: %2$s)</string>
     <string name="guide_refs_title">المراجع والمصادر التوثيقية</string>
-    <string name="guide_refs_intro">مصادر الملخص الذكي للجذور (المنهجية 2.1) موزعة على الأقسام الدلالية الخمسة. يُوثق الشاهد القرآني بصيغة [اسم السورة: رقم الآية].</string>
+    <string name="guide_refs_intro">مصادر الملخص الذكي للجذور (المنهجية 2.1) موزعة على الأقسام الدلالية الثلاثة. يُوثق الشاهد القرآني بصيغة [اسم السورة: رقم الآية].</string>
     <string name="guide_refs_hissi_title">المعنى الأصلي</string>
     <string name="guide_refs_hissi_body">• معجم مقاييس اللغة لابن فارس\n• المحكم لابن سيده\n• الصحاح في اللغة للجوهري\n• لسان العرب لابن منظور\n• تاج العروس للزبيدي\n• معجم لين الإنجليزي (Lane)\n• كتاب العين للخليل بن أحمد\n• أساس البلاغة للزمخشري</string>
     <string name="guide_refs_tatawwur_title">التطور الدلالي</string>
     <string name="guide_refs_tatawwur_body">• المفردات في غريب القرآن للراغب الأصفهاني\n• تفسير التحرير والتنوير لابن عاشور</string>
-    <string name="guide_refs_tashrih_title">التشريح الصرفي</string>
-    <string name="guide_refs_tashrih_body">• عمدة الحفاظ للسمين الحلبي\n• بصائر ذوي التمييز للفيروزآبادي\n• جداول الصرف (المصادر والمشتقات)\n• مدونة ليدز الصرفية (corpus_leeds) — مدونة القرآن الكريم اللغوية، كايز ديوكس، جامعة ليدز</string>
-    <string name="guide_refs_shabaka_title">الشبكة القرآنية</string>
-    <string name="guide_refs_shabaka_body">• إحصاء جدول word_morphology والآيات\n• نزهة الأعين ونواظر المصاحف لابن الجوزي\n• إصلاح الوجوه والنظائر للدامغاني\n• المصحف الإلكتروني لمشروع تنزيل (Tanzil.net)</string>
     <string name="guide_refs_furuq_title">الفروق</string>
     <string name="guide_refs_furuq_body">• الفروق اللغوية لأبي هلال العسكري\n• الفروق المضمنة في المفردات للراغب\n• المتشابه النظمي: درة التنزيل للإسكافي • الغرناطي • السامرائي</string>
 
@@ -351,11 +341,7 @@
     <string name="meanings_bar_title">معاني الجذر</string>
     <string name="copy_meanings">نسخ المعاني</string>
     <string name="share_meanings">مشاركة المعاني</string>
-    <string name="ai_summary_copied">تم نسخ الملخص الذكي</string>
     <string name="copied_text">تم النسخ</string>
-    <string name="ai_copy_all">نسخ الكل</string>
-    <string name="cd_copy_all_ai">نسخ الملخص الذكي كاملًا</string>
-    <string name="share_ai_summary">مشاركة الملخص</string>
     <string name="cd_copy_ai_summary">نسخ الملخص الذكي</string>
     <string name="read_more">عرض المزيد</string>
     <string name="no_meanings_copy">لا توجد معانٍ للنسخ</string>
