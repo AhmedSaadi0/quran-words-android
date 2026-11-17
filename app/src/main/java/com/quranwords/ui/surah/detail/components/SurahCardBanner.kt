@@ -1,21 +1,23 @@
 package com.quranwords.ui.surah.detail.components
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -28,9 +30,21 @@ import com.quranwords.core.util.toEasternArabicDigits
 import com.quranwords.domain.model.Surah
 
 /**
- * Card-based surah banner (Full Plan v2, D2). No Bitmaps — mirrors
- * Lexicon's ornate banner in flat Material tokens: surah name center,
- * revelation + ayah count on the sides.
+ * Measured from `chapter_hdr.png` (3420 × 360): visible ink spans x 29..3385,
+ * y 32..326; the blank centre between the ornaments spans x 760..2653.
+ * Cropping to the ink keeps the frame's edges aligned with the caller's 16dp
+ * text margin, and restricting the name to the measured blank centre keeps it
+ * off the ornate ends and the top/bottom rules at every screen width.
+ */
+private const val HEADER_VISIBLE_ASPECT = (3385f - 29f) / (326f - 32f)
+private const val HEADER_CENTER_WIDTH = (2653f - 760f) / (3385f - 29f)
+
+/**
+ * Surah header: the ornamental QuranLexicon chapter frame, tinted with the
+ * current Material primary so it works in light/dark/dynamic themes. The
+ * surah name sits inside the frame's empty centre; revelation + ayah count,
+ * basmalah and juz line stay directly below, so both reading modes keep the
+ * same rhythm as before.
  */
 @Composable
 fun SurahCardBanner(
@@ -39,38 +53,41 @@ fun SurahCardBanner(
     modifier: Modifier = Modifier
 ) {
     if (surah == null) return
-    val revelation = if (surah.isMeccan) stringResource(R.string.revelation_meccan) else stringResource(R.string.revelation_medinan)
-    val ayahCountText = pluralStringResource(R.plurals.ayah_count, surah.ayahCount, surah.ayahCount)
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
-            modifier = Modifier.fillMaxWidth().testTag("surah_banner_${surah.id}")
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(HEADER_VISIBLE_ASPECT)
+                .testTag("surah_banner_${surah.id}")
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().height(46.dp).padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Image(
+                painter = painterResource(R.drawable.chapter_hdr),
+                contentDescription = null, // decorative; the surah name below is the label
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+                colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .fillMaxWidth(HEADER_CENTER_WIDTH)
+                    .fillMaxHeight()
+                    .padding(horizontal = 2.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = revelation,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Text(
                     text = stringResource(R.string.surah_title_template, surah.nameAr),
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
+                    lineHeight = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = ayahCountText,
-                    fontSize = 11.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    textAlign = TextAlign.Center,
+                    maxLines = 1
                 )
             }
         }
@@ -81,15 +98,11 @@ fun SurahCardBanner(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp).testTag("surah_banner_bismillah")
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+                    .testTag("surah_banner_bismillah")
             )
         }
-        Text(
-            text = stringResource(R.string.page_header_juz, (surah.juzStart).toEasternArabicDigits()),
-            fontSize = 11.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }

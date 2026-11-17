@@ -195,12 +195,13 @@ fun AppNavigation(
                         targetAyah = route.ayah,
                         enter = route.enter,
                         onNavigateBack = { navController.popBackStack() },
-                        onNavigateToAdjacentSurah = { targetSurahId, ayah, fromNext ->
+                        onNavigateToAdjacentSurah = { targetSurahId, ayah, fromNext, initialImmersive ->
                             navController.navigate(
                                 SurahDetail(
                                     surahId = targetSurahId,
                                     ayah = ayah,
-                                    enter = if (fromNext) SurahEnter.FromNext else SurahEnter.FromPrev
+                                    enter = if (fromNext) SurahEnter.FromNext else SurahEnter.FromPrev,
+                                    initialImmersive = initialImmersive
                                 )
                             ) {
                                 // Adjacent switches replace the current entry, so

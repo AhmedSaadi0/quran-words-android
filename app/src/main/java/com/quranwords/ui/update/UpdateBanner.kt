@@ -140,27 +140,27 @@ internal fun UpdateFailedBanner(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    BannerSurface(modifier = modifier.testTag(UpdateBannerTags.ROOT)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.update_banner_failed_message),
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.testTag(UpdateBannerTags.DISMISS_ACTION),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Close,
-                    contentDescription = stringResource(R.string.cd_update_banner_close),
-                )
-            }
-        }
-    }
+//    BannerSurface(modifier = modifier.testTag(UpdateBannerTags.ROOT)) {
+//        Row(
+//            verticalAlignment = Alignment.CenterVertically,
+//            horizontalArrangement = Arrangement.spacedBy(12.dp),
+//        ) {
+//            Text(
+//                text = stringResource(R.string.update_banner_failed_message),
+//                style = MaterialTheme.typography.bodyMedium,
+//                modifier = Modifier.weight(1f),
+//            )
+//            IconButton(
+//                onClick = onDismiss,
+//                modifier = Modifier.testTag(UpdateBannerTags.DISMISS_ACTION),
+//            ) {
+//                Icon(
+//                    imageVector = Icons.Filled.Close,
+//                    contentDescription = stringResource(R.string.cd_update_banner_close),
+//                )
+//            }
+//        }
+//    }
 }
 
 @Composable

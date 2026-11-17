@@ -52,6 +52,11 @@ private class FakeQuranRepository(
     override suspend fun getSurahById(id: Int): Surah? = null
     override fun getAyatBySurah(surahId: Int): Flow<List<Ayah>> = flowOf(emptyList())
     override suspend fun getAyatBySurahFull(surahId: Int): List<Ayah> = emptyList()
+    override suspend fun getAyatByPageRangeFull(firstPage: Int, lastPage: Int): com.quranwords.core.util.Result<List<Ayah>> =
+        com.quranwords.core.util.Result.Success(emptyList())
+    override suspend fun getAyatOfPageFull(pageNumber: Int): com.quranwords.core.util.Result<List<Ayah>> =
+        com.quranwords.core.util.Result.Success(emptyList())
+    override suspend fun getMaxPageNumber(): Int = 604
     override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? = null
     override suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem> = emptyList()
     override suspend fun getAllRoots(): List<RootItem> = emptyList()
@@ -117,6 +122,8 @@ class RootWordsTest {
     fun `typed SurahDetail route defaults ayah to one`() {
         assertEquals(1, SurahDetail(surahId = 5).ayah)
         assertEquals(5, SurahDetail(surahId = 5).surahId)
+        assertFalse(SurahDetail(surahId = 5).initialImmersive)
+        assertTrue(SurahDetail(surahId = 5, initialImmersive = true).initialImmersive)
     }
 
     @Test

@@ -25,8 +25,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.quranwords.core.util.AyahRef
 import com.quranwords.domain.model.Ayah
-import com.quranwords.domain.model.WordToken
 import com.quranwords.ui.components.PageSeparator
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.QuranFont
@@ -38,11 +38,11 @@ fun SurahAyatList(
     quranFont: QuranFont,
     hasBasmalah: Boolean,
     isSelectionMode: Boolean,
-    selectedAyahs: Set<Int>,
+    selectedAyahs: Set<AyahRef>,
     listState: LazyListState,
-    onWordClick: (WordToken, Ayah) -> Unit,
-    onToggleSelection: (Int) -> Unit,
-    onEnterSelection: (Int) -> Unit,
+    wordInteraction: WordInteractionCallbacks,
+    onToggleSelection: (AyahRef) -> Unit,
+    onEnterSelection: (AyahRef) -> Unit,
     modifier: Modifier = Modifier,
     /**
      * Top padding must reserve the reading chrome (status bar + pill) at the
@@ -50,9 +50,10 @@ fun SurahAyatList(
      * list.
      */
     contentPadding: PaddingValues = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 24.dp),
-    bookmarkedAyahs: Set<Int> = emptySet(),
-    pulseAyah: Int? = null,
+    bookmarkedAyahs: Set<AyahRef> = emptySet(),
+    pulseAyah: AyahRef? = null,
     onPulseDone: () -> Unit = {},
+    activeWordAction: WordActionTarget? = null,
     surah: com.quranwords.domain.model.Surah? = null
 ) {
     val groups = remember(ayat) { groupAyatByPage(ayat) }
@@ -97,7 +98,6 @@ fun SurahAyatList(
                 bookmarkedAyahs = bookmarkedAyahs,
                 pulseAyah = pulseAyah,
                 onPulseDone = onPulseDone,
-                onWordClick = onWordClick,
                 onToggleSelection = onToggleSelection,
                 onEnterSelection = onEnterSelection,
                 animateEntrance = true,
@@ -117,7 +117,8 @@ fun SurahAyatList(
                         bookmarkedAyahs = bookmarkedAyahs,
                         pulseAyah = pulseAyah,
                         onPulseDone = onPulseDone,
-                        onWordClick = onWordClick,
+                        wordInteraction = wordInteraction,
+                        activeWordAction = activeWordAction,
                         onToggleSelection = onToggleSelection,
                         onEnterSelection = onEnterSelection
                     )
@@ -152,13 +153,12 @@ fun MushafPageContent(
     ayat: List<Ayah>,
     quranFont: QuranFont,
     isSelectionMode: Boolean,
-    selectedAyahs: Set<Int>,
-    bookmarkedAyahs: Set<Int>,
-    pulseAyah: Int?,
+    selectedAyahs: Set<AyahRef>,
+    bookmarkedAyahs: Set<AyahRef>,
+    pulseAyah: AyahRef?,
     onPulseDone: () -> Unit,
-    onWordClick: (WordToken, Ayah) -> Unit,
-    onToggleSelection: (Int) -> Unit,
-    onEnterSelection: (Int) -> Unit,
+    onToggleSelection: (AyahRef) -> Unit,
+    onEnterSelection: (AyahRef) -> Unit,
     animateEntrance: Boolean,
     block: @Composable ColumnScope.() -> Unit,
     modifier: Modifier = Modifier
@@ -173,7 +173,7 @@ fun MushafPageContent(
         // 0. Page header (Full Plan v2): surah name | juz (+ hizb start) | page.
         if (chrome.showHeader) {
             PageHeaderRow(
-                surahId = first.surah,
+                surahIds = listOf(first.surah),
                 juz = first.juz,
                 hizb = if (chrome.isHizbStart) first.hizb else null,
                 pageNumber = first.pageNumber!!

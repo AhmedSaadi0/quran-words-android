@@ -27,3 +27,10 @@ inline fun <T> runCatchingResult(block: () -> T): Result<T> = try {
 } catch (throwable: Throwable) {
     Result.Error(throwable.message ?: "Unexpected error", throwable)
 }
+
+/** Explicit empty fallback for supplementary list reads whose failure must
+ * not blank the primary content (e.g. the neighbour-surah boundary pages). */
+fun <T> Result<List<T>>.orEmptyIfError(): List<T> = when (this) {
+    is Result.Success -> data
+    is Result.Error -> emptyList()
+}

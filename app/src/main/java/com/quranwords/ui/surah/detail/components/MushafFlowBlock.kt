@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -47,11 +48,12 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import com.quranwords.R
+import com.quranwords.core.util.AyahRef
 import com.quranwords.core.util.sanitizeUthmanicText
 import com.quranwords.core.util.toEasternArabicDigits
-import com.quranwords.domain.model.Ayah
-import com.quranwords.domain.model.WordToken
 import com.quranwords.ui.theme.AppMotion
+import com.quranwords.ui.theme.LocalWordFocusHighlight
 import com.quranwords.ui.theme.QuranFont
 
 internal const val FLOW_WORD_TAG = "word_id"
@@ -67,16 +69,24 @@ fun MushafFlowBlock(
     fontSize: Float,
     quranFont: QuranFont,
     isSelectionMode: Boolean,
-    selectedAyahs: Set<Int>,
-    onWordClick: (WordToken, Ayah) -> Unit,
-    onToggleSelection: (Int) -> Unit,
-    onEnterSelection: (Int) -> Unit,
+    selectedAyahs: Set<AyahRef>,
+    /** Shared gesture seam from the screen; single tap no longer opens words. */
+    wordInteraction: WordInteractionCallbacks,
+    onToggleSelection: (AyahRef) -> Unit,
+    onEnterSelection: (AyahRef) -> Unit,
     modifier: Modifier = Modifier,
-    bookmarkedAyahs: Set<Int> = emptySet(),
-    pulseAyah: Int? = null,
-    onPulseDone: () -> Unit = {}
+    bookmarkedAyahs: Set<AyahRef> = emptySet(),
+    pulseAyah: AyahRef? = null,
+    onPulseDone: () -> Unit = {},
+    /** Pages-mode line-spacing stretch (sp); 0 in the scrolling reader. */
+    extraLineSpacingSp: Float = 0f,
+    /** Non-null only on the block owning the open long-press toolbar. */
+    activeWordAction: WordActionTarget? = null
 ) {
     val haptic = LocalHapticFeedback.current
+    val blockKey = "${group.key}_${group.firstAyahIndex}"
+    val focusedWordId = activeWordAction?.takeIf { it.blockKey == blockKey }?.wordId
+    val morphologyLabel = stringResource(R.string.word_action_root)
     // 24dp word-hit margin in px: taps this far past a word's ink still snap
     // to the nearest word; beyond that, blank margins stay inert.
     val outerMarginSlopPx = with(LocalDensity.current) { 24.dp.toPx() }
@@ -97,6 +107,9 @@ fun MushafFlowBlock(
     var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
 
     val ayahByNumber = remember(group) { group.ayat.associateBy { it.ayah } }
+    // CompositionLocal read must happen in @Composable scope, not inside the
+    // remember calculation / AnnotatedString builder below.
+    val wordFocusHighlight = LocalWordFocusHighlight.current
 
     val annotated = remember(
         group,
@@ -107,7 +120,9 @@ fun MushafFlowBlock(
         selectionBg,
         bookmarkBg,
         bookmarkMarkerColor,
-        quranFont
+        quranFont,
+        focusedWordId,
+        wordFocusHighlight
     ) {
         // NOTE: the character content of this builder is mirrored by
         // mushafBlockLayoutText in MushafFontSizeFit.kt (pages-mode auto-fit
@@ -117,14 +132,21 @@ fun MushafFlowBlock(
                 // Inter-ayah space belongs to neither range: highlights stay isolated.
                 if (ayahIndex > 0) append(" ")
                 val ayahStart = length
-                val isSelected = ayah.ayah in selectedAyahs
-                val isBookmarked = ayah.ayah in bookmarkedAyahs
+                // Pair key: identical ayah numbers in different surahs stay distinct.
+                val ref = AyahRef(ayah.surah, ayah.ayah)
+                val isSelected = ref in selectedAyahs
+                val isBookmarked = ref in bookmarkedAyahs
                 if (ayah.words.isNotEmpty()) {
                     ayah.words.forEachIndexed { wordIndex, word ->
                         if (wordIndex > 0) append(" ")
                         val wordStart = length
                         append(sanitizeUthmanicText(word.text))
                         addStringAnnotation(FLOW_WORD_TAG, word.wordAyahId.toString(), wordStart, length)
+                        // Temporary long-press focus — paint-only; the auto-fit
+                        // mirror measures the identical characters either way.
+                        if (focusedWordId == word.wordAyahId) {
+                            addStyle(SpanStyle(background = wordFocusHighlight), wordStart, length)
+                        }
                     }
                 } else {
                     append(sanitizeUthmanicText(ayah.textUthmani))
@@ -143,8 +165,8 @@ fun MushafFlowBlock(
                     // مؤطرة في كل الخطوط الأربعة، بما فيها خط مصحف المدينة.
                     // \u00A0 stays OUTSIDE the marker annotation on purpose: taps on
                     // the gluing space fall back to the nearest word (the ayah's
-                    // final word), while taps on ﴿n﴾ itself are inert
-                    // (see wordAtPoint).
+                    // final word), while presses on ﴿n﴾ resolve to the marker
+                    // (see mushafHitAtPoint).
                     append("\u00A0")
                     val markerStart = length
                     append("﴿${ayah.ayah.toEasternArabicDigits()}﴾")
@@ -162,7 +184,7 @@ fun MushafFlowBlock(
 
     // Canonical block style — also the reference style the last-line
     // justification re-lays-out tokens with, so measure == render.
-    val blockStyle = mushafBlockTextStyle(LocalTextStyle.current, fontSize, quranFont)
+    val blockStyle = mushafBlockTextStyle(LocalTextStyle.current, fontSize, quranFont, extraLineSpacingSp)
     val textMeasurer = rememberTextMeasurer()
     // Word-gap justification of the last line (uniform rectangle). Computed
     // once per layout/annotation change; drawing applies per-token shifts
@@ -176,13 +198,70 @@ fun MushafFlowBlock(
     // capture a stale justification — read it fresh per tap instead.
     val currentJustification by rememberUpdatedState(justification)
 
+    // Text's own padding inside this Box — the word rect from TextLayoutResult
+    // is Text-local, while the Popup anchor is this Box.
+    val wordRectOffset = with(LocalDensity.current) { Offset(4.dp.toPx(), 2.dp.toPx()) }
+
+    // Gesture seam: single tap toggles chrome (or keeps active-selection
+    // behavior); long press on a WORD opens the floating action toolbar.
+    fun handleTap(offset: Offset) {
+        // A tap outside the toolbar consumes the gesture: dismiss ONLY, never
+        // fall through to chrome toggle or ayah selection on the same tap.
+        if (activeWordAction != null) {
+            wordInteraction.onDismissWordAction()
+            return
+        }
+        if (isSelectionMode) {
+            val result = layoutResult ?: return
+            val position = result.remapForLastLine(currentJustification, offset)
+            val ayahNum = result.ayahAt(annotated, position) ?: return
+            val ayah = group.ayat.firstOrNull { it.ayah == ayahNum } ?: return
+            onToggleSelection(AyahRef(ayah.surah, ayah.ayah))
+        } else {
+            wordInteraction.onToggleChrome()
+        }
+    }
+
+    fun handleLongPress(offset: Offset) {
+        val result = layoutResult ?: return
+        val hit = result.mushafHitAtPoint(
+            text = annotated,
+            ayahByNumber = ayahByNumber,
+            position = offset,
+            lastLineJustification = currentJustification,
+            lastLineEmptySpace = result.lastLineEmptySpace(),
+            outerMarginSlopPx = outerMarginSlopPx
+        ) ?: return // true whitespace / margins are a safe no-op
+        when (hit) {
+            is MushafHit.AyahMarker -> {
+                // Direct full-ayah selection — every surah on the page is first-class.
+                val ayah = group.ayat.firstOrNull { it.ayah == hit.ayahNum } ?: return
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onEnterSelection(AyahRef(ayah.surah, ayah.ayah))
+            }
+            is MushafHit.Word -> {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                wordInteraction.onWordLongPressed(
+                    WordActionTarget(
+                        wordId = hit.hit.word.wordAyahId,
+                        word = hit.hit.word,
+                        ayah = hit.hit.ayah, // word's own ayah + surah
+                        blockKey = blockKey,
+                        visualRect = hit.hit.visualRect.translate(wordRectOffset)
+                    )
+                )
+            }
+        }
+    }
+
     // Line bands covering the pulse target, split for the centered last line.
     // Pure geometry over the static text: no span changes, no relayout.
-    val pulseGeo = remember(layoutResult, annotated, pulseAyah, justification) {
+    val pulseGeo = remember(layoutResult, annotated, pulseAyah, justification, group) {
         val target = pulseAyah
         val result = layoutResult
-        if (target == null || result == null) null
-        else result.pulseGeometry(annotated, target, justification)
+        val surahMatches = target?.surahId == group.ayat.firstOrNull()?.surah
+        if (target == null || result == null || !surahMatches) null
+        else result.pulseGeometry(annotated, target.ayah, justification)
     }
 
     // Two soft fades (~1s total). Keys cover late layout delivery; the effect
@@ -205,41 +284,8 @@ fun MushafFlowBlock(
             .fillMaxWidth()
             .pointerInput(isSelectionMode, group.key, group.firstAyahIndex) {
                 detectTapGestures(
-                    onTap = { offset ->
-                        val result = layoutResult ?: return@detectTapGestures
-                        if (isSelectionMode) {
-                            // Selection taps keep the remap+ayahAt path
-                            // (whole-ayah annotations span the inter-word
-                            // gaps).
-                            val position = result.remapForLastLine(currentJustification, offset)
-                            val ayahNum = result.ayahAt(annotated, position) ?: return@detectTapGestures
-                            onToggleSelection(ayahNum)
-                        } else {
-                            // Word taps use the RAW visual position: the
-                            // last-line shifts (justified per-token / centered
-                            // fallback) are handled against the drawn geometry
-                            // inside wordAtPoint.
-                            val hit = result.wordAtPoint(
-                                text = annotated,
-                                ayahByNumber = ayahByNumber,
-                                position = offset,
-                                lastLineJustification = currentJustification,
-                                lastLineEmptySpace = result.lastLineEmptySpace(),
-                                outerMarginSlopPx = outerMarginSlopPx
-                            )
-                            if (hit != null) {
-                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                onWordClick(hit.word, hit.ayah)
-                            }
-                        }
-                    },
-                    onLongPress = { offset ->
-                        val result = layoutResult ?: return@detectTapGestures
-                        val position = result.remapForLastLine(currentJustification, offset)
-                        val ayahNum = result.ayahAt(annotated, position) ?: return@detectTapGestures
-                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onEnterSelection(ayahNum)
-                    }
+                    onTap = { offset -> handleTap(offset) },
+                    onLongPress = { offset -> handleLongPress(offset) }
                 )
             }
             .testTag("mushaf_block_${group.key}_${group.firstAyahIndex}")
@@ -252,31 +298,46 @@ fun MushafFlowBlock(
                 } else {
                     range
                 }
-                customActions = group.ayat.flatMap { ayah ->
-                    val toggleLabel = if (ayah.ayah in bookmarkedAyahs) {
-                        "الآية ${ayah.ayah.toEasternArabicDigits()} (محفوظة)"
-                    } else {
-                        "الآية ${ayah.ayah.toEasternArabicDigits()}"
+                // Single tap no longer opens words, so TalkBack needs its OWN
+                // per-word morphology action (it has no long press). Foreign
+                // words keep it too — with their real Ayah/surah.
+                customActions = buildList<CustomAccessibilityAction> {
+                    group.ayat.forEach { ayah ->
+                        ayah.words.forEach { word ->
+                            add(
+                                CustomAccessibilityAction(
+                                    "$morphologyLabel: ${sanitizeUthmanicText(word.text)}"
+                                ) {
+                                    wordInteraction.onOpenWord(word, ayah)
+                                    true
+                                }
+                            )
+                        }
                     }
-                    val toggle = CustomAccessibilityAction(toggleLabel) {
-                        if (isSelectionMode) onToggleSelection(ayah.ayah)
-                        else onEnterSelection(ayah.ayah)
-                        true
-                    }
-                    // TalkBack has no long-press: expose range extension (the
-                    // Screen routes onEnterSelection to RangeSelect in this mode).
-                    if (isSelectionMode) {
-                        listOf(
-                            toggle,
-                            CustomAccessibilityAction(
-                                "تحديد المدى حتى الآية ${ayah.ayah.toEasternArabicDigits()}"
-                            ) {
-                                onEnterSelection(ayah.ayah)
-                                true
-                            }
-                        )
-                    } else {
-                        listOf(toggle)
+                    // Every ayah on the visible page is selectable, whatever
+                    // surah it belongs to.
+                    group.ayat.forEach { ayah ->
+                        val ref = AyahRef(ayah.surah, ayah.ayah)
+                        val toggleLabel = if (ref in bookmarkedAyahs) {
+                            "الآية ${ayah.ayah.toEasternArabicDigits()} (محفوظة)"
+                        } else {
+                            "الآية ${ayah.ayah.toEasternArabicDigits()}"
+                        }
+                        add(CustomAccessibilityAction(toggleLabel) {
+                            if (isSelectionMode) onToggleSelection(ref)
+                            else onEnterSelection(ref)
+                            true
+                        })
+                        if (isSelectionMode) {
+                            add(
+                                CustomAccessibilityAction(
+                                    "تحديد المدى حتى الآية ${ayah.ayah.toEasternArabicDigits()}"
+                                ) {
+                                    onEnterSelection(ref)
+                                    true
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -382,6 +443,19 @@ fun MushafFlowBlock(
                 // measure with.
                 style = blockStyle,
                 onTextLayout = { layoutResult = it }
+            )
+        }
+        // Popup lives in THIS Box so PopupPositionProvider's anchorBounds are
+        // the block's bounds; the word rect is already block-local.
+        val action = activeWordAction
+        if (action != null && action.blockKey == blockKey) {
+            WordActionPopup(
+                target = action,
+                onDismiss = wordInteraction.onDismissWordAction,
+                onMorphology = { wordInteraction.onOpenWord(action.word, action.ayah) },
+                // Screen routes this to RangeSelect when already selecting.
+                onSelectAyah = { onEnterSelection(AyahRef(action.ayah.surah, action.ayah.ayah)) },
+                onCopyWord = { wordInteraction.onCopyWord(action.word.text) }
             )
         }
     }

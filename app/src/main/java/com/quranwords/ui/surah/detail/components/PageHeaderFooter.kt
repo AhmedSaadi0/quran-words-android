@@ -26,13 +26,20 @@ import com.quranwords.core.util.toEasternArabicDigits
  */
 @Composable
 fun PageHeaderRow(
-    surahId: Int,
+    surahIds: List<Int>,
     juz: Int?,
     hizb: Int? = null,
     pageNumber: Int?,
     modifier: Modifier = Modifier
 ) {
-    val surahName = SurahMetadata.SURAHS.getOrNull(surahId - 1)?.nameAr ?: ""
+    // A shared page can hold up to three surahs (Juz Amma). Two names are shown
+    // in full; three+ collapse to first … last so the row never overflows.
+    val names = surahIds.mapNotNull { SurahMetadata.SURAHS.getOrNull(it - 1)?.nameAr }.distinct()
+    val surahName = when {
+        names.isEmpty() -> ""
+        names.size <= 2 -> names.joinToString(" • ")
+        else -> "${names.first()} … ${names.last()}"
+    }
     Row(
         modifier = modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 4.dp).testTag("page_header_$pageNumber"),
         horizontalArrangement = Arrangement.SpaceBetween,

@@ -9,13 +9,47 @@ import com.quranwords.domain.model.WordToken
 
 /**
  * Tag wrapping ONLY the ayah-end marker body (`﴿n﴾`) — not the `\u00A0` gluing
- * it to the ayah's final word. Taps landing on the marker are inert; taps on
- * the gluing NBSP fall back to nearest-word resolution (the ayah's final word).
+ * it to the ayah's final word. Pressing the marker resolves to an ayah hit;
+ * taps on the gluing NBSP fall back to nearest-word resolution.
  */
 internal const val FLOW_MARKER_TAG = "ayah_marker"
 
-/** Winner of a word hit test: the resolved pair [onWordClick] needs. */
-internal data class WordHit(val word: WordToken, val ayah: Ayah)
+/**
+ * Winner of a word hit test: the resolved pair the morphology action needs,
+ * plus its drawn bounds (in the Text's own coordinates) used to anchor the
+ * long-press toolbar and to highlight the pressed word.
+ */
+internal data class WordHit(val word: WordToken, val ayah: Ayah, val visualRect: Rect)
+
+/** Long-press target: either a word or an ayah-end marker (﴿n﴾). True
+ * whitespace/margins resolve to null and stay a safe no-op. */
+internal sealed interface MushafHit {
+    data class Word(val hit: WordHit) : MushafHit
+    data class AyahMarker(val ayahNum: Int) : MushafHit
+}
+
+/** Pure hit-kind resolver, shared by the layout-backed hit test and tests. */
+internal sealed interface MushafHitKind {
+    data class Word(val index: Int) : MushafHitKind
+    data class Marker(val index: Int) : MushafHitKind
+    data object Miss : MushafHitKind
+}
+
+/** Marker containment wins first; every other point resolves to the nearest
+ * word (with slop), and only true blank margins miss. */
+internal fun resolveHitKind(
+    x: Float,
+    wordRects: List<Rect>,
+    markerRects: List<Rect>,
+    outerMarginSlopPx: Float
+): MushafHitKind {
+    for (i in markerRects.indices) {
+        val rect = markerRects[i]
+        if (x in rect.left..rect.right) return MushafHitKind.Marker(i)
+    }
+    val wordIndex = closestWordIndex(x, wordRects, outerMarginSlopPx) ?: return MushafHitKind.Miss
+    return MushafHitKind.Word(wordIndex)
+}
 
 /**
  * Picks the index of the rect winning the tap at [x], or null when there is
@@ -77,11 +111,9 @@ internal fun closestWordIndex(x: Float, rects: List<Rect>, outerMarginSlopPx: Fl
  *
  * - The line is located by the tap's vertical band; taps outside the block's
  *   vertical extent select nothing.
- * - The ayah-end marker ([FLOW_MARKER_TAG]) is inert even though the gluing
- *   NBSP is not.
- * - Every other horizontal position on the line maps to the containing or
- *   nearest word (see [closestWordIndex]); the marker check runs before the
- *   nearest-word fallback so `﴿n﴾` can never open a sheet.
+ * - End-of-ayah markers resolve to [MushafHit.AyahMarker] (see [resolveHitKind]);
+ *   every other horizontal position maps to the containing or nearest word
+ *   (see [closestWordIndex]) — true blank margins still miss.
  * - Arabic tashkeel/combining marks measure as zero-width boxes — bounds are
  *   the union over ALL glyph boxes of the span with `width > 0f` (the same
  *   pattern as the pulse overlay), never first/last char.
@@ -94,14 +126,14 @@ internal fun closestWordIndex(x: Float, rects: List<Rect>, outerMarginSlopPx: Fl
  * (it owns the layout); pass 0f / null to disable the last-line handling.
  * Direction-safe throughout: spans merge min/max box edges.
  */
-internal fun TextLayoutResult.wordAtPoint(
+internal fun TextLayoutResult.mushafHitAtPoint(
     text: AnnotatedString,
     ayahByNumber: Map<Int, Ayah>,
     position: Offset,
     lastLineJustification: LastLineJustification?,
     lastLineEmptySpace: Float,
     outerMarginSlopPx: Float
-): WordHit? {
+): MushafHit? {
     if (lineCount == 0 || text.isEmpty()) return null
 
     // Vertical line check: first line whose band contains the tap; the whole
@@ -156,15 +188,17 @@ internal fun TextLayoutResult.wordAtPoint(
         )
     }
 
-    // Inert ayah-end marker — checked before any nearest-word fallback.
+    // Ayah-end markers are their own hit kind (long-press selects the ayah).
+    val markerRects = ArrayList<Rect>()
+    val markerAyahNums = ArrayList<Int>()
     for (marker in text.getStringAnnotations(FLOW_MARKER_TAG, lineStart, lineEnd)) {
         val bounds = spanVisualRect(marker.start, marker.end) ?: continue
-        if (position.x in bounds.left..bounds.right) return null
+        val ayahNum = marker.item.toIntOrNull() ?: continue
+        markerRects.add(bounds)
+        markerAyahNums.add(ayahNum)
     }
 
     val wordAnnotations = text.getStringAnnotations(FLOW_WORD_TAG, lineStart, lineEnd)
-    if (wordAnnotations.isEmpty()) return null
-
     val rects = ArrayList<Rect>(wordAnnotations.size)
     val spans = ArrayList<AnnotatedString.Range<String>>(wordAnnotations.size)
     for (annotation in wordAnnotations) {
@@ -173,14 +207,19 @@ internal fun TextLayoutResult.wordAtPoint(
         spans.add(annotation)
     }
 
-    val winnerIndex = closestWordIndex(position.x, rects, outerMarginSlopPx) ?: return null
-    val winner = spans[winnerIndex]
-    val wordId = winner.item.toIntOrNull() ?: return null
-    val ayahNum = text.getStringAnnotations(FLOW_AYAH_TAG, winner.start, winner.end)
-        .firstOrNull()?.item?.toIntOrNull() ?: return null
-    val ayah = ayahByNumber[ayahNum] ?: return null
-    val word = ayah.words.find { it.wordAyahId == wordId }
-        ?: ayah.words.find { it.wordId == wordId }
-        ?: return null
-    return WordHit(word, ayah)
+    return when (val kind = resolveHitKind(position.x, rects, markerRects, outerMarginSlopPx)) {
+        is MushafHitKind.Marker -> MushafHit.AyahMarker(markerAyahNums[kind.index])
+        is MushafHitKind.Word -> {
+            val winner = spans[kind.index]
+            val wordId = winner.item.toIntOrNull() ?: return null
+            val ayahNum = text.getStringAnnotations(FLOW_AYAH_TAG, winner.start, winner.end)
+                .firstOrNull()?.item?.toIntOrNull() ?: return null
+            val ayah = ayahByNumber[ayahNum] ?: return null
+            val word = ayah.words.find { it.wordAyahId == wordId }
+                ?: ayah.words.find { it.wordId == wordId }
+                ?: return null
+            MushafHit.Word(WordHit(word, ayah, rects[kind.index]))
+        }
+        MushafHitKind.Miss -> null
+    }
 }

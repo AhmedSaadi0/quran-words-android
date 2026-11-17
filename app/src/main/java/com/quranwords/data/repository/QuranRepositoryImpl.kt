@@ -7,6 +7,8 @@ import com.quranwords.data.local.db.RootProjection
 import com.quranwords.data.local.search.SearchQueryBuilder
 import com.quranwords.data.remote.DatabaseDownloadManager
 import com.quranwords.core.util.ArabicNormalizer
+import com.quranwords.core.util.Result
+import com.quranwords.core.util.runCatchingResult
 import com.quranwords.core.util.sanitizeUthmanicText
 import com.quranwords.core.util.AiRefsParser
 import com.quranwords.core.util.MorphologyMaps
@@ -261,6 +263,65 @@ class QuranRepositoryImpl @Inject constructor(
         }
         return@withContext rows.map { ayah ->
             ayah.copy(words = wordsByAyah[ayah.id].orEmpty())
+        }
+    }
+
+    /**
+     * All ayat of every mushaf page in the active surah's page range, across
+     * surah boundaries. Page 604, for example, holds An-Nasr, Al-Masad, Al-Falaq
+     * and An-Nas; the book-pages reader must show all of them on that page.
+     * Uses the same 21-column word projection + batched morphology read as
+     * [getAyatBySurahFull] so a page can never render with different word data
+     * than the scrolling reader.
+     */
+    override suspend fun getAyatByPageRangeFull(firstPage: Int, lastPage: Int): Result<List<Ayah>> = withContext(ioDispatcher) {
+        runCatchingResult {
+            val db = getDb() ?: return@runCatchingResult emptyList()
+            val rows = mutableListOf<Ayah>()
+            val ayahIds = mutableListOf<Int>()
+            val cursor = db.rawQuery(
+                "SELECT id, surah, ayah, text_uthmani, text_uthmani_plain, text_imlaei, word_count, juz, hizb, rub_el_hizb, page_number " +
+                    "FROM ayat WHERE page_number BETWEEN ? AND ? ORDER BY surah ASC, ayah ASC",
+                arrayOf(firstPage.toString(), lastPage.toString())
+            )
+            cursor.use { c ->
+                while (c.moveToNext()) {
+                    val ayahId = c.getInt(0)
+                    ayahIds += ayahId
+                    rows += Ayah(
+                        id = ayahId,
+                        surah = c.getInt(1),
+                        ayah = c.getInt(2),
+                        textUthmani = sanitizeUthmanicText(c.getString(3) ?: ""),
+                        textUthmaniPlain = c.getString(4) ?: "",
+                        textImlaei = c.getString(5) ?: "",
+                        wordCount = c.getInt(6),
+                        words = emptyList(),
+                        juz = if (c.isNull(7)) null else c.getInt(7),
+                        hizb = if (c.isNull(8)) null else c.getInt(8),
+                        rubElHizb = if (c.isNull(9)) null else c.getInt(9),
+                        pageNumber = if (c.isNull(10)) null else c.getInt(10)
+                    )
+                }
+            }
+            if (rows.isEmpty()) return@runCatchingResult emptyList()
+            val wordsByAyah = loadWordsForAyat(db, ayahIds)
+            rows.map { ayah -> ayah.copy(words = wordsByAyah[ayah.id].orEmpty()) }
+        }
+    }
+
+    override suspend fun getAyatOfPageFull(pageNumber: Int): Result<List<Ayah>> =
+        getAyatByPageRangeFull(pageNumber, pageNumber)
+
+    override suspend fun getMaxPageNumber(): Int = withContext(ioDispatcher) {
+        val db = getDb() ?: return@withContext 604
+        try {
+            val cursor = db.rawQuery("SELECT MAX(page_number) FROM ayat", null)
+            cursor.use { c ->
+                if (c.moveToNext() && !c.isNull(0)) c.getInt(0).coerceIn(1, 604) else 604
+            }
+        } catch (_: Exception) {
+            604
         }
     }
 

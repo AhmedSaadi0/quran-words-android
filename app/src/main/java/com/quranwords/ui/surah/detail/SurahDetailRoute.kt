@@ -24,7 +24,7 @@ fun SurahDetailRoute(
     targetAyah: Int,
     enter: SurahEnter,
     onNavigateBack: () -> Unit,
-    onNavigateToAdjacentSurah: (surahId: Int, ayah: Int, fromNext: Boolean) -> Unit,
+    onNavigateToAdjacentSurah: (surahId: Int, ayah: Int, fromNext: Boolean, initialImmersive: Boolean) -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
     viewModel: SurahDetailViewModel = hiltViewModel()
 ) {
@@ -36,6 +36,10 @@ fun SurahDetailRoute(
 
     fun onEvent(event: SurahDetailEvent) {
         when (event) {
+            is SurahDetailEvent.CopyWord -> {
+                shareHandler.copyImmediate(event.text, context.getString(R.string.copied_text))
+                // The toolbar already dismissed itself and cleared the highlight.
+            }
             SurahDetailEvent.CopySelection -> scope.launch {
                 val formatted = viewModel.getFormattedSelection()
                 if (formatted.isNotBlank()) {

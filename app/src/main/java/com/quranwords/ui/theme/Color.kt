@@ -99,6 +99,15 @@ val PosPronounColor = Color(0xFF5E4E6E) // earthy heather
 val PosAdjectiveColor = Color(0xFF886326) // warm amber
 val PosDefaultColor = Color(0xFF56624B) // natural olive
 
+/**
+ * Temporary word-focus wash for the long-press action toolbar. Distinct from
+ * the persistent selection (primaryContainer) and bookmark (tertiaryContainer)
+ * washes: sage in light, warm amber in dark, both translucent enough to keep
+ * tashkeel legible.
+ */
+val WordFocusHighlightLight = NaturalOlive300.copy(alpha = 0.55f)
+val WordFocusHighlightDark = NaturalAmberLight.copy(alpha = 0.45f)
+
 // Harmonize helper - blend dynamic color with brand olive for identity retention
 fun harmonizeWithBrand(color: Color, blendRatio: Float = 0.25f): Color {
     // Simple lerp blend: 25% brand olive + 75% dynamic color

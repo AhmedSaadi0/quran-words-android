@@ -80,4 +80,33 @@ class MushafWordHitTestTest {
         assertEquals(0, closestWordIndex(200f, rects, SLOP))
         assertEquals(1, closestWordIndex(400f, rects, SLOP))
     }
+
+    @Test
+    fun markerContainmentWinsOverOverlappingWord() {
+        val words = listOf(Rect(0f, 0f, 100f, 10f))
+        val markers = listOf(Rect(90f, 0f, 110f, 10f))
+        assertEquals(MushafHitKind.Marker(0), resolveHitKind(100f, words, markers, 0f))
+    }
+
+    @Test
+    fun wordHitWhenOutsideTheMarker() {
+        val words = listOf(Rect(0f, 0f, 100f, 10f))
+        val markers = listOf(Rect(120f, 0f, 140f, 10f))
+        assertEquals(MushafHitKind.Word(0), resolveHitKind(30f, words, markers, 0f))
+    }
+
+    @Test
+    fun gluingNbspFallsBackToNearestWord() {
+        // Between the word's ink end (100) and the marker start (105).
+        val words = listOf(Rect(0f, 0f, 100f, 10f))
+        val markers = listOf(Rect(105f, 0f, 125f, 10f))
+        assertEquals(MushafHitKind.Word(0), resolveHitKind(103f, words, markers, SLOP))
+    }
+
+    @Test
+    fun trueWhitespaceAndMarginsMiss() {
+        val words = listOf(Rect(0f, 0f, 100f, 10f))
+        val markers = listOf(Rect(120f, 0f, 140f, 10f))
+        assertEquals(MushafHitKind.Miss, resolveHitKind(300f, words, markers, SLOP))
+    }
 }

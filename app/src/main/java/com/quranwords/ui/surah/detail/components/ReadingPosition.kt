@@ -2,6 +2,7 @@ package com.quranwords.ui.surah.detail.components
 
 import androidx.compose.foundation.lazy.LazyListState
 import com.quranwords.core.util.ReadingProgress
+import com.quranwords.domain.model.Ayah
 import com.quranwords.domain.model.Surah
 
 /**
@@ -68,16 +69,40 @@ fun readingProgressOfPager(
     page: Int,
     groups: List<AyahFlowGroup>,
     surah: Surah?,
-    surahPages: List<Int>
+    surahPages: List<Int>,
+    activeSurahId: Int? = null
 ): ReadingProgress? {
     val surahId = surah?.id ?: return null
     val group = groups.getOrNull(page) ?: return null
+    // A shared page may start with a neighbour surah's tail: count only this
+    // surah's ayat so the rings track the reader's actual position.
+    val firstActive = firstActiveAyah(group, activeSurahId) ?: return null
     return ReadingProgress.of(
         surahId = surahId,
-        blockFirstAyah = group.ayat.first().ayah,
-        blockAyahCount = group.ayat.size,
+        blockFirstAyah = firstActive.ayah,
+        blockAyahCount = activeAyahCount(group, activeSurahId),
         scrolledFraction = 0f,
         currentPage = group.pageNumber,
+        surahPages = surahPages
+    )
+}
+
+/** Rings for the unified 1..N mushaf pager: the current page is already a real
+ * page number, and progress is measured inside the active surah on that page. */
+fun readingProgressOfMushafPage(
+    page: Int,
+    surah: Surah?,
+    surahPages: List<Int>,
+    ayat: List<Ayah>
+): ReadingProgress? {
+    val surahId = surah?.id ?: return null
+    val active = ayat.firstOrNull { it.surah == surahId } ?: return null
+    return ReadingProgress.of(
+        surahId = surahId,
+        blockFirstAyah = active.ayah,
+        blockAyahCount = ayat.count { it.surah == surahId },
+        scrolledFraction = 0f,
+        currentPage = page,
         surahPages = surahPages
     )
 }

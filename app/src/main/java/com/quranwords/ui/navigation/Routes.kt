@@ -24,7 +24,10 @@ enum class SurahEnter { Normal, FromNext, FromPrev }
 data class SurahDetail(
     val surahId: Int,
     val ayah: Int = 1,
-    val enter: SurahEnter = SurahEnter.Normal
+    val enter: SurahEnter = SurahEnter.Normal,
+    /** External entries leave this false; internal surah switches carry the
+     * reader's current immersive state so the top bar does not pop back. */
+    val initialImmersive: Boolean = false
 )
 
 @Serializable

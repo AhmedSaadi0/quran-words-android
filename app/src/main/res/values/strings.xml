@@ -380,6 +380,10 @@
     <string name="copy_meanings">Copy meanings</string>
     <string name="share_meanings">Share meanings</string>
     <string name="copied_text">Copied</string>
+    <!-- Long-press word action toolbar -->
+    <string name="word_action_root">Word root &amp; morphology</string>
+    <string name="word_action_select_ayah">Select full ayah</string>
+    <string name="word_action_copy">Copy word</string>
     <string name="cd_copy_ai_summary">Copy AI summary</string>
     <string name="read_more">Read more</string>
     <string name="no_meanings_copy">No meanings to copy</string>

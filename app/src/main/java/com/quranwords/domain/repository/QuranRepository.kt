@@ -10,6 +10,7 @@ import com.quranwords.domain.model.RootWordModel
 import com.quranwords.domain.model.SearchResult
 import com.quranwords.domain.model.Surah
 import com.quranwords.domain.model.WordToken
+import com.quranwords.core.util.Result
 import kotlinx.coroutines.flow.Flow
 
 interface QuranRepository {
@@ -22,6 +23,17 @@ interface QuranRepository {
      * premature optimization; `LazyColumn` already virtualizes rendering.
      */
     suspend fun getAyatBySurahFull(surahId: Int): List<Ayah>
+    /**
+     * Every ayah on every mushaf page in [firstPage]..[lastPage], regardless of
+     * surah, with words attached. The book-pages reader renders this directly
+     * so a page shared by two or three surahs always shows 100% of its verses;
+     * the scrolling reader stays surah-scoped via [getAyatBySurahFull].
+     */
+    suspend fun getAyatByPageRangeFull(firstPage: Int, lastPage: Int): Result<List<Ayah>>
+    /** One full mushaf page (all surahs on it), for the lazy 1..604 pager. */
+    suspend fun getAyatOfPageFull(pageNumber: Int): Result<List<Ayah>>
+    /** Highest `page_number` in the DB (404/604 fallback when unavailable). */
+    suspend fun getMaxPageNumber(): Int
     suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah?
     suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem>
     suspend fun getAllRoots(): List<RootItem>

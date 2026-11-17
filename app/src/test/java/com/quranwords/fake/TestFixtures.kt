@@ -11,6 +11,7 @@ import com.quranwords.domain.model.SearchResult
 import com.quranwords.domain.model.Surah
 import com.quranwords.domain.repository.UserPreferencesRepository
 import com.quranwords.domain.repository.QuranRepository
+import com.quranwords.core.util.Result
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -127,6 +128,10 @@ class FakeQuranRepository(
     val searchResult: SearchResult = SearchResult(),
     val searchPageSize: Int = 20,
     val topRoots: List<RootItem> = emptyList(),
+    val ayatBySurah: Map<Int, List<Ayah>> = emptyMap(),
+    val ayatByPage: Map<Int, List<Ayah>> = emptyMap(),
+    var failGetAyatOfPage: Boolean = false,
+    val pageRangeFetchCalls: MutableList<Pair<Int, Int>> = mutableListOf(),
     var failGetAllRoots: Boolean = false,
     var failSearch: Boolean = false
 ) : QuranRepository {
@@ -134,7 +139,20 @@ class FakeQuranRepository(
     override fun getSurahs(): Flow<List<Surah>> = flowOf(emptyList())
     override suspend fun getSurahById(id: Int): Surah? = null
     override fun getAyatBySurah(surahId: Int): Flow<List<Ayah>> = flowOf(emptyList())
-    override suspend fun getAyatBySurahFull(surahId: Int): List<Ayah> = emptyList()
+    override suspend fun getAyatBySurahFull(surahId: Int): List<Ayah> = ayatBySurah[surahId].orEmpty()
+    override suspend fun getAyatByPageRangeFull(firstPage: Int, lastPage: Int): Result<List<Ayah>> {
+        pageRangeFetchCalls += firstPage to lastPage
+        if (failGetAyatOfPage) return Result.Error("page read failed")
+        return Result.Success(
+            ayatByPage.filterKeys { it in firstPage..lastPage }.values.flatten()
+                .sortedWith(compareBy<Ayah> { it.surah }.thenBy { it.ayah })
+        )
+    }
+    override suspend fun getAyatOfPageFull(pageNumber: Int): Result<List<Ayah>> =
+        getAyatByPageRangeFull(pageNumber, pageNumber)
+    override suspend fun getMaxPageNumber(): Int = maxPageNumber
+
+    var maxPageNumber: Int = 604
     override suspend fun getAyahWithWords(surahId: Int, ayahNum: Int): Ayah? = null
 
     override suspend fun getRootsPaged(limit: Int, offset: Int): List<RootItem> =
