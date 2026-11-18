@@ -244,4 +244,92 @@ class SurahDetailViewModelTest {
         assertTrue(state.isPagesReady)
         assertEquals(listOf(5), state.pageAyahs.map { it.surah })
     }
+
+    @Test
+    fun `readiness survives LRU eviction of the entry page`() = runTest {
+        val repo = FakeQuranRepository(
+            ayatBySurah = mapOf(4 to listOf(pageAyah(4, 1, 50))),
+            ayatByPage = (45..80).associateWith { page -> listOf(pageAyah(4, 1, page)) }
+        )
+        val vm = SurahDetailViewModel(repo, FakeUserPreferences())
+        vm.onEvent(SurahDetailEvent.Load(4, targetAyah = 1))
+        advanceUntilIdle()
+        assertTrue(vm.screenState.value.isPagesReady)
+        assertTrue(vm.screenState.value.pagesByNumber.containsKey(50))
+
+        // Swipe far beyond the 18-page window; the old screen gate watched
+        // pagesByNumber[entryPage] and unmounted the pager into a dead spinner.
+        for (page in 55..75) {
+            vm.onEvent(SurahDetailEvent.PageChanged(page))
+            advanceUntilIdle()
+        }
+        val state = vm.screenState.value
+        assertTrue(state.isPagesReady)
+        assertEquals(75, state.currentPage)
+        assertTrue(state.pagesByNumber.containsKey(75))
+        assertTrue(state.pagesByNumber.containsKey(50)) // pinned entry page
+    }
+
+    @Test
+    fun `duplicate page events while loading do not cancel the visible fetch`() = runTest {
+        val repo = FakeQuranRepository(
+            ayatBySurah = mapOf(4 to listOf(pageAyah(4, 1, 50))),
+            ayatByPage = (45..60).associateWith { page -> listOf(pageAyah(4, 1, page)) },
+            pageLoadDelayMs = 20L
+        )
+        val vm = SurahDetailViewModel(repo, FakeUserPreferences())
+        vm.onEvent(SurahDetailEvent.Load(4, targetAyah = 1))
+        advanceUntilIdle()
+        repo.pageRangeFetchCalls.clear()
+
+        vm.onEvent(SurahDetailEvent.PageChanged(58))
+        vm.onEvent(SurahDetailEvent.PageChanged(58))
+        vm.onEvent(SurahDetailEvent.PageChanged(58))
+        advanceUntilIdle()
+
+        val fetchesOf58 = repo.pageRangeFetchCalls.count { it == 58 to 58 }
+        assertEquals(1, fetchesOf58)
+        assertTrue(vm.screenState.value.pagesByNumber.containsKey(58))
+    }
+
+    @Test
+    fun `visible page is published before its neighbours`() = runTest {
+        val repo = FakeQuranRepository(
+            ayatBySurah = mapOf(4 to listOf(pageAyah(4, 1, 50))),
+            ayatByPage = (45..60).associateWith { page -> listOf(pageAyah(4, 1, page)) },
+            pageLoadDelayMs = 20L
+        )
+        val vm = SurahDetailViewModel(repo, FakeUserPreferences())
+        vm.onEvent(SurahDetailEvent.Load(4, targetAyah = 1))
+        advanceUntilIdle()
+        repo.pageRangeFetchCalls.clear()
+
+        vm.onEvent(SurahDetailEvent.PageChanged(58))
+        advanceUntilIdle()
+        assertEquals(58 to 58, repo.pageRangeFetchCalls.first())
+    }
+
+    @Test
+    fun `failed page offers retry instead of an endless spinner`() = runTest {
+        val repo = FakeQuranRepository(
+            ayatBySurah = mapOf(4 to listOf(pageAyah(4, 1, 50))),
+            ayatByPage = mapOf(60 to listOf(pageAyah(4, 1, 60)))
+        )
+        repo.failPages += 60
+        val vm = SurahDetailViewModel(repo, FakeUserPreferences())
+        vm.onEvent(SurahDetailEvent.Load(4))
+        advanceUntilIdle()
+
+        vm.onEvent(SurahDetailEvent.PageChanged(60))
+        advanceUntilIdle()
+        assertTrue(vm.screenState.value.failedPages.contains(60))
+        assertFalse(vm.screenState.value.pagesByNumber.containsKey(60))
+
+        repo.failPages.clear()
+        vm.onEvent(SurahDetailEvent.RetryPage(60))
+        advanceUntilIdle()
+        assertFalse(vm.screenState.value.failedPages.contains(60))
+        assertTrue(vm.screenState.value.pagesByNumber.containsKey(60))
+        assertEquals(listOf(4), vm.screenState.value.pageAyahs.map { it.surah })
+    }
 }

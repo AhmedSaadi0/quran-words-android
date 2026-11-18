@@ -45,6 +45,13 @@ internal const val MUSHAF_STRETCH_MAX_RATIO = 0.25f
 /** Binary-search resolution (sp) — fine enough to leave almost no dead space. */
 private const val FIT_RESOLUTION_SP = 0.1f
 
+/** Rectangle refinement: smallest downward font step and its hard bounds. */
+internal const val RECT_REFINE_STEP_SP = 0.25f
+internal const val RECT_REFINE_MAX_SHRINK_SP = 2.5f
+internal const val RECT_REFINE_SHRINK_RATIO = 0.12f
+/** Segments shorter than this cannot meaningfully "complete a rectangle". */
+internal const val RECT_REFINE_MIN_LINES = 4
+
 /**
  * Conservative px shaved off the measured width: the slot arrives as Dp from
  * BoxWithConstraints while the real Text gets integer-px constraints after
@@ -135,6 +142,41 @@ internal fun resolveExtraLineSpacingPx(
 }
 
 /**
+ * Pure bounded search for the largest font size at or below [maxFitSp] whose
+ * last line completes the rectangle. Checks [maxFitSp] first (zero extra work
+ * when it already qualifies), then scans downward in [stepSp] steps, never
+ * shrinking more than [maxShrinkSp]. A candidate must satisfy [isRectangle]
+ * (the real `computeLastLineJustification` rule), still fit vertically, and
+ * leave no more slack than Phase 2's line-stretch can absorb.
+ *
+ * Pure lambdas keep the policy unit-testable without a Compose fixture; no
+ * glyph scale / letter spacing is ever altered — only the uniform font size.
+ */
+internal fun refineFontSizeForRectangle(
+    maxFitSp: Float,
+    stepSp: Float = RECT_REFINE_STEP_SP,
+    maxShrinkSp: Float = min(RECT_REFINE_MAX_SHRINK_SP, maxFitSp * RECT_REFINE_SHRINK_RATIO),
+    isRectangle: (Float) -> Boolean,
+    fitsVertically: (Float) -> Boolean,
+    slackWithinCap: (Float) -> Boolean
+): Float {
+    if (maxFitSp <= 0f || stepSp <= 0f || maxShrinkSp <= 0f) return maxFitSp
+    // Phase 1 already guaranteed maxFitSp fits vertically — one rectangle
+    // check is enough to keep it with zero extra work.
+    if (isRectangle(maxFitSp)) return maxFitSp
+    var distance = stepSp
+    while (distance <= maxShrinkSp + 1e-4f) {
+        val candidate = maxFitSp - distance
+        if (candidate < MUSHAF_FIT_MIN_SP) break
+        if (isRectangle(candidate) && fitsVertically(candidate) && slackWithinCap(candidate)) {
+            return candidate
+        }
+        distance += stepSp
+    }
+    return maxFitSp
+}
+
+/**
  * Fits ALL surah segments of one mushaf page at once: one shared font size for
  * every block, banner/basmalah heights (measured by the caller) subtracted from
  * the slot, then a strictly capped line-spacing stretch that consumes only the
@@ -178,7 +220,7 @@ internal fun rememberMushafPageFit(
         fun fitsAt(fontSize: Float): Boolean =
             measure(fontSize).sumOf { it.size.height } <= targetPx
 
-        val fontSize = when {
+        val maxFitSp = when {
             !fitsAt(MUSHAF_FIT_MIN_SP) -> MUSHAF_FIT_MIN_SP
             fitsAt(MUSHAF_FIT_MAX_SP) -> MUSHAF_FIT_MAX_SP
             else -> {
@@ -191,6 +233,40 @@ internal fun rememberMushafPageFit(
                 low
             }
         }
+
+        // Rectangle awareness: reuse the REAL last-line rule (same text/style/
+        // constraints as rendering) so the chosen size is exactly the one the
+        // block will justify at draw time.
+        fun lastLineCompletesRectangle(size: Float): Boolean {
+            val layouts = measure(size)
+            return segments.indices.any { index ->
+                val layout = layouts[index]
+                if (layout.lineCount < RECT_REFINE_MIN_LINES) return@any false
+                if (layout.lastLineEmptySpace() <= LAST_LINE_EPS_PX) return@any true
+                computeLastLineJustification(
+                    text = mushafBlockLayoutText(segments[index].ayat, size),
+                    layout = layout,
+                    style = mushafBlockTextStyle(baseStyle, size, quranFont),
+                    textMeasurer = textMeasurer
+                ) != null
+            }
+        }
+
+        fun slackWithinStretchCap(size: Float): Boolean {
+            val layouts = measure(size)
+            val totalLines = layouts.sumOf { it.lineCount }.coerceAtLeast(1)
+            val leftoverPx = targetPx - layouts.sumOf { it.size.height }
+            val perLineCapPx = with(density) { size.sp.toPx() } * quranFont.lineHeightMultiplier *
+                MUSHAF_STRETCH_MAX_RATIO
+            return leftoverPx <= totalLines * perLineCapPx + 0.5f
+        }
+
+        val fontSize = refineFontSizeForRectangle(
+            maxFitSp = maxFitSp,
+            isRectangle = { size -> lastLineCompletesRectangle(size) },
+            fitsVertically = { size -> fitsAt(size) },
+            slackWithinCap = { size -> slackWithinStretchCap(size) }
+        )
 
         val measured = measure(fontSize)
         val totalLines = measured.sumOf { it.lineCount }

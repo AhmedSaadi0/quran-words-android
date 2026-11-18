@@ -61,6 +61,7 @@ private data class ReaderCoreState(
     val entryPage: Int = 0,
     val currentPage: Int = 0,
     val pagesByNumber: Map<Int, List<Ayah>> = emptyMap(),
+    val failedPages: Set<Int> = emptySet(),
     val isPagesReady: Boolean = false,
     val activeSurah: Surah? = null,
     val activeSurahId: Int = 0,
@@ -78,10 +79,17 @@ private data class ReaderCoreState(
     val error: String? = null
 )
 
-/** Bounded access-order cache: recently viewed pages survive rapid flipping. */
+/**
+ * Bounded access-order cache: recently viewed pages survive rapid flipping.
+ * Main-thread confined: only [SurahDetailViewModel] methods on viewModelScope
+ * (Main) touch it, and every published map is a detached snapshot.
+ */
 private class PageCache : LinkedHashMap<Int, List<Ayah>>(PAGE_CACHE_CAPACITY + 2, 0.75f, true) {
+    /** Entry page is kept so it never disappears from published snapshots. */
+    var pinnedPage: Int? = null
+
     override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, List<Ayah>>?): Boolean =
-        size > PAGE_CACHE_CAPACITY
+        size > PAGE_CACHE_CAPACITY && eldest?.key != pinnedPage
 }
 
 /**
@@ -99,6 +107,8 @@ class SurahDetailViewModel @Inject constructor(
     private val initialImmersive = savedStateHandle.get<Boolean>(KEY_INITIAL_IMMERSIVE) ?: false
     private val pageCache = PageCache()
     private var prefetchJob: Job? = null
+    /** Page whose prefetch is in flight — duplicate events must not cancel it. */
+    private var activePrefetchTarget: Int? = null
     private var currentSurahId: Int = -1
     private var lastWrittenLastRead: Pair<Int, Int>? = null
 
@@ -127,6 +137,7 @@ class SurahDetailViewModel @Inject constructor(
             entryPage = state.entryPage,
             currentPage = state.currentPage,
             pagesByNumber = state.pagesByNumber,
+            failedPages = state.failedPages,
             isPagesReady = state.isPagesReady,
             activeSurah = state.activeSurah,
             activeSurahId = state.activeSurahId,
@@ -184,6 +195,7 @@ class SurahDetailViewModel @Inject constructor(
             is SurahDetailEvent.AyahVisible -> updateLastRead(event.ref)
             is SurahDetailEvent.PageChanged -> onPageChanged(event.page)
             is SurahDetailEvent.SetEntryPage -> setEntryPage(event.page)
+            is SurahDetailEvent.RetryPage -> retryPage(event.page)
             is SurahDetailEvent.ToggleAyahBookmark ->
                 viewModelScope.launch { preferences.toggleAyahBookmark(event.ref.surahId, event.ref.ayah) }
             is SurahDetailEvent.SetFontSize ->
@@ -217,11 +229,14 @@ class SurahDetailViewModel @Inject constructor(
 
         currentSurahId = surahId
         prefetchJob?.cancel()
+        activePrefetchTarget = null
         pageCache.clear()
+        pageCache.pinnedPage = null
         _core.update {
             it.copy(
                 isLoading = true, ayat = emptyList(), pageRangeAyat = emptyList(),
                 totalPages = 0, entryPage = 0, currentPage = 0, pagesByNumber = emptyMap(),
+                failedPages = emptySet(),
                 isPagesReady = false, activeSurah = null, activeSurahId = 0, pageAyahs = emptyList(),
                 pulseAyah = null, error = null, selection = AyahSelectionState()
             )
@@ -261,6 +276,7 @@ class SurahDetailViewModel @Inject constructor(
                         chunks.mapIndexed { index, chunk -> index + 1 to chunk }.toMap())
                 }
                 pageCache.putAll(initialPages)
+                pageCache.pinnedPage = entry
                 val entryAyat = initialPages[entry].orEmpty()
                 val activeId = entryAyat.firstOrNull()?.surah ?: surahId
                 LoadedReader(surah, allAyat, rangeAyat, pageCount, entry, activeId, entryAyat)
@@ -276,7 +292,7 @@ class SurahDetailViewModel @Inject constructor(
                             totalPages = pageCount,
                             entryPage = entry,
                             currentPage = entry,
-                            pagesByNumber = LinkedHashMap(pageCache),
+                            pagesByNumber = pageCache.toMap(),
                             isPagesReady = pageCache.containsKey(entry),
                             activeSurah = surahFor(activeId, surah),
                             activeSurahId = activeId,
@@ -297,9 +313,37 @@ class SurahDetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Loads one missing page and publishes a detached map snapshot immediately
+     * (success or failure), so the pager never spins forever. Runs on Main —
+     * [pageCache] is main-thread confined.
+     */
+    private suspend fun loadPageIfMissing(page: Int): Boolean {
+        if (pageCache.containsKey(page)) return true
+        val result = runCatchingResult { repository.getAyatOfPageFull(page).orEmptyIfError() }
+        val ayat = if (result is Result.Success) result.data else emptyList()
+        return if (ayat.isNotEmpty()) {
+            pageCache[page] = ayat
+            _core.update {
+                it.copy(pagesByNumber = pageCache.toMap(), failedPages = it.failedPages - page)
+            }
+            true
+        } else {
+            // Error OR empty page: expose a retry path instead of an endless spinner.
+            _core.update { it.copy(failedPages = it.failedPages + page) }
+            false
+        }
+    }
+
     /** Called when the unified pager settles on a real mushaf page. */
     fun onPageChanged(page: Int) {
         if (page < 1) return
+        // Guardrail 1: duplicate events for the visible page — cached OR still
+        // loading — must not cancel and restart its own fetch.
+        if (page == _core.value.currentPage &&
+            (pageCache.containsKey(page) || activePrefetchTarget == page)
+        ) return
+
         val ayat = pageCache[page].orEmpty()
         val activeId = ayat.firstOrNull()?.surah ?: _core.value.activeSurahId
         _core.update {
@@ -310,20 +354,53 @@ class SurahDetailViewModel @Inject constructor(
                 activeSurah = if (activeId > 0) surahFor(activeId, it.surah) else it.activeSurah
             )
         }
+
         prefetchJob?.cancel()
+        activePrefetchTarget = page
         prefetchJob = viewModelScope.launch {
-            val total = _core.value.totalPages
-            val wanted = (page - PREFETCH_RADIUS..page + PREFETCH_RADIUS)
-                .filter { it in 1..total && !pageCache.containsKey(it) }
-            var changed = false
-            for (p in wanted) {
-                val result = runCatchingResult { repository.getAyatOfPageFull(p).orEmptyIfError() }
-                if (result is Result.Success && result.data.isNotEmpty()) {
-                    pageCache[p] = result.data
-                    changed = true
+            try {
+                // Guardrail 2: the VISIBLE page first, so a heavy fling resolves
+                // its spinner before any neighbour work begins.
+                if (loadPageIfMissing(page)) {
+                    val loaded = pageCache[page].orEmpty()
+                    val loadedId = loaded.firstOrNull()?.surah ?: _core.value.activeSurahId
+                    _core.update { state ->
+                        if (state.currentPage != page) state
+                        else state.copy(
+                            pageAyahs = loaded,
+                            activeSurahId = loadedId,
+                            activeSurah = if (loadedId > 0) surahFor(loadedId, state.surah) else state.activeSurah
+                        )
+                    }
+                }
+                val total = _core.value.totalPages
+                val neighbours = listOf(page - 1, page + 1, page - 2, page + 2)
+                    .filter { it in 1..total && !pageCache.containsKey(it) }
+                for (neighbour in neighbours) loadPageIfMissing(neighbour)
+            } finally {
+                // A cancelled predecessor must not clear the NEW target.
+                if (activePrefetchTarget == page) activePrefetchTarget = null
+            }
+        }
+    }
+
+    /** Explicit retry for a page whose load failed (error or empty result). */
+    fun retryPage(page: Int) {
+        if (page < 1) return
+        _core.update { it.copy(failedPages = it.failedPages - page) }
+        viewModelScope.launch {
+            loadPageIfMissing(page)
+            if (page == _core.value.currentPage) {
+                val loaded = pageCache[page].orEmpty()
+                val loadedId = loaded.firstOrNull()?.surah ?: _core.value.activeSurahId
+                _core.update { state ->
+                    state.copy(
+                        pageAyahs = loaded,
+                        activeSurahId = loadedId,
+                        activeSurah = if (loadedId > 0) surahFor(loadedId, state.surah) else state.activeSurah
+                    )
                 }
             }
-            if (changed) _core.update { it.copy(pagesByNumber = LinkedHashMap(pageCache)) }
         }
     }
 
@@ -331,19 +408,20 @@ class SurahDetailViewModel @Inject constructor(
      * the pager mounts, so it starts on the reader's current position. */
     fun setEntryPage(page: Int) {
         if (page < 1) return
-        _core.update { it.copy(isPagesReady = false, entryPage = page, currentPage = page) }
+        prefetchJob?.cancel()
+        activePrefetchTarget = null
+        _core.update {
+            it.copy(isPagesReady = false, entryPage = page, currentPage = page, pageAyahs = emptyList())
+        }
         viewModelScope.launch {
-            if (!pageCache.containsKey(page)) {
-                val loaded = runCatchingResult { repository.getAyatOfPageFull(page).orEmptyIfError() }
-                if (loaded is Result.Success && loaded.data.isNotEmpty()) pageCache[page] = loaded.data
-            }
+            val loaded = loadPageIfMissing(page)
+            pageCache.pinnedPage = page
             val ayat = pageCache[page].orEmpty()
             val activeId = ayat.firstOrNull()?.surah ?: _core.value.activeSurahId
             _core.update {
                 it.copy(
-                    pagesByNumber = LinkedHashMap(pageCache),
                     pageAyahs = ayat,
-                    isPagesReady = pageCache.containsKey(page),
+                    isPagesReady = loaded,
                     activeSurahId = activeId,
                     activeSurah = if (activeId > 0) surahFor(activeId, it.surah) else it.activeSurah
                 )

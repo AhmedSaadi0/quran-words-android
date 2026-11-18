@@ -19,6 +19,8 @@ data class SurahDetailUiState(
     val entryPage: Int = 0,
     val currentPage: Int = 0,
     val pagesByNumber: Map<Int, List<Ayah>> = emptyMap(),
+    /** Pages whose load failed — the pager offers Retry instead of a spinner. */
+    val failedPages: Set<Int> = emptySet(),
     val isPagesReady: Boolean = false,
     /** Surah of the settled page in Pages mode (route surah in Scroll mode). */
     val activeSurah: Surah? = null,
@@ -69,6 +71,7 @@ sealed interface SurahDetailEvent {
     data class PageChanged(val page: Int) : SurahDetailEvent
     /** Mode flip: re-anchor the unified pager on the page currently being read. */
     data class SetEntryPage(val page: Int) : SurahDetailEvent
+    data class RetryPage(val page: Int) : SurahDetailEvent
     data class ToggleAyahBookmark(val ref: AyahRef) : SurahDetailEvent
     data class SetFontSize(val size: Float) : SurahDetailEvent
     data class SetPillTransparency(val transparency: Float) : SurahDetailEvent

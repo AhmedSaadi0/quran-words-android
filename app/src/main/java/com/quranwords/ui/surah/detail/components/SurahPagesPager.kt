@@ -9,21 +9,26 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
+import com.quranwords.R
 import com.quranwords.core.util.AyahRef
 import com.quranwords.core.util.SurahMetadata
 import com.quranwords.domain.model.Ayah
@@ -52,6 +57,7 @@ fun SurahPagesPager(
     totalPages: Int,
     entryPage: Int,
     pagesByNumber: Map<Int, List<Ayah>>,
+    failedPages: Set<Int>,
     quranFont: QuranFont,
     activeSurah: Surah?,
     isSelectionMode: Boolean,
@@ -63,6 +69,7 @@ fun SurahPagesPager(
     activeWordAction: WordActionTarget?,
     pendingPage: Int?,
     onPageChanged: (Int) -> Unit,
+    onRetryPage: (Int) -> Unit,
     onToggleSelection: (AyahRef) -> Unit,
     onEnterSelection: (AyahRef) -> Unit,
     modifier: Modifier = Modifier
@@ -70,11 +77,15 @@ fun SurahPagesPager(
     val initialPage = (entryPage - 1).coerceIn(0, (totalPages - 1).coerceAtLeast(0))
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { totalPages })
 
-    LaunchedEffect(Unit) { onPageChanged(entryPage) }
-    LaunchedEffect(pagerState, onPageChanged) {
+    // Stable callback: including the lambda as a key made every VM state
+    // update restart snapshotFlow, which re-emitted the same page, cancelled
+    // the prefetch job and left the spinner up forever after a long fling.
+    val onPageChangedState = rememberUpdatedState(onPageChanged)
+    LaunchedEffect(Unit) { onPageChangedState.value(entryPage) }
+    LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }
             .distinctUntilChanged()
-            .collect { page -> onPageChanged(page + 1) }
+            .collect { page -> onPageChangedState.value(page + 1) }
     }
     LaunchedEffect(pendingPage) {
         val page = pendingPage ?: return@LaunchedEffect
@@ -88,7 +99,19 @@ fun SurahPagesPager(
     ) { index ->
         val pageNumber = index + 1
         val ayat = pagesByNumber[pageNumber]
-        if (ayat.isNullOrEmpty()) {
+        if (pageNumber in failedPages) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(stringResource(R.string.page_load_failed), style = MaterialTheme.typography.bodyMedium)
+                    Button(onClick = { onRetryPage(pageNumber) }) {
+                        Text(stringResource(R.string.common_retry))
+                    }
+                }
+            }
+        } else if (ayat.isNullOrEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }

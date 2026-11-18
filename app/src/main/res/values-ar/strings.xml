@@ -288,6 +288,7 @@
     <string name="db_back_to_app">العودة إلى التطبيق</string>
     <string name="db_download_failed">تعذر تنزيل قاعدة البيانات</string>
     <string name="common_retry">إعادة المحاولة</string>
+    <string name="page_load_failed">تعذّر تحميل هذه الصفحة</string>
     <string name="db_import_title">📂 استيراد قاعدة البيانات من الذاكرة</string>
     <string name="db_preview_action">المتابعة باستخدام بيانات المعاينة السريعة</string>
     <string name="db_import_dialog_title">استيراد قاعدة البيانات</string>

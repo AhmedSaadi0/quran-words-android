@@ -323,6 +323,7 @@
     <string name="db_back_to_app">Back to the app</string>
     <string name="db_download_failed">Could not download the database</string>
     <string name="common_retry">Retry</string>
+    <string name="page_load_failed">Couldn’t load this page</string>
     <string name="db_import_title">📂 Import database from storage</string>
     <string name="db_preview_action">Continue with quick preview data</string>
     <string name="db_import_dialog_title">Import database</string>

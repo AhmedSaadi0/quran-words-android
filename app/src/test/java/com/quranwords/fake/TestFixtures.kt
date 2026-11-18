@@ -12,6 +12,7 @@ import com.quranwords.domain.model.Surah
 import com.quranwords.domain.repository.UserPreferencesRepository
 import com.quranwords.domain.repository.QuranRepository
 import com.quranwords.core.util.Result
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -131,6 +132,9 @@ class FakeQuranRepository(
     val ayatBySurah: Map<Int, List<Ayah>> = emptyMap(),
     val ayatByPage: Map<Int, List<Ayah>> = emptyMap(),
     var failGetAyatOfPage: Boolean = false,
+    /** Specific pages that fail once; clear to simulate a successful retry. */
+    val failPages: MutableSet<Int> = mutableSetOf(),
+    val pageLoadDelayMs: Long = 0L,
     val pageRangeFetchCalls: MutableList<Pair<Int, Int>> = mutableListOf(),
     var failGetAllRoots: Boolean = false,
     var failSearch: Boolean = false
@@ -142,7 +146,10 @@ class FakeQuranRepository(
     override suspend fun getAyatBySurahFull(surahId: Int): List<Ayah> = ayatBySurah[surahId].orEmpty()
     override suspend fun getAyatByPageRangeFull(firstPage: Int, lastPage: Int): Result<List<Ayah>> {
         pageRangeFetchCalls += firstPage to lastPage
-        if (failGetAyatOfPage) return Result.Error("page read failed")
+        if (failGetAyatOfPage || (firstPage == lastPage && firstPage in failPages)) {
+            return Result.Error("page read failed")
+        }
+        if (pageLoadDelayMs > 0L) delay(pageLoadDelayMs)
         return Result.Success(
             ayatByPage.filterKeys { it in firstPage..lastPage }.values.flatten()
                 .sortedWith(compareBy<Ayah> { it.surah }.thenBy { it.ayah })

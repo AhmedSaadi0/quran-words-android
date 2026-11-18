@@ -113,11 +113,12 @@ fun SurahDetailScreen(
     val blockIndexOfAyah = remember(flowGroups, listOffset) { buildBlockIndexOfAyah(flowGroups, listOffset) }
 
     val isPagesMode = uiState.readingMode == ReadingModePreference.PAGES
-    // Guardrail 1: never mount the pager until the page count, entry page and
-    // its preloaded window are all available.
+    // Guardrail 1: never mount the pager until the VM has resolved the page
+    // count/entry page and preloaded the entry window. Do NOT gate on the entry
+    // page still being in the cache — the 18-page LRU evicts it after ~18
+    // swipes, which used to unmount the pager and spin forever.
     val pagesReady = isPagesMode && uiState.isPagesReady &&
-        uiState.totalPages > 0 && uiState.entryPage in 1..uiState.totalPages &&
-        !uiState.pagesByNumber[uiState.entryPage].isNullOrEmpty()
+        uiState.totalPages > 0 && uiState.entryPage in 1..uiState.totalPages
 
     var hasHandledInitialScroll by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
     var isInitialPositionSettled by rememberSaveable(surahId, targetAyah) { mutableStateOf(targetAyah <= 1) }
@@ -414,6 +415,7 @@ fun SurahDetailScreen(
                                 totalPages = uiState.totalPages,
                                 entryPage = uiState.entryPage,
                                 pagesByNumber = uiState.pagesByNumber,
+                                failedPages = uiState.failedPages,
                                 quranFont = uiState.quranFont,
                                 activeSurah = uiState.activeSurah,
                                 isSelectionMode = uiState.isSelectionMode,
@@ -425,6 +427,7 @@ fun SurahDetailScreen(
                                 activeWordAction = wordAction,
                                 pendingPage = pendingPage,
                                 onPageChanged = { onEvent(SurahDetailEvent.PageChanged(it)) },
+                                onRetryPage = { onEvent(SurahDetailEvent.RetryPage(it)) },
                                 onToggleSelection = { onEvent(SurahDetailEvent.ToggleAyahSelection(it)) },
                                 onEnterSelection = {
                                     if (uiState.isSelectionMode) onEvent(SurahDetailEvent.RangeSelect(it))

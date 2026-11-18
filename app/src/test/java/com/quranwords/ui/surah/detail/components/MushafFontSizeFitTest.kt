@@ -37,4 +37,96 @@ class MushafFontSizeFitTest {
     fun `zero lines never stretches`() {
         assertEquals(0f, resolveExtraLineSpacingPx(50f, 0, 20f) { true }, 0f)
     }
+
+    @Test
+    fun `already rectangular at max costs one check`() {
+        var checks = 0
+        val result = refineFontSizeForRectangle(
+            maxFitSp = 32f,
+            isRectangle = { checks++; true },
+            fitsVertically = { true },
+            slackWithinCap = { true }
+        )
+        assertEquals(32f, result, 0f)
+        assertEquals(1, checks)
+    }
+
+    @Test
+    fun `picks the largest qualifying size in 0.25sp steps`() {
+        val result = refineFontSizeForRectangle(
+            maxFitSp = 32f,
+            isRectangle = { it <= 31.5f },
+            fitsVertically = { true },
+            slackWithinCap = { true }
+        )
+        assertEquals(31.5f, result, 0.01f)
+    }
+
+    @Test
+    fun `rejects candidates that break the vertical height budget`() {
+        val result = refineFontSizeForRectangle(
+            maxFitSp = 32f,
+            isRectangle = { it <= 31.5f },
+            fitsVertically = { it >= 31.75f },
+            slackWithinCap = { true }
+        )
+        assertEquals(32f, result, 0f)
+    }
+
+    @Test
+    fun `rejects candidates whose slack exceeds the stretch cap`() {
+        val result = refineFontSizeForRectangle(
+            maxFitSp = 32f,
+            isRectangle = { it <= 31.5f },
+            fitsVertically = { true },
+            slackWithinCap = { it >= 31.75f }
+        )
+        assertEquals(32f, result, 0f)
+    }
+
+    @Test
+    fun `graceful fallback when nothing inside the shrink bound qualifies`() {
+        val result = refineFontSizeForRectangle(
+            maxFitSp = 32f,
+            isRectangle = { it <= 28f }, // needs more than the 2.5sp cap
+            fitsVertically = { true },
+            slackWithinCap = { true }
+        )
+        assertEquals(32f, result, 0f)
+    }
+
+    @Test
+    fun `shrink cap is twelve percent for smaller fonts`() {
+        // 20sp * 0.12 = 2.4sp -> lowest candidate 17.6sp.
+        val inside = refineFontSizeForRectangle(
+            maxFitSp = 20f,
+            isRectangle = { it <= 17.75f },
+            fitsVertically = { true },
+            slackWithinCap = { true }
+        )
+        assertEquals(17.75f, inside, 0.01f)
+        val outside = refineFontSizeForRectangle(
+            maxFitSp = 20f,
+            isRectangle = { it <= 17.5f },
+            fitsVertically = { true },
+            slackWithinCap = { true }
+        )
+        assertEquals(20f, outside, 0f)
+    }
+
+    @Test
+    fun `never drops below the fit floor and tolerates zero step`() {
+        val floored = refineFontSizeForRectangle(
+            maxFitSp = MUSHAF_FIT_MIN_SP + 0.1f,
+            isRectangle = { false },
+            fitsVertically = { true },
+            slackWithinCap = { true }
+        )
+        assertEquals(MUSHAF_FIT_MIN_SP + 0.1f, floored, 0f)
+        val zeroStep = refineFontSizeForRectangle(
+            maxFitSp = 32f, stepSp = 0f,
+            isRectangle = { true }, fitsVertically = { true }, slackWithinCap = { true }
+        )
+        assertEquals(32f, zeroStep, 0f)
+    }
 }
