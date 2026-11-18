@@ -1,6 +1,10 @@
 package com.quranwords.ui.surah.detail.components
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Pure line-spacing math behind the pages-mode fit (no Compose fixtures). */
@@ -128,5 +132,48 @@ class MushafFontSizeFitTest {
             isRectangle = { true }, fitsVertically = { true }, slackWithinCap = { true }
         )
         assertEquals(32f, zeroStep, 0f)
+    }
+
+    @Test
+    fun `fit cache key is geometry-only`() {
+        val key = MushafFitKey(listOf(1, 2), 1000, 700, "kfgqpc", 1f)
+        assertEquals(key, MushafFitKey(listOf(1, 2), 1000, 700, "kfgqpc", 1f))
+        assertNotEquals(key, key.copy(ayahIds = listOf(1, 3)))
+        assertNotEquals(key, key.copy(innerWidthPx = 999))
+        assertNotEquals(key, key.copy(innerHeightPx = 699))
+        assertNotEquals(key, key.copy(quranFontKey = "other"))
+        assertNotEquals(key, key.copy(fontScale = 1.2f))
+        // Colours must never enter the key — they don't affect text bounds.
+        assertTrue(
+            MushafFitKey::class.java.declaredFields.none {
+                it.name.contains("color", ignoreCase = true)
+            }
+        )
+    }
+
+    @Test
+    fun `prefilter accepts a within-threshold gap`() {
+        val fill = resolveLastLineFill(listOf(100f, 200f), lineLeft = 90f)
+        assertEquals(10f, fill?.gapWidthPx ?: 0f, 0f)
+        assertTrue(lastLineCanBeJustified(fill, spaceWidthPx = 6f)) // 10 <= 2*6
+    }
+
+    @Test
+    fun `prefilter rejects a gap beyond the renderer multiplier`() {
+        val fill = resolveLastLineFill(listOf(100f, 200f), lineLeft = 90f)
+        assertFalse(lastLineCanBeJustified(fill, spaceWidthPx = 4f)) // 10 > 2*4
+    }
+
+    @Test
+    fun `prefilter treats an already full line as complete`() {
+        val fill = resolveLastLineFill(listOf(90f, 200f), lineLeft = 90f)
+        assertTrue(fill?.isAlreadyFull == true)
+        assertTrue(lastLineCanBeJustified(fill, spaceWidthPx = 1f))
+    }
+
+    @Test
+    fun `prefilter rejects single token and missing fill`() {
+        assertNull(resolveLastLineFill(listOf(100f), lineLeft = 90f))
+        assertFalse(lastLineCanBeJustified(null, spaceWidthPx = 100f))
     }
 }

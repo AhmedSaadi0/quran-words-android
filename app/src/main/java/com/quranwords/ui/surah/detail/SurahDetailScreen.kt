@@ -68,6 +68,7 @@ import com.quranwords.ui.surah.detail.components.SurahAyatList
 import com.quranwords.ui.surah.detail.components.SurahDbMissingState
 import com.quranwords.ui.surah.detail.components.SurahPagesPager
 import com.quranwords.ui.surah.detail.components.SurahSwitchHints
+import com.quranwords.ui.surah.detail.components.MushafFitCache
 import com.quranwords.ui.surah.detail.components.WordActionTarget
 import com.quranwords.ui.surah.detail.components.WordInteractionCallbacks
 import com.quranwords.ui.surah.detail.components.buildBlockIndexOfAyah
@@ -128,6 +129,8 @@ fun SurahDetailScreen(
     var showFontSheet by rememberSaveable { mutableStateOf(false) }
     var wordAction by remember { mutableStateOf<WordActionTarget?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    // Small result-only cache; survives page disposal so revisits don't refit.
+    val fitCache = remember { MushafFitCache() }
 
     val bookmarkedRefs = remember(uiState.bookmarkedAyat) {
         uiState.bookmarkedAyat.mapNotNull { AyahRef.parse(it) }.toSet()
@@ -162,7 +165,11 @@ fun SurahDetailScreen(
     )
     val isRtlTurn = LocalLayoutDirection.current == LayoutDirection.Rtl
 
-    val readingProgressState = remember(listState, flowGroups, listOffset, isPagesMode, uiState) {
+    val readingProgressState = remember(
+        listState, flowGroups, listOffset, isPagesMode,
+        uiState.currentPage, uiState.activeSurah, uiState.surahPages, uiState.pageAyahs,
+        uiState.surah
+    ) {
         derivedStateOf {
             if (isPagesMode) {
                 readingProgressOfMushafPage(
@@ -173,7 +180,7 @@ fun SurahDetailScreen(
             }
         }
     }
-    val currentPageState = remember(listState, flowGroups, listOffset, isPagesMode, uiState) {
+    val currentPageState = remember(listState, flowGroups, listOffset, isPagesMode, uiState.currentPage) {
         derivedStateOf {
             if (isPagesMode) uiState.currentPage
             else currentPageFor(flowGroups, listState, hasBasmalah = listOffset > 0)
@@ -416,6 +423,7 @@ fun SurahDetailScreen(
                                 entryPage = uiState.entryPage,
                                 pagesByNumber = uiState.pagesByNumber,
                                 failedPages = uiState.failedPages,
+                                fitCache = fitCache,
                                 quranFont = uiState.quranFont,
                                 activeSurah = uiState.activeSurah,
                                 isSelectionMode = uiState.isSelectionMode,

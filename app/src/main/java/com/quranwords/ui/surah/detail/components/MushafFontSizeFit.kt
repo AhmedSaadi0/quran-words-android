@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +70,22 @@ internal val MUSHAF_SEGMENT_GAP: Dp = 8.dp
 
 /** Font size + extra leading (sp) that make a whole page fill its slot exactly. */
 internal data class MushafPageFit(val fontSize: Float, val extraLineSpacingSp: Float)
+
+/** Geometry-only identity of one fit: content + measured slot + font metrics.
+ * Theme colours are deliberately absent — they never affect text bounds. */
+internal data class MushafFitKey(
+    val ayahIds: List<Int>,
+    val innerWidthPx: Int,
+    val innerHeightPx: Int,
+    val quranFontKey: String,
+    val fontScale: Float
+)
+
+/** Tiny screen-level LRU of fit RESULTS ONLY (no TextLayoutResult retained). */
+internal class MushafFitCache : LinkedHashMap<MushafFitKey, MushafPageFit>(64, 0.75f, true) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<MushafFitKey, MushafPageFit>?): Boolean =
+        size > 32
+}
 
 /**
  * Canonical MushafFlowBlock [TextStyle]: the cut's leading plus an optional
@@ -188,13 +205,14 @@ internal fun rememberMushafPageFit(
     bannerHeightsPx: List<Int>,
     quranFont: QuranFont,
     slotWidth: Dp,
-    slotHeight: Dp
+    slotHeight: Dp,
+    fitCache: MushafFitCache? = null
 ): MushafPageFit {
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val fontScale = density.fontScale
     val baseStyle = LocalTextStyle.current
-    return remember(segments, bannerHeightsPx, quranFont, slotWidth, slotHeight, fontScale, baseStyle) {
+    return remember(segments, bannerHeightsPx, quranFont, slotWidth, slotHeight, fontScale, baseStyle, fitCache) {
         if (segments.isEmpty()) return@remember MushafPageFit(MUSHAF_FIT_MIN_SP, 0f)
         val bannerPx = bannerHeightsPx.sum().toFloat()
         val innerWidthPx = with(density) { (slotWidth - BLOCK_H_PADDING * 2).toPx() }.roundToInt() - WIDTH_SLACK_PX
@@ -205,17 +223,32 @@ internal fun rememberMushafPageFit(
         val innerHeightPx = with(density) { slotHeight.toPx() } -
             with(density) { (BLOCK_V_PADDING * 2).toPx() } * segments.size - bannerPx - gapsPx
         if (innerWidthPx <= 0 || innerHeightPx <= 0) return@remember MushafPageFit(MUSHAF_FIT_MIN_SP, 0f)
-        val targetPx = innerHeightPx * MUSHAF_FIT_SAFETY
 
-        fun measure(fontSize: Float, extraSp: Float = 0f) = segments.map { segment ->
-            textMeasurer.measure(
-                text = mushafBlockLayoutText(segment.ayat, fontSize),
-                style = mushafBlockTextStyle(baseStyle, fontSize, quranFont, extraSp),
-                constraints = Constraints(maxWidth = innerWidthPx),
-                // Mushaf blocks always render RTL regardless of the app locale.
-                layoutDirection = LayoutDirection.Rtl
-            )
-        }
+        // Geometry-only key: revisiting a disposed page reuses its tiny fit.
+        val key = MushafFitKey(
+            ayahIds = segments.flatMap { segment -> segment.ayat.map { it.id } },
+            innerWidthPx = innerWidthPx,
+            innerHeightPx = innerHeightPx.roundToInt(),
+            quranFontKey = quranFont.key,
+            fontScale = fontScale
+        )
+        fitCache?.get(key)?.let { return@remember it }
+
+        val targetPx = innerHeightPx * MUSHAF_FIT_SAFETY
+        // Strictly local: layout results die with this fit computation.
+        val measureCache = HashMap<Pair<Float, Float>, List<TextLayoutResult>>()
+        fun measure(fontSize: Float, extraSp: Float = 0f) =
+            measureCache.getOrPut(fontSize to extraSp) {
+                segments.map { segment ->
+                    textMeasurer.measure(
+                        text = mushafBlockLayoutText(segment.ayat, fontSize),
+                        style = mushafBlockTextStyle(baseStyle, fontSize, quranFont, extraSp),
+                        constraints = Constraints(maxWidth = innerWidthPx),
+                        // Mushaf blocks always render RTL regardless of the app locale.
+                        layoutDirection = LayoutDirection.Rtl
+                    )
+                }
+            }
 
         fun fitsAt(fontSize: Float): Boolean =
             measure(fontSize).sumOf { it.size.height } <= targetPx
@@ -239,14 +272,31 @@ internal fun rememberMushafPageFit(
         // block will justify at draw time.
         fun lastLineCompletesRectangle(size: Float): Boolean {
             val layouts = measure(size)
+            val style = mushafBlockTextStyle(baseStyle, size, quranFont)
+            // One space measurement per candidate, reused by every segment.
+            val spaceWidthPx = textMeasurer.measure(
+                text = " ",
+                style = style,
+                constraints = Constraints(maxWidth = innerWidthPx),
+                layoutDirection = LayoutDirection.Rtl
+            ).size.width.toFloat()
             return segments.indices.any { index ->
                 val layout = layouts[index]
                 if (layout.lineCount < RECT_REFINE_MIN_LINES) return@any false
                 if (layout.lastLineEmptySpace() <= LAST_LINE_EPS_PX) return@any true
+                val text = mushafBlockLayoutText(segments[index].ayat, size)
+                // Exact geometry prefilter: skip token re-measuring when the
+                // per-gap width cannot possibly satisfy the renderer's rule.
+                val lefts = lastLineTokenRanges(text, layout).map { range ->
+                    minOf(layout.getBoundingBox(range.first).left, layout.getBoundingBox(range.last).left)
+                }
+                val fill = resolveLastLineFill(lefts, layout.getLineLeft(layout.lineCount - 1))
+                if (fill?.isAlreadyFull == true) return@any true
+                if (!lastLineCanBeJustified(fill, spaceWidthPx)) return@any false
                 computeLastLineJustification(
-                    text = mushafBlockLayoutText(segments[index].ayat, size),
+                    text = text,
                     layout = layout,
-                    style = mushafBlockTextStyle(baseStyle, size, quranFont),
+                    style = style,
                     textMeasurer = textMeasurer
                 ) != null
             }
@@ -276,6 +326,8 @@ internal fun rememberMushafPageFit(
         val extraPx = resolveExtraLineSpacingPx(leftoverPx, totalLines, naturalLineHeightPx) { extra ->
             measure(fontSize, with(density) { extra.toSp().value }).sumOf { it.size.height } <= targetPx
         }
-        MushafPageFit(fontSize, with(density) { extraPx.toSp().value })
+        val fit = MushafPageFit(fontSize, with(density) { extraPx.toSp().value })
+        fitCache?.put(key, fit)
+        fit
     }
 }

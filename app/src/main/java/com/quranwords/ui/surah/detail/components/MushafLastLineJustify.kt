@@ -58,6 +58,69 @@ internal data class LastLineJustification(
 private data class TokenRect(val range: IntRange, val left: Float, val right: Float, val ayah: Int)
 
 /**
+ * Pure geometry snapshot of the last line, sufficient to decide WITHOUT any
+ * token re-measurement whether the rectangle rule can possibly pass. Uses the
+ * same token split as [computeLastLineJustification].
+ */
+internal data class LastLineFill(
+    val tokenCount: Int,
+    val emptyPx: Float,
+    val gapWidthPx: Float
+) {
+    val isAlreadyFull: Boolean get() = emptyPx <= LAST_LINE_EPS_PX
+}
+
+/** Mirrors the token split in [computeLastLineJustification]: maximal runs of
+ * non-space chars on the last line; the `﴿n﴾` marker stays glued by its NBSP. */
+internal fun lastLineTokenRanges(text: AnnotatedString, layout: TextLayoutResult): List<IntRange> {
+    val last = layout.lineCount - 1
+    val lineStart = layout.getLineStart(last)
+    val lineEnd = layout.getLineEnd(last)
+    val chars = text.text
+    val ranges = mutableListOf<IntRange>()
+    var start = -1
+    for (i in lineStart until lineEnd) {
+        if (chars[i] == ' ') {
+            if (start >= 0) {
+                ranges.add(start until i)
+                start = -1
+            }
+        } else if (start < 0) {
+            start = i
+        }
+    }
+    if (start >= 0) ranges.add(start until lineEnd)
+    return ranges
+}
+
+/**
+ * Builds the fill from token left edges. [maxGapFactor] must match the render
+ * rule (2f), so a `false` result here is guaranteed to stay false in render.
+ */
+internal fun resolveLastLineFill(
+    tokenLefts: List<Float>,
+    lineLeft: Float
+): LastLineFill? {
+    if (tokenLefts.size < 2) return null
+    val empty = tokenLefts.min() - lineLeft
+    return LastLineFill(tokenLefts.size, empty, empty / (tokenLefts.size - 1))
+}
+
+/** True when the last line is already full or its per-gap width is within the
+ * renderer's limit. Exact for the geometry part; the fit still calls the real
+ * [computeLastLineJustification] for candidates that pass, so the single-line
+ * token check cannot drift. */
+internal fun lastLineCanBeJustified(
+    fill: LastLineFill?,
+    spaceWidthPx: Float,
+    maxGapFactor: Float = 2f
+): Boolean {
+    if (fill == null) return false
+    if (fill.isAlreadyFull) return true
+    return fill.gapWidthPx <= spaceWidthPx * maxGapFactor
+}
+
+/**
  * Computes the last-line justification plan: the line's unused width is
  * distributed EQUALLY into the inter-token gaps (spaces only), so the whole
  * block renders as a uniform rectangle with every letter and word at exactly
@@ -78,29 +141,13 @@ internal fun computeLastLineJustification(
 ): LastLineJustification? {
     if (layout.lineCount == 0 || text.isEmpty()) return null
     val lastLine = layout.lineCount - 1
-    val lineStart = layout.getLineStart(lastLine)
-    val lineEnd = layout.getLineEnd(lastLine)
     val lineTop = layout.getLineTop(lastLine)
     val lineLeft = layout.getLineLeft(lastLine)
 
-    // Tokens = maximal runs without a breaking space; the wrap space (when
-    // the layout keeps it on the line) forms no token. The ﴿n﴾ marker is
-    // glued to its ayah's last word by a non-breaking space, so they are one
-    // token — exactly the unit that must never separate.
-    val chars = text.text
-    val ranges = mutableListOf<IntRange>()
-    var start = -1
-    for (i in lineStart until lineEnd) {
-        if (chars[i] == ' ') {
-            if (start >= 0) {
-                ranges.add(start until i)
-                start = -1
-            }
-        } else if (start < 0) {
-            start = i
-        }
-    }
-    if (start >= 0) ranges.add(start until lineEnd)
+    // Tokens = maximal runs without a breaking space; the `﴿n﴾` marker is
+    // glued to its final word by an NBSP, so it is one token. The split is
+    // shared with the fit's pure prefilter so measure and render agree.
+    val ranges = lastLineTokenRanges(text, layout)
     if (ranges.size < 2) return null
 
     // Ink rect per token: union of the first/last glyph boxes — direction-

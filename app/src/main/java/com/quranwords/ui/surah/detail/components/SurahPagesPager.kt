@@ -11,21 +11,19 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
@@ -36,11 +34,6 @@ import com.quranwords.domain.model.Surah
 import com.quranwords.ui.components.PageSeparator
 import com.quranwords.ui.theme.QuranFont
 import kotlinx.coroutines.flow.distinctUntilChanged
-
-/** Initial banner height before the first real measurement. */
-private const val BANNER_ESTIMATE_DP = 96
-/** Tawbah / Fatihah have no separate Basmalah row. */
-private const val BANNER_NO_BASMALLAH_ESTIMATE_DP = 72
 
 /**
  * Book-pages reader over REAL mushaf pages 1..[totalPages]. Swiping always
@@ -53,11 +46,12 @@ private const val BANNER_NO_BASMALLAH_ESTIMATE_DP = 72
  * the first frame already shows the full Mushaf page.
  */
 @Composable
-fun SurahPagesPager(
+internal fun SurahPagesPager(
     totalPages: Int,
     entryPage: Int,
     pagesByNumber: Map<Int, List<Ayah>>,
     failedPages: Set<Int>,
+    fitCache: MushafFitCache,
     quranFont: QuranFont,
     activeSurah: Surah?,
     isSelectionMode: Boolean,
@@ -95,7 +89,9 @@ fun SurahPagesPager(
     HorizontalPager(
         state = pagerState,
         modifier = modifier.fillMaxSize(),
-        verticalAlignment = Alignment.Top
+        verticalAlignment = Alignment.Top,
+        // Precompose the next page so its fit is ready before it enters view.
+        beyondViewportPageCount = 1
     ) { index ->
         val pageNumber = index + 1
         val ayat = pagesByNumber[pageNumber]
@@ -120,6 +116,7 @@ fun SurahPagesPager(
                 pageNumber = pageNumber,
                 ayat = ayat,
                 previousPageLast = pagesByNumber[pageNumber - 1]?.lastOrNull(),
+                fitCache = fitCache,
                 quranFont = quranFont,
                 activeSurah = activeSurah,
                 isSelectionMode = isSelectionMode,
@@ -141,6 +138,7 @@ private fun MushafPageContent(
     pageNumber: Int,
     ayat: List<Ayah>,
     previousPageLast: Ayah?,
+    fitCache: MushafFitCache,
     quranFont: QuranFont,
     activeSurah: Surah?,
     isSelectionMode: Boolean,
@@ -153,97 +151,96 @@ private fun MushafPageContent(
     onToggleSelection: (AyahRef) -> Unit,
     onEnterSelection: (AyahRef) -> Unit
 ) {
-    val density = LocalDensity.current
     // Full-bleed: chrome is an overlay, never part of this layout.
     val topPadding = 8.dp
     val bottomPadding = 8.dp
     val segments = remember(ayat) { splitPageIntoSegments(ayat, activeSurahId = null) }
     val first = ayat.first()
+    val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
+    val baseStyle = LocalTextStyle.current
+    val fontScale = density.fontScale
 
-    val estimatePx = with(density) { BANNER_ESTIMATE_DP.dp.roundToPx() }
-    val noBasmalahEstimatePx = with(density) { BANNER_NO_BASMALLAH_ESTIMATE_DP.dp.roundToPx() }
-    var bannerHeights by remember(segments) {
-        mutableStateOf(
-            List(segments.size) { index ->
-                if (segments[index].startsOnPage) {
-                    if (showsBasmalah(segments[index].surahId)) estimatePx else noBasmalahEstimatePx
-                } else 0
-            }
-        )
-    }
-    val bannerHeightsForFit = segments.mapIndexedNotNull { index, segment ->
-        if (segment.startsOnPage) bannerHeights.getOrNull(index) ?: estimatePx else null
-    }
-
-    fun updateBannerHeight(index: Int, height: Int) {
-        if (bannerHeights.getOrNull(index) == height) return
-        bannerHeights = bannerHeights.toMutableList().also { it[index] = height }
-    }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(start = 16.dp, end = 16.dp, top = topPadding, bottom = bottomPadding),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        PageHeaderRow(
-            surahIds = segments.map { it.surahId },
-            juz = first.juz,
-            hizb = if (previousPageLast?.hizb != first.hizb) first.hizb else null,
-            pageNumber = pageNumber
-        )
-
-        BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
-            val fit = rememberMushafPageFit(
-                segments = segments,
-                bannerHeightsPx = bannerHeightsForFit,
-                quranFont = quranFont,
-                slotWidth = maxWidth,
-                slotHeight = maxHeight
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(MUSHAF_SEGMENT_GAP)) {
-                segments.forEachIndexed { index, segment ->
-                    if (segment.startsOnPage) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clearAndSetSemantics { }
-                                .onSizeChanged { size -> updateBannerHeight(index, size.height) }
-                        ) {
-                            SurahCardBanner(
-                                surah = bannerSurah(segment.surahId, activeSurah),
-                                showBismillah = showsBasmalah(segment.surahId)
-                            )
-                        }
-                    }
-                    MushafFlowBlock(
-                        group = AyahFlowGroup(
-                            key = "page_${pageNumber}_surah_${segment.surahId}",
-                            pageNumber = pageNumber,
-                            ayat = segment.ayat,
-                            firstAyahIndex = index
-                        ),
-                        fontSize = fit.fontSize,
-                        extraLineSpacingSp = fit.extraLineSpacingSp,
-                        quranFont = quranFont,
-                        isSelectionMode = isSelectionMode,
-                        selectedAyahs = selectedAyahs,
-                        bookmarkedAyahs = bookmarkedAyahs,
-                        pulseAyah = pulseAyah,
-                        onPulseDone = onPulseDone,
-                        wordInteraction = wordInteraction,
-                        activeWordAction = activeWordAction,
-                        onToggleSelection = onToggleSelection,
-                        onEnterSelection = onEnterSelection
+    // Outer constraints give the banner its real width; banner heights are
+    // computed deterministically once (fontScale-aware) — no onSizeChanged
+    // feedback loop, hence no second fit pass per page.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val bannerWidth = maxWidth - 32.dp
+        val bannerHeightsPx = remember(segments, bannerWidth, fontScale, baseStyle) {
+            segments.mapNotNull { segment ->
+                if (segment.startsOnPage) {
+                    surahBannerHeightPx(
+                        slotWidth = bannerWidth,
+                        showBismillah = showsBasmalah(segment.surahId),
+                        density = density,
+                        textMeasurer = textMeasurer,
+                        baseStyle = baseStyle
                     )
-                }
+                } else null
             }
         }
 
-        PageSeparator(
-            pageNumber = pageNumber,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(start = 16.dp, end = 16.dp, top = topPadding, bottom = bottomPadding),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            PageHeaderRow(
+                surahIds = segments.map { it.surahId },
+                juz = first.juz,
+                hizb = if (previousPageLast?.hizb != first.hizb) first.hizb else null,
+                pageNumber = pageNumber
+            )
+
+            BoxWithConstraints(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                val fit = rememberMushafPageFit(
+                    segments = segments,
+                    bannerHeightsPx = bannerHeightsPx,
+                    quranFont = quranFont,
+                    slotWidth = maxWidth,
+                    slotHeight = maxHeight,
+                    fitCache = fitCache
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(MUSHAF_SEGMENT_GAP)) {
+                    segments.forEachIndexed { index, segment ->
+                        if (segment.startsOnPage) {
+                            Box(modifier = Modifier.fillMaxWidth().clearAndSetSemantics { }) {
+                                SurahCardBanner(
+                                    surah = bannerSurah(segment.surahId, activeSurah),
+                                    showBismillah = showsBasmalah(segment.surahId)
+                                )
+                            }
+                        }
+                        MushafFlowBlock(
+                            group = AyahFlowGroup(
+                                key = "page_${pageNumber}_surah_${segment.surahId}",
+                                pageNumber = pageNumber,
+                                ayat = segment.ayat,
+                                firstAyahIndex = index
+                            ),
+                            fontSize = fit.fontSize,
+                            extraLineSpacingSp = fit.extraLineSpacingSp,
+                            quranFont = quranFont,
+                            isSelectionMode = isSelectionMode,
+                            selectedAyahs = selectedAyahs,
+                            bookmarkedAyahs = bookmarkedAyahs,
+                            pulseAyah = pulseAyah,
+                            onPulseDone = onPulseDone,
+                            wordInteraction = wordInteraction,
+                            activeWordAction = activeWordAction,
+                            onToggleSelection = onToggleSelection,
+                            onEnterSelection = onEnterSelection
+                        )
+                    }
+                }
+            }
+
+            PageSeparator(
+                pageNumber = pageNumber,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp)
+            )
+        }
     }
 }
 
