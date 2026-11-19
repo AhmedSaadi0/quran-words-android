@@ -200,7 +200,7 @@ class RootWordsTest {
         assertEquals("كَتَبَ", vm.wordText.value)
         assertEquals(3, vm.occurrences.value.size)
         assertFalse(vm.hasMore.value)
-        val formatted = vm.getAllFormatted()
+        val formatted = (vm.getAllFormatted() as com.quranwords.core.util.Result.Success).data
         assertTrue(formatted.contains("[سورة البقرة: 183]"))
         assertTrue(formatted.contains("[سورة البقرة: 282]"))
         assertTrue(formatted.contains("[سورة النساء: 103]"))

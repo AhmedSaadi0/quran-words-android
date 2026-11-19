@@ -2,6 +2,7 @@ package com.quranwords.ui.surah.detail
 
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -9,6 +10,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quranwords.R
+import com.quranwords.core.util.Result
 import com.quranwords.ui.navigation.SurahEnter
 import com.quranwords.ui.roots.detail.util.rememberShareHandler
 import kotlinx.coroutines.launch
@@ -34,6 +36,19 @@ fun SurahDetailRoute(
     val shareHandler = rememberShareHandler(snackbarHostState, scope)
     val context = LocalContext.current
 
+    LaunchedEffect(viewModel) {
+        viewModel.effect.collect { effect ->
+            when (effect) {
+                is SurahDetailEffect.BookmarkSelectionSucceeded -> shareHandler.showMessage(
+                    context.resources.getQuantityString(
+                        R.plurals.bookmarked_ayat_count, effect.count, effect.count
+                    )
+                )
+                is SurahDetailEffect.BookmarkSelectionFailed -> shareHandler.showMessage(effect.message)
+            }
+        }
+    }
+
     fun onEvent(event: SurahDetailEvent) {
         when (event) {
             is SurahDetailEvent.CopyWord -> {
@@ -41,39 +56,32 @@ fun SurahDetailRoute(
                 // The toolbar already dismissed itself and cleared the highlight.
             }
             SurahDetailEvent.CopySelection -> scope.launch {
-                val formatted = viewModel.getFormattedSelection()
-                if (formatted.isNotBlank()) {
-                    val count = uiState.selectedAyahs.size
-                    shareHandler.copyImmediate(
-                        formatted,
-                        context.resources.getQuantityString(R.plurals.copied_ayat_count, count, count)
-                    )
-                    viewModel.onEvent(SurahDetailEvent.ClearSelection)
+                when (val result = viewModel.getFormattedSelection()) {
+                    is Result.Success -> if (result.data.isNotBlank()) {
+                        val count = uiState.selectedAyahs.size
+                        shareHandler.copyImmediate(
+                            result.data,
+                            context.resources.getQuantityString(R.plurals.copied_ayat_count, count, count)
+                        )
+                        viewModel.onEvent(SurahDetailEvent.ClearSelection)
+                    }
+                    is Result.Error -> shareHandler.showMessage(context.getString(R.string.copy_failed))
                 }
             }
             SurahDetailEvent.ShareSelection -> scope.launch {
-                val formatted = viewModel.getFormattedSelection()
-                if (formatted.isNotBlank()) {
-                    shareHandler.shareImmediate(
-                        formatted,
-                        context.getString(R.string.share_ayat),
-                        context.getString(R.string.no_share_app)
-                    )
-                    viewModel.onEvent(SurahDetailEvent.ClearSelection)
+                when (val result = viewModel.getFormattedSelection()) {
+                    is Result.Success -> if (result.data.isNotBlank()) {
+                        shareHandler.shareImmediate(
+                            result.data,
+                            context.getString(R.string.share_ayat),
+                            context.getString(R.string.no_share_app)
+                        )
+                        viewModel.onEvent(SurahDetailEvent.ClearSelection)
+                    }
+                    is Result.Error -> shareHandler.showMessage(context.getString(R.string.share_failed))
                 }
             }
             else -> viewModel.onEvent(event)
-        }
-    }
-
-    fun onBookmarkSelection() {
-        // Count first: the VM clears the selection synchronously on bookmark.
-        val count = uiState.selectedAyahs.size
-        viewModel.onEvent(SurahDetailEvent.BookmarkSelection)
-        if (count > 0) {
-            shareHandler.showMessage(
-                context.resources.getQuantityString(R.plurals.bookmarked_ayat_count, count, count)
-            )
         }
     }
 
@@ -82,10 +90,7 @@ fun SurahDetailRoute(
         surahId = surahId,
         targetAyah = targetAyah,
         enter = enter,
-        onEvent = { event ->
-            if (event == SurahDetailEvent.BookmarkSelection) onBookmarkSelection()
-            else onEvent(event)
-        },
+        onEvent = { event -> onEvent(event) },
         onNavigateBack = onNavigateBack,
         onNavigateToAdjacentSurah = onNavigateToAdjacentSurah,
         onNavigateToRootDetail = onNavigateToRootDetail,

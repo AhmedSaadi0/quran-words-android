@@ -86,3 +86,8 @@ sealed interface SurahDetailEvent {
     data object CopySelection : SurahDetailEvent
     data object ShareSelection : SurahDetailEvent
 }
+
+sealed interface SurahDetailEffect {
+    data class BookmarkSelectionSucceeded(val count: Int) : SurahDetailEffect
+    data class BookmarkSelectionFailed(val message: String) : SurahDetailEffect
+}

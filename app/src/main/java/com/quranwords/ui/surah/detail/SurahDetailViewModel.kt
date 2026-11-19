@@ -24,7 +24,9 @@ import com.quranwords.ui.theme.QuranFont
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -115,6 +117,8 @@ class SurahDetailViewModel @Inject constructor(
     private val _core = MutableStateFlow(
         ReaderCoreState(isImmersive = savedStateHandle.get<Boolean>(KEY_IMMERSIVE_STATE) ?: initialImmersive)
     )
+    private val _effect = MutableSharedFlow<SurahDetailEffect>(extraBufferCapacity = 8)
+    val effect: SharedFlow<SurahDetailEffect> = _effect
 
     private val fontState = MutableStateFlow(24f)
     private val pillTransparencyState = MutableStateFlow(PillTransparencyPreference.DEFAULT)
@@ -219,8 +223,15 @@ class SurahDetailViewModel @Inject constructor(
         val selected = _core.value.selection.selected
         if (selected.isEmpty()) return
         _core.update { it.copy(selection = it.selection.clear()) }
+        val keys = selected.map { "${it.surahId}:${it.ayah}" }.toSet()
         viewModelScope.launch {
-            selected.forEach { ref -> preferences.toggleAyahBookmark(ref.surahId, ref.ayah) }
+            when (val result = runCatchingResult { preferences.setAyahBookmarked(keys, true) }) {
+                is Result.Success -> _effect.tryEmit(SurahDetailEffect.BookmarkSelectionSucceeded(selected.size))
+                is Result.Error -> {
+                    _core.update { it.copy(error = result.message) }
+                    _effect.tryEmit(SurahDetailEffect.BookmarkSelectionFailed(result.message))
+                }
+            }
         }
     }
 
@@ -308,7 +319,10 @@ class SurahDetailViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = runCatchingResult { repository.getPagesForSurah(surahId) }) {
                 is Result.Success -> _core.update { it.copy(surahPages = result.data) }
-                is Result.Error -> _core.update { it.copy(surahPages = emptyList()) }
+                is Result.Error -> _core.update { state ->
+                    // Keep previously resolved page chrome; surface the failure instead.
+                    if (state.error == null) state.copy(error = result.message) else state
+                }
             }
         }
     }
@@ -483,13 +497,15 @@ class SurahDetailViewModel @Inject constructor(
     }
 
     /** Formats selected ayat grouped by surah, each with its own Surah header. */
-    fun getFormattedSelection(): String {
+    fun getFormattedSelection(): Result<String> {
         val selected = _core.value.selection.selected
-        if (selected.isEmpty()) return ""
-        return selected.groupBy { it.surahId }.mapNotNull { (surahId, refs) ->
+        if (selected.isEmpty()) return Result.Success("")
+        return runCatchingResult {
+            selected.groupBy { it.surahId }.mapNotNull { (surahId, refs) ->
             val ayat = refs.mapNotNull { findAyah(it) }.sortedBy { it.ayah }
-            if (ayat.isEmpty()) null else QuranCopyFormatter.formatMultiple(ayat, surahFor(surahId, _core.value.surah))
-        }.joinToString("\n\n")
+                if (ayat.isEmpty()) null else QuranCopyFormatter.formatMultiple(ayat, surahFor(surahId, _core.value.surah))
+            }.joinToString("\n\n")
+        }
     }
 
     fun getFormattedSingle(ayah: Ayah): String =

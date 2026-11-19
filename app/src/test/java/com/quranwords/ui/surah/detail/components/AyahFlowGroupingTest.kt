@@ -125,10 +125,9 @@ class AyahFlowGroupingTest {
             pageAyah(113, 1), pageAyah(113, 2),
             pageAyah(114, 1), pageAyah(114, 2)
         )
-        val segments = splitPageIntoSegments(page, activeSurahId = 113)
+        val segments = splitPageIntoSegments(page)
         assertEquals(listOf(112, 113, 114), segments.map { it.surahId })
         assertEquals(listOf(true, true, true), segments.map { it.startsOnPage })
-        assertEquals(listOf(false, true, false), segments.map { it.isActiveSurah })
         assertEquals(
             listOf(3, 4, 1, 2, 1, 2),
             segments.map { it.ayat.map { a -> a.ayah } }.flatten()
@@ -138,10 +137,9 @@ class AyahFlowGroupingTest {
     @Test
     fun `boundary page marks continuation segment without a banner`() {
         val page = listOf(pageAyah(3, 199, 50), pageAyah(3, 200, 50), pageAyah(4, 1, 50), pageAyah(4, 2, 50))
-        val segments = splitPageIntoSegments(page, activeSurahId = 4)
+        val segments = splitPageIntoSegments(page)
         assertEquals(listOf(3, 4), segments.map { it.surahId })
         assertEquals(listOf(false, true), segments.map { it.startsOnPage })
-        assertEquals(listOf(false, true), segments.map { it.isActiveSurah })
     }
 
     @Test
@@ -158,12 +156,6 @@ class AyahFlowGroupingTest {
         assertEquals(listOf(112, 113, 113, 114, 114), groups[0].ayat.map { it.surah })
         assertEquals(2, activeAyahCount(groups[0], 113))
         assertEquals(1, firstActiveAyah(groups[0], 113)?.ayah)
-    }
-
-    @Test
-    fun `unknown surah keeps every segment interactive`() {
-        val segments = splitPageIntoSegments(listOf(pageAyah(113, 1), pageAyah(114, 1)), activeSurahId = null)
-        assertEquals(listOf(true, true), segments.map { it.isActiveSurah })
     }
 
     @Test
@@ -190,6 +182,15 @@ class AyahFlowGroupingTest {
         assertEquals(2, activeAyahCount(group, 4))
         assertEquals(199, firstActiveAyah(group, 3)?.ayah)
         assertEquals(2, activeAyahCount(group, 3))
+    }
+
+    @Test
+    fun unpaged_group_renders_without_page_number() {
+        val group = groupAyatByPage(listOf(ayah(1, page = null), ayah(2, page = null))).single()
+        val chrome = mushafPageChrome(group, group.ayat)
+        assertEquals(false, chrome.showHeader)
+        assertEquals(false, chrome.showPageNumber)
+        assertNull(group.pageNumber)
     }
 
     /**

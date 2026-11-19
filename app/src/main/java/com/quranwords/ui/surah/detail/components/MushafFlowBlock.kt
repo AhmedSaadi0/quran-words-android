@@ -197,6 +197,10 @@ fun MushafFlowBlock(
     // pointerInput's keys never change with the layout, so its lambda would
     // capture a stale justification — read it fresh per tap instead.
     val currentJustification by rememberUpdatedState(justification)
+    // pointerInput is remembered under layout-only keys; read the toolbar and
+    // interaction callbacks fresh so an outside tap cannot toggle chrome.
+    val currentWordAction by rememberUpdatedState(activeWordAction)
+    val currentInteraction by rememberUpdatedState(wordInteraction)
 
     // Text's own padding inside this Box — the word rect from TextLayoutResult
     // is Text-local, while the Popup anchor is this Box.
@@ -207,8 +211,8 @@ fun MushafFlowBlock(
     fun handleTap(offset: Offset) {
         // A tap outside the toolbar consumes the gesture: dismiss ONLY, never
         // fall through to chrome toggle or ayah selection on the same tap.
-        if (activeWordAction != null) {
-            wordInteraction.onDismissWordAction()
+        if (currentWordAction != null) {
+            currentInteraction.onDismissWordAction()
             return
         }
         if (isSelectionMode) {
@@ -218,7 +222,7 @@ fun MushafFlowBlock(
             val ayah = group.ayat.firstOrNull { it.ayah == ayahNum } ?: return
             onToggleSelection(AyahRef(ayah.surah, ayah.ayah))
         } else {
-            wordInteraction.onToggleChrome()
+            currentInteraction.onToggleChrome()
         }
     }
 
@@ -241,7 +245,7 @@ fun MushafFlowBlock(
             }
             is MushafHit.Word -> {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                wordInteraction.onWordLongPressed(
+                currentInteraction.onWordLongPressed(
                     WordActionTarget(
                         wordId = hit.hit.word.wordAyahId,
                         word = hit.hit.word,

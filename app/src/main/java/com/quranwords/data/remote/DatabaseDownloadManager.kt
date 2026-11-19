@@ -5,6 +5,10 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import com.quranwords.core.util.DatabaseConstants
 import com.quranwords.domain.model.DbReleaseInfo
+import com.quranwords.domain.model.DownloadError
+import com.quranwords.domain.model.DownloadPhase
+import com.quranwords.domain.model.DownloadState
+import com.quranwords.domain.repository.DatabaseDownloadRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -16,55 +20,20 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.zip.ZipInputStream
 
-enum class DownloadPhase { DOWNLOAD, EXTRACT }
-
-/**
- * Localizable download failure reason. The UI maps each code to a string
- * resource; [DownloadState.Error.detail] carries the raw technical message
- * for logs only and is never displayed.
- */
-enum class DownloadError {
-    NETWORK,
-    NOT_ZIP,
-    CHECKSUM_MISMATCH,
-    EXTRACT_FAILED,
-    INVALID_DB,
-    INCOMPLETE_FILE,
-    INSTALL_FAILED,
-    BAD_PICK,
-    IMPORT_FAILED,
-    MANIFEST_FAILED,
-    UNKNOWN
-}
-
-sealed interface DownloadState {
-    object Idle : DownloadState
-    data class Progress(
-        val percentage: Int,
-        val downloadedBytes: Long,
-        val totalBytes: Long,
-        val speedKbps: Long = 0,
-        val phase: DownloadPhase = DownloadPhase.DOWNLOAD
-    ) : DownloadState
-    data class Extracting(val percentage: Int) : DownloadState
-    data class Completed(val versionCode: Int = 0, val versionName: String = "") : DownloadState
-    data class Error(val error: DownloadError, val detail: String? = null) : DownloadState
-}
-
 class DatabaseDownloadManager(
     private val context: Context,
     private val client: OkHttpClient
-) {
+) : DatabaseDownloadRepository {
     private val dbName = DatabaseConstants.DB_NAME
 
-    fun isDatabaseReady(): Boolean {
+    override fun isDatabaseReady(): Boolean {
         val dbFile = context.getDatabasePath(dbName)
         return dbFile.exists() && dbFile.length() > DatabaseConstants.DB_MIN_READY_SIZE
     }
 
     fun getDatabaseFile(): File = context.getDatabasePath(dbName)
 
-    fun downloadRelease(info: DbReleaseInfo): Flow<DownloadState> = flow {
+    override fun downloadRelease(info: DbReleaseInfo): Flow<DownloadState> = flow {
         val targetFile = context.getDatabasePath(dbName)
         val parent = targetFile.parentFile
         if (parent != null && !parent.exists()) parent.mkdirs()
@@ -147,7 +116,8 @@ class DatabaseDownloadManager(
         }
     }.flowOn(Dispatchers.IO)
 
-    fun importDatabase(sourceUri: Uri): Flow<DownloadState> = flow {
+    override fun importDatabase(uri: String): Flow<DownloadState> = flow {
+        val sourceUri = Uri.parse(uri)
         val targetFile = context.getDatabasePath(dbName)
         val parent = targetFile.parentFile
         if (parent != null && !parent.exists()) parent.mkdirs()

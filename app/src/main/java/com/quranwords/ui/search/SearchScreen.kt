@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +57,18 @@ import com.quranwords.ui.search.components.SectionHeader
 import com.quranwords.ui.search.components.SurahSearchCard
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+
+private fun activeSearchTab(scope: SearchScope, subScope: LexiconSubScope): SearchTab =
+    when (scope) {
+        SearchScope.AYAHS -> SearchTab.AYAT
+        SearchScope.WORDS -> SearchTab.WORDS
+        SearchScope.LEXICON -> when (subScope) {
+            LexiconSubScope.ROOTS -> SearchTab.ROOTS
+            LexiconSubScope.MASADIR -> SearchTab.MASADIR
+            LexiconSubScope.DERIVATIVES -> SearchTab.DERIVATIVES
+        }
+        else -> SearchTab.ROOTS
+    }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -92,17 +107,9 @@ fun SearchScreen(
             .distinctUntilChanged()
             .collect { lastIdx ->
                 if (lastIdx == -1) return@collect
-                val tab = when (uiState.scope) {
-                    SearchScope.AYAHS -> SearchTab.AYAT
-                    SearchScope.WORDS -> SearchTab.WORDS
-                    SearchScope.LEXICON -> when (uiState.lexiconSubScope) {
-                        LexiconSubScope.ROOTS -> SearchTab.ROOTS
-                        LexiconSubScope.MASADIR -> SearchTab.MASADIR
-                        LexiconSubScope.DERIVATIVES -> SearchTab.DERIVATIVES
-                    }
-                    else -> SearchTab.ROOTS
-                }
-                onEvent(SearchEvent.NearingEnd(tab, lastIdx))
+                onEvent(SearchEvent.NearingEnd(
+                    activeSearchTab(uiState.scope, uiState.lexiconSubScope), lastIdx
+                ))
             }
     }
     LaunchedEffect(uiState.scope, uiState.query) { listState.scrollToItem(0) }
@@ -140,6 +147,28 @@ fun SearchScreen(
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp).testTag("unified_search_input")
             )
+            if (uiState.pagingError != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = uiState.pagingError.orEmpty(),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Button(
+                        onClick = {
+                            onEvent(SearchEvent.LoadMore(
+                                activeSearchTab(uiState.scope, uiState.lexiconSubScope)
+                            ))
+                        },
+                        modifier = Modifier.testTag("search_paging_retry")
+                    ) { Text(stringResource(R.string.common_retry)) }
+                }
+            }
             SearchScopeChips(
                 scope = uiState.scope,
                 ayahCount = uiState.results.ayat.size,

@@ -37,7 +37,7 @@ class DbUpdateViewModel @Inject constructor(
             try {
                 when (val r = checkUpdate()) {
                     is DbCheckResult.Success -> _state.value = r.data
-                    is DbCheckResult.Error -> _state.value = DbUpdateState.Unknown
+                    is DbCheckResult.Error -> _state.value = DbUpdateState.CheckFailed(r.message)
                 }
             } finally {
                 _isChecking.value = false

@@ -66,6 +66,9 @@ interface UserPreferencesRepository {
 
     suspend fun toggleAyahBookmark(surahId: Int, ayahNum: Int)
 
+    /** Adds or removes many ayat in one atomic edit. Keys use "surah:ayah". */
+    suspend fun setAyahBookmarked(keys: Set<String>, bookmarked: Boolean)
+
     suspend fun addRecentSearch(query: String)
 
     suspend fun removeRecentSearch(query: String)

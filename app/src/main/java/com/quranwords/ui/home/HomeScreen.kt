@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.quranwords.domain.model.DbUpdateState
 import com.quranwords.ui.home.components.BookmarksQuickCard
+import com.quranwords.ui.home.components.DbUpdateCheckFailedBanner
 import com.quranwords.ui.home.components.ContinueReadingCard
 import com.quranwords.ui.home.components.DbSetupBanner
 import com.quranwords.ui.home.components.FeaturedRootsSection
@@ -45,7 +46,8 @@ fun HomeScreen(
     onNavigateToGuide: () -> Unit,
     onNavigateToSetup: () -> Unit,
     onNavigateToBookmarks: () -> Unit,
-    onDismissUpdate: (DbUpdateState.UpdateAvailable) -> Unit
+    onDismissUpdate: (DbUpdateState.UpdateAvailable) -> Unit,
+    onRetryDbCheck: () -> Unit
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -73,6 +75,16 @@ fun HomeScreen(
                 item(key = "home_db_banner") {
                     DbSetupBanner(
                         onNavigateToSetup = onNavigateToSetup,
+                        modifier = Modifier.animateItem(placementSpec = placementSpec())
+                    )
+                }
+            }
+
+            if (uiState.isDbReady && updateState is DbUpdateState.CheckFailed) {
+                item(key = "home_db_check_failed") {
+                    DbUpdateCheckFailedBanner(
+                        message = updateState.message,
+                        onRetry = onRetryDbCheck,
                         modifier = Modifier.animateItem(placementSpec = placementSpec())
                     )
                 }

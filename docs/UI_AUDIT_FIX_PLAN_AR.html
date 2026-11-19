@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  خطة إصلاح واجهة المستخدم — نسخة عربية (RTL) — كلمات القرآن
+  ============================================================================
+  المرجع: docs/UI_AUDIT_FIX_PLAN.md  (الخطة التفصيلية القابلة للتنفيذ)
+          docs/UI_AUDIT_FIX_PLAN.html (النسخة الإنجليزية المصوّرة)
+
+  صفحة مستقلة تمامًا:
+    * لا ملفات تنسيق أو خطوط أو سكربتات أو صور خارجية
+    * الرسومات مضمّنة كـ SVG مع عناوين وأوصاف قابلة للقراءة
+    * لا JavaScript ولا requests للشبكة — تُفتح دون اتصال
+    * لا تغيّر هذه الصفحة أي ملف Kotlin أو XML
+  ============================================================================
+-->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>خطة إصلاح الواجهة — ملخص مصوّر | كلمات القرآن</title>
+<meta name="description" content="دليل عربي مبسّط لخطة تحسين واجهة تطبيق كلمات القرآن: ما الذي كان خاطئًا، ما الذي سيتغيّر، ولماذا، وما المراحل الست للتنفيذ.">
+<meta name="theme-color" content="#56624B" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121411" media="(prefers-color-scheme: dark)">
+<style>
+  :root {
+    --bg: #F7F8F2;
+    --surface: #FFFFFF;
+    --surface-var: #F2F5EC;
+    --border: #E1E3D9;
+    --text: #1A1C18;
+    --muted: #43483E;
+    --primary: #56624B;
+    --primary-dark: #3F4E36;
+    --primary-container: #DDE5D1;
+    --amber: #8C6E2D;
+    --amber-bg: #F3E8D0;
+    --bad: #8A4930;
+    --bad-bg: #F8ECE5;
+    --good: #285C4F;
+    --good-bg: #E6F0EB;
+    --shadow: 0 2px 10px rgba(26,28,24,.06);
+    --radius: 16px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121411;
+      --surface: #191D17;
+      --surface-var: #232820;
+      --border: #363D31;
+      --text: #E2E5DC;
+      --muted: #A2A999;
+      --primary: #A4AD96;
+      --primary-dark: #C4CCA6;
+      --primary-container: #323B2B;
+      --amber: #B5934C;
+      --amber-bg: #382A0C;
+      --bad: #D89A7B;
+      --bad-bg: #3A241B;
+      --good: #A4C9B8;
+      --good-bg: #1E332C;
+      --shadow: 0 2px 14px rgba(0,0,0,.25);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Noto Naskh Arabic", "Noto Sans Arabic", "Amiri", Tahoma, Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.9;
+    direction: rtl;
+  }
+  a { color: var(--primary-dark); text-underline-offset: 3px; }
+  a:focus-visible, summary:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+  .skip { position: absolute; right: -9999px; top: 0; }
+  .skip:focus { right: 12px; top: 12px; background: var(--surface); padding: 10px 14px; border-radius: 8px; z-index: 99; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 22px 72px; }
+
+  header.hero {
+    background: linear-gradient(225deg, var(--primary-container) 0%, var(--surface) 62%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-inner { max-width: 1120px; margin: 0 auto; padding: 46px 22px 34px; }
+  .eyebrow { font-size: .82rem; letter-spacing: .04em; color: var(--primary-dark); font-weight: 800; margin: 0 0 8px; }
+  h1 { font-size: clamp(1.9rem, 4.4vw, 3rem); line-height: 1.35; margin: 0 0 10px; }
+  h2 { font-size: 1.6rem; line-height: 1.4; margin: 0 0 16px; padding-top: 6px; }
+  h3 { font-size: 1.15rem; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  .lead { font-size: 1.08rem; max-width: 78ch; color: var(--muted); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px 13px; font-size: .88rem; font-weight: 700;
+  }
+  .chip.plan { background: var(--amber-bg); border-color: var(--amber); color: var(--amber); }
+
+  nav.toc {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+  }
+  nav.toc ul { display: flex; flex-wrap: wrap; gap: 4px; list-style: none; margin: 0 auto; padding: 9px 18px; max-width: 1120px; }
+  nav.toc a { display: block; padding: 5px 11px; border-radius: 8px; text-decoration: none; font-size: .9rem; font-weight: 700; }
+  nav.toc a:hover { background: var(--surface-var); }
+
+  section { padding-top: 42px; }
+  .section-note { color: var(--muted); max-width: 84ch; margin-bottom: 18px; }
+
+  .grid { display: grid; gap: 16px; }
+  .grid.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .grid.three { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .card h3 { display: flex; align-items: baseline; gap: 9px; }
+  .num { color: var(--primary); font-variant-numeric: tabular-nums; font-weight: 900; }
+  .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+  ul.tight { margin: 6px 0 0; padding-inline-start: 20px; }
+  ul.tight li { margin-bottom: 5px; }
+
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
+  .before-after > div { padding: 16px 20px; }
+  .bad { border-inline-start: 5px solid var(--bad); background: linear-gradient(to left, var(--bad-bg), var(--surface) 58%); }
+  .good { border-inline-start: 5px solid var(--good); background: linear-gradient(to left, var(--good-bg), var(--surface) 58%); }
+  .label { display: block; font-size: .78rem; font-weight: 900; margin-bottom: 7px; }
+  .bad .label { color: var(--bad); }
+  .good .label { color: var(--good); }
+  @media (max-width: 720px) { .before-after { grid-template-columns: 1fr; } }
+
+  .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); margin-bottom: 18px; }
+  .diagram figcaption { font-weight: 800; margin: 2px 0 4px 6px; }
+  .diagram p.cap { color: var(--muted); font-size: .92rem; margin: 4px 6px 8px; }
+  .diagram svg { display: block; width: 100%; height: auto; direction: rtl; }
+  .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+  .box.accent { fill: var(--primary-container); stroke: var(--primary); }
+  .box.badbox { fill: var(--bad-bg); stroke: var(--bad); }
+  .box.goodbox { fill: var(--good-bg); stroke: var(--good); }
+  .box.amberbox { fill: var(--amber-bg); stroke: var(--amber); }
+  .lbl { fill: var(--text); font: 700 13px "Noto Sans Arabic", Tahoma, Arial, sans-serif; direction: rtl; }
+  .lbl.small { font-size: 11.5px; font-weight: 600; }
+  .lbl.big { font-size: 15px; }
+  .lbl.muted { fill: var(--muted); }
+  .lbl.badlbl { fill: var(--bad); }
+  .lbl.goodlbl { fill: var(--good); }
+  .arrow { stroke: var(--muted); stroke-width: 1.8; fill: none; marker-end: url(#head); }
+  .arrow.goodarrow { stroke: var(--good); marker-end: url(#headgood); }
+  .arrow.badarrow { stroke: var(--bad); marker-end: url(#headbad); }
+  .dash { stroke-dasharray: 5 4; }
+
+  details.phase { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; box-shadow: var(--shadow); }
+  details.phase > summary { cursor: pointer; padding: 15px 19px; font-weight: 800; font-size: 1.1rem; display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; list-style: none; }
+  details.phase > summary::-webkit-details-marker { display: none; }
+  details.phase > summary::before { content: "◀"; color: var(--primary); font-size: .85rem; }
+  details.phase[open] > summary::before { content: "▾"; }
+  details.phase > summary .count { margin-inline-start: auto; font-size: .82rem; color: var(--muted); font-weight: 700; }
+  .phase-body { padding: 0 19px 18px; border-top: 1px solid var(--border); }
+  .phase-body > p { margin-top: 14px; color: var(--muted); }
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .94rem; }
+  th, td { text-align: right; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-size: .8rem; }
+  td.id { white-space: nowrap; font-weight: 900; color: var(--primary-dark); }
+  tr:last-child td { border-bottom: 0; }
+
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  code {
+    background: var(--surface-var); border: 1px solid var(--border); border-radius: 5px;
+    padding: 1px 5px; font-size: .84em; direction: ltr; unicode-bidi: isolate; display: inline-block;
+  }
+  pre {
+    direction: ltr; text-align: left; unicode-bidi: isolate;
+    background: var(--surface); border: 1px solid var(--border); border-inline-start: 4px solid var(--primary);
+    border-radius: 10px; padding: 14px 16px; overflow-x: auto; line-height: 1.6;
+  }
+
+  .note { border: 1px solid var(--amber); background: var(--amber-bg); border-radius: 12px; padding: 13px 16px; margin: 14px 0; }
+  .note strong { color: var(--amber); }
+  .gate { border-inline-start: 4px solid var(--primary); padding-inline-start: 14px; margin: 12px 0; }
+
+  footer { border-top: 1px solid var(--border); margin-top: 46px; padding-top: 20px; color: var(--muted); font-size: .9rem; }
+
+  @media print {
+    nav.toc { position: static; }
+    details.phase { break-inside: avoid; }
+    details.phase:not([open]) > .phase-body { display: block; }
+    body { background: #fff; }
+    .card, .diagram, details.phase, .before-after { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">تخطَّ إلى المحتوى</a>
+
+<header class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">ملخص مصوّر · المرافق لخطة العمل المعتمدة</p>
+    <h1>خطة إصلاح واجهة المستخدم<br><span dir="ltr" style="font-family:system-ui,sans-serif;font-size:.55em;color:var(--muted)">UI Audit Fix Plan — Arabic brief</span></h1>
+    <p class="lead">دليل مبسّط بالعربية يشرح ما اكتشفه التدقيق، وما الذي سيتغيّر، ولماذا كل تغيير يفيد هذا التطبيق. الهدف هو معرفة ما سيحدث قبل البدء بالتنفيذ — لا تغييرات في الكود حتى الآن. الخطة التفصيلية القابلة للتنفيذ موجودة في <a href="UI_AUDIT_FIX_PLAN.md"><code>docs/UI_AUDIT_FIX_PLAN.md</code></a>، وهناك <a href="UI_AUDIT_FIX_PLAN.html">نسخة إنجليزية مصوّرة</a>.</p>
+    <div class="chips">
+      <span class="chip plan">الحالة: مخطّط فقط</span>
+      <span class="chip">٣٩ ملاحظة مؤكدة</span>
+      <span class="chip">٥٥ مهمة</span>
+      <span class="chip">٦ مراحل</span>
+      <span class="chip">صفر ملفات Kotlin/XML معدّلة</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="أقسام هذه الصفحة">
+  <ul>
+    <li><a href="#story">القصة القصيرة</a></li>
+    <li><a href="#why">لماذا يهمّنا</a></li>
+    <li><a href="#diagrams">الرسومات</a></li>
+    <li><a href="#phases">المراحل الست</a></li>
+    <li><a href="#decisions">قرارات واستثناءات</a></li>
+    <li><a href="#verification">التحقق والفحص</a></li>
+    <li><a href="#risks">الترتيب والمخاطر</a></li>
+  </ul>
+</nav>
+
+<main class="wrap" id="main">
+
+  <section id="story">
+    <h2>القصة القصيرة</h2>
+    <p class="section-note">مستخدم واحد، هاتف واحد، وقاعدة بيانات قرآن بحجم ١١٨ ميجابايت تعمل دون إنترنت. التطبيق قواعد جيدة — مجلدات لكل ميزة، تنقّل مكتوب، نماذج عرض وعقود — لكن أخطاءً مرئية وبعض الاختصارات المعمارية نمت داخل هذه القاعدة.</p>
+    <div class="grid three">
+      <div class="card">
+        <h3><span class="num">١</span> ما هو التطبيق</h3>
+        <p>مرجع قرآني: تقرأ المصحف بالسورة أو بصفحة الورق الحقيقية، وتضغط أي كلمة لتظهر الصرف، ثم تنتقل إلى جذرها لتقرأ المعاني والاشتقاقات وكل مواضعها في القرآن. تبحث في خمسة نطاقات، وتحفظ الإشارات المرجعية، وكل ذلك يعمل دون اتصال بعد تنزيل قاعدة البيانات مرة واحدة.</p>
+      </div>
+      <div class="card">
+        <h3><span class="num">٢</span> ما وجدَه التدقيق</h3>
+        <p>نتائج البحث كانت تعرض رقم آية مزيفًا <span dir="rtl">﴿٠﴾</span>؛زر «حفظ المحدد» قد يحذف إشارات موجودة؛بعض أزرار إعادة المحاولة لا تعمل؛والأخطاء تُبتلع فتظهر دوّانًا أو رسائل خاطئة. وتحت السطح: ملف واجهة يستورد حزمة البيانات مباشرة، وحالة موزّعة على خمس جهات، ونسختان من باني نصوص المصحف يجب مزامنتهما يدويًا.</p>
+      </div>
+      <div class="card">
+        <h3><span class="num">٣</span> ماذا تفعل الخطة</h3>
+        <p>نُصلح أولًا الأخطاء التي يراها المستخدم ومع كل خطأ اختبار يمنع عودته. ثم نُغلق الحدود المعمارية، ونوحّد الحالة، ونقسّم الملفات الكبيرة دون تغيير السلوك، وننظّق العربية وإمكانية الوصول، ونختم باختبارات مركّزة. يمكن التوقف بعد أي مرحلة والتطبيق يعمل.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <h2>لماذا هذه التغييرات مفيدة لهذا المشروع</h2>
+    <p class="section-note">ليست إعادة كتابة من أجل الشكل. كل بند يحمي وعدًا حقيقيًا يقدّمه المنتج.</p>
+    <div class="grid two">
+      <div class="card"><h3>صحة البيانات القرآنية</h3><p>إزالة الرقم المزيف <span dir="rtl">﴿٠﴾</span> وجعل مراجع الآيات دقيقة يحمي أهم ما لا يجوز أن يخطئ فيه مرجع قرآني: الآية التي يقرأها المستخدم.</p></div>
+      <div class="card"><h3>أمان بيانات المستخدم</h3><p>الإشارات المرجعية هي البيانات الوحيدة التي ينشئها المستخدم. تحويل «حفظ» إلى إضافة حقيقية في كتابة واحدة يمنع حذفها صامتًا.</p></div>
+      <div class="card"><h3>الأخطاء تصبح قابلة للاستعادة</h3><p>تنزيل ١١٨ ميجابايت وملف إصدار من GitHub قد يفشلان. الأخطاء المكتوبة مع زر إعادة تحلّ محل دوّان أو رسالة «قاعدة البيانات مفقودة» غير الصحيحة.</p></div>
+      <div class="card"><h3>القارئ العربي أولًا</h3><p>تسميات TalkBack بالعربية، وأرقام شرقية، ومساحات لمس ٤٨ نقطة، وأيقونات متجهة بدل الإيموجي — كلها تخدم كبار السن وضعاف البصر مباشرة.</p></div>
+      <div class="card"><h3>التغيير لا ينتشر بين الملفات</h3><p>ستة ملفات ضخمة كانت تؤدي سبع وظائف مستقلة. تقسيمها حسب المسؤولية يعني أن إصلاح إيماءة القراءة لا يلمس شاشة التنزيل.</p></div>
+      <div class="card"><h3>الاختبارات تمنع الانتكاس</h3><p>يوجد اليوم اختبار Compose واحد للقطة شاشة. إضافة اختبار مركّز لكل خطأ تُصلَحه تحوّل «نظن أنه يعمل» إلى «هذا الفشل لا يعود دون أن نلاحظه».</p></div>
+    </div>
+
+    <h3 style="margin-top:28px">قبل / بعد في لمحة</h3>
+    <div class="grid" style="gap:12px">
+      <div class="before-after">
+        <div class="bad"><span class="label">قبل · معالجة الأخطاء</span><p>يُلتقط الاستثناء ويُحوَّل إلى قائمة فارغة أو نص فارغ. تظهر دوّان أو رسالة «قاعدة البيانات مفقودة» أو «لا يوجد ما يُنسخ». لا أحد يعرف ما الذي فشل.</p></div>
+        <div class="good"><span class="label">بعد · معالجة الأخطاء</span><p>يصبح الفشل <code>Result.Error</code>، ثم يظهر في <code>UiState.error</code> مع رسالة وزر إعادة. لا يُخلط بين فشل حقيقي ونتيجة فارغة.</p></div>
+      </div>
+      <div class="before-after">
+        <div class="bad"><span class="label">قبل · المعمارية</span><p>نموذج عرض الإعداد يستورد أصناف <code>data.remote</code>. اختبارات الواجهة تحتاج تنفيذ التنزيل الحقيقي، وأي إعادة تسمية في البيانات تفرض إعادة كتابة الواجهة.</p></div>
+        <div class="good"><span class="label">بعد · المعمارية</span><p>منفذ نطاق يجلس بينهما. الواجهة تعرف واجهةً ونماذج نطاق فقط، وطبقة البيانات تنفّذها. الاختبارات تستخدم نسخًا وهمية بسيطة.</p></div>
+      </div>
+      <div class="before-after">
+        <div class="bad"><span class="label">قبل · الحالة</span><p>الشاشة تحفظ حالة القائمة وحجم الخط والصفحة، بل وتقرأ إعدادات النظام وتتحكم بشريط الحالة. وحالة مكرّرة في تدفقات متعددة مع تحويلات موضعية.</p></div>
+        <div class="good"><span class="label">بعد · الحالة</span><p>حالة واحدة مكتوبة لكل ميزة، وأحداث وتأثيرات لمرة واحدة، و«المسار» يملك المنصة. الشاشات تصبح قابلة للمعاينة والاختبار.</p></div>
+      </div>
+      <div class="before-after">
+        <div class="bad"><span class="label">قبل · التكرار</span><p>بانيان لنصوص المصحف مع تعليق يطلب «إبقاءهما متزامنين»، دالتان لحجم الملف، كتابتان للحافظة، ثلاث آلات صفحات، وخمس نسخ لحجم الخط الافتراضي.</p></div>
+        <div class="good"><span class="label">بعد · التكرار</span><p>باني واحد، دالة تنسيق نقية واحدة، كتابة واحدة للحافظة، مساعد صفحات واحد، وثابت واحد <code>FontSizePreference.DEFAULT</code>. الانحراف يصبح مستحيلًا بدل أن يكون مهمة مراجعة.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="diagrams">
+    <h2>رسومات توضيحية</h2>
+    <p class="section-note">كل رسم صورة مبسّطة للملفات الحقيقية. اللون الأخضر هو الهدف، والطيني هو الوضع الحالي. الرسومات نفسها معكوسة اتجاهها لتُقرأ من اليمين إلى اليسار.</p>
+
+    <figure class="diagram">
+      <figcaption>الرسم ١ — تدفّق البيانات وحدّ التبعية</figcaption>
+      <p class="cap">اليوم تخلط الشاشة بين أعمال المنصة والعرض وتصل إلى البيانات مباشرة. بعد المرحلتين ١–٢ يملك «المسار» المنصة، ويملك نموذج العرض حالة واحدة، ولا يوجد باب إلى البيانات سوى واجهة النطاق.</p>
+      <svg viewBox="0 0 980 340" role="img" aria-labelledby="d1t d1d">
+        <title id="d1t">تدفق البيانات قبل وبعد التغيير</title>
+        <desc id="d1d"> على اليمين الوضع الحالي: شاشة تملك حالة واستدعاءات نظام وتتصل بنموذج عرض متعدد التدفقات، وتستورد حزمة البيانات مباشرة. على اليسار الهدف: حدث من الشاشة إلى نموذج العرض، حالة واحدة تعود، ومسار يملك المنصة، وواجهة نطاق تنفذها طبقة البيانات.</desc>
+        <defs>
+          <marker id="head" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker>
+          <marker id="headgood" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--good)"/></marker>
+          <marker id="headbad" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--bad)"/></marker>
+        </defs>
+
+        <text class="lbl badlbl" x="950" y="26">اليوم</text>
+        <rect class="box badbox" x="760" y="56" width="180" height="86" rx="12"/>
+        <text class="lbl" x="926" y="80">الشاشة / المكوّن</text>
+        <text class="lbl small muted" x="926" y="101">حالة + إعدادات النظام</text>
+        <text class="lbl small muted" x="926" y="117">النشاط، شريط الحالة،</text>
+        <text class="lbl small muted" x="926" y="133">الحافظة داخل الواجهة</text>
+
+        <rect class="box" x="534" y="70" width="170" height="64" rx="12"/>
+        <text class="lbl" x="688" y="95">نموذج العرض</text>
+        <text class="lbl small muted" x="688" y="115">تدفقات متعددة</text>
+
+        <rect class="box badbox" x="534" y="220" width="170" height="64" rx="12"/>
+        <text class="lbl" x="688" y="245">تنفيذ البيانات</text>
+        <text class="lbl small muted" x="688" y="265">يُستورد مباشرة</text>
+
+        <path class="arrow badarrow" d="M756 96 L708 96"/>
+        <text class="lbl small badlbl" x="754" y="88">يستدعي</text>
+        <path class="arrow badarrow dash" d="M850 146 L850 250 L708 250"/>
+        <text class="lbl small badlbl" x="744" y="203">الواجهة تعتمد على حزمة البيانات</text>
+
+        <line x1="490" y1="12" x2="490" y2="320" stroke="var(--border)" stroke-dasharray="4 5"/>
+        <text class="lbl goodlbl" x="460" y="26">بعد المرحلتين ١–٢</text>
+
+        <rect class="box goodbox" x="280" y="48" width="170" height="52" rx="12"/>
+        <text class="lbl" x="434" y="70">المسار (Route)</text>
+        <text class="lbl small muted" x="434" y="88">حدّ المنصة</text>
+
+        <rect class="box" x="280" y="130" width="170" height="66" rx="12"/>
+        <text class="lbl" x="434" y="154">الشاشة</text>
+        <text class="lbl small muted" x="434" y="174">حالة داخلة · حدث خارج</text>
+
+        <rect class="box accent" x="40" y="130" width="170" height="66" rx="12"/>
+        <text class="lbl" x="194" y="154">نموذج العرض</text>
+        <text class="lbl small muted" x="194" y="174">حالة واحدة مكتوبة</text>
+
+        <rect class="box amberbox" x="40" y="242" width="170" height="60" rx="12"/>
+        <text class="lbl" x="194" y="266">منفذ النطاق</text>
+        <text class="lbl small muted" x="194" y="285">واجهة فقط</text>
+
+        <rect class="box" x="280" y="242" width="170" height="60" rx="12"/>
+        <text class="lbl" x="434" y="266">تنفيذ البيانات</text>
+        <text class="lbl small muted" x="434" y="285">ينفّذ الواجهة</text>
+
+        <path class="arrow goodarrow" d="M365 100 L365 126"/>
+        <path class="arrow goodarrow" d="M276 158 L214 158"/>
+        <text class="lbl small goodlbl" x="272" y="150">حدث</text>
+        <path class="arrow goodarrow" d="M214 180 L276 180"/>
+        <text class="lbl small goodlbl" x="272" y="199">الحالة</text>
+        <path class="arrow goodarrow" d="M125 196 L125 238"/>
+        <path class="arrow goodarrow" d="M276 272 L214 272"/>
+        <text class="lbl small goodlbl" x="272" y="264">ينفّذ</text>
+      </svg>
+    </figure>
+
+    <figure class="diagram">
+      <figcaption>الرسم ٢ — ماذا يحدث عند الفشل</figcaption>
+      <p class="cap">نفس خطأ قاعدة البيانات أو الشبكة يسلك طريقين مختلفين. المسار الهدف ينتهي دائمًا بشيء يستطيع المستخدم أن يفعله.</p>
+      <svg viewBox="0 0 980 220" role="img" aria-labelledby="d2t d2d">
+        <title id="d2t">معالجة الأخطاء قبل وبعد</title>
+        <desc id="d2d">قبل: يُلتقط الخطأ ويحوّل إلى نص أو قائمة فارغة فيظهر دوّان أو رسالة مضللة. بعد: يصبح خطأً مكتوبًا يظهر في حالة الواجهة مع رسالة وزر إعادة تحافظ على النتائج.</desc>
+        <text class="lbl badlbl" x="950" y="26">قبل · فشل صامت</text>
+        <rect class="box badbox" x="730" y="42" width="220" height="56" rx="10"/>
+        <text class="lbl" x="936" y="65">استعلام أو قاعدة بيانات</text><text class="lbl small muted" x="936" y="84">يرمي خطأً أو يعيد خطأ</text>
+        <rect class="box badbox" x="488" y="42" width="190" height="56" rx="10"/>
+        <text class="lbl" x="664" y="65">التقاط الاستثناء</text><text class="lbl small muted" x="664" y="84">→ نص فارغ أو قائمة فارغة</text>
+        <rect class="box badbox" x="246" y="42" width="190" height="56" rx="10"/>
+        <text class="lbl" x="422" y="65">لا تغيير في الحالة</text><text class="lbl small muted" x="422" y="84">دوّان أو نتيجة فارغة</text>
+        <rect class="box badbox" x="24" y="42" width="170" height="56" rx="10"/>
+        <text class="lbl" x="180" y="65">المستخدم لا يرى</text><text class="lbl small muted" x="180" y="84">شيئًا مفيدًا</text>
+        <path class="arrow badarrow" d="M726 70 L682 70"/><path class="arrow badarrow" d="M484 70 L440 70"/><path class="arrow badarrow" d="M242 70 L198 70"/>
+
+        <line x1="24" y1="120" x2="956" y2="120" stroke="var(--border)" stroke-dasharray="4 5"/>
+        <text class="lbl goodlbl" x="950" y="146">بعد · فشل معلن وقابل للاستعادة</text>
+        <rect class="box goodbox" x="730" y="160" width="220" height="52" rx="10"/>
+        <text class="lbl" x="936" y="182">نفس الخطأ بالضبط</text><text class="lbl small muted" x="936" y="200">لا تغيير في المصدر</text>
+        <rect class="box goodbox" x="488" y="160" width="190" height="52" rx="10"/>
+        <text class="lbl" x="664" y="182">runCatchingResult</text><text class="lbl small muted" x="664" y="200">→ Result.Error(رسالة)</text>
+        <rect class="box goodbox" x="246" y="160" width="190" height="52" rx="10"/>
+        <text class="lbl" x="422" y="182">UiState.error</text><text class="lbl small muted" x="422" y="200">الصفحات التالية تبقى</text>
+        <rect class="box goodbox" x="24" y="160" width="170" height="52" rx="10"/>
+        <text class="lbl" x="180" y="182">رسالة + زر إعادة</text><text class="lbl small muted" x="180" y="200">النتائج محفوظة</text>
+        <path class="arrow goodarrow" d="M726 186 L682 186"/><path class="arrow goodarrow" d="M484 186 L440 186"/><path class="arrow goodarrow" d="M242 186 L198 186"/>
+      </svg>
+    </figure>
+
+    <figure class="diagram">
+      <figcaption>الرسم ٣ — تفكيك القارئ دون تغييره</figcaption>
+      <p class="cap">المرحلة ٣ تنقل الكود فقط: نفس التطبيق، لكن ملفات صغيرة لكل وظيفة. باني النصوص المشترك يلغي خطر «يجب مزامنة النسختين».</p>
+      <svg viewBox="0 0 980 300" role="img" aria-labelledby="d3t d3d">
+        <title id="d3t">تقسيم ملفات القارئ</title>
+        <desc id="d3d">شاشة واحدة ضخمة على اليمين تؤدي سبع وظائف، تُقسّم على اليسار إلى تأثيرات الوضع ومضيف الشريط ومبدّل المحتوى وإيماءات/nbsp;كلها تستخدم باني نصوص واحدًا.</desc>
+        <rect class="box badbox" x="676" y="50" width="280" height="200" rx="14"/>
+        <text class="lbl badlbl" x="944" y="76">شاشة التفاصيل · ٥٦٧ سطرًا</text>
+        <text class="lbl small" x="944" y="102">تمرير + تبديل السور</text>
+        <text class="lbl small" x="944" y="124">الوصول العميق + النبض</text>
+        <text class="lbl small" x="944" y="146">تتبّع آخر قراءة</text>
+        <text class="lbl small" x="944" y="168">شريط النظام + الوضع الغامر</text>
+        <text class="lbl small" x="944" y="190">التحديد + قائمة الكلمة</text>
+        <text class="lbl small" x="944" y="212">قارئ صفحات / قائمة</text>
+        <text class="lbl small" x="944" y="234">كتلة المصحف · ٥٥٩ سطرًا</text>
+
+        <path class="arrow goodarrow" d="M672 150 L620 150"/>
+
+        <rect class="box goodbox" x="366" y="36" width="250" height="50" rx="10"/>
+        <text class="lbl" x="600" y="58">تأثيرات الوضع</text><text class="lbl small muted" x="600" y="75">تموضع · نبض · آخر قراءة</text>
+        <rect class="box goodbox" x="366" y="96" width="250" height="50" rx="10"/>
+        <text class="lbl" x="600" y="118">مضيف الشريط</text><text class="lbl small muted" x="600" y="135">شريط علوي · تحديد</text>
+        <rect class="box goodbox" x="366" y="156" width="250" height="50" rx="10"/>
+        <text class="lbl" x="600" y="178">مبدّل المحتوى</text><text class="lbl small muted" x="600" y="195">صفحات · قائمة · خطأ</text>
+        <rect class="box goodbox" x="366" y="216" width="250" height="50" rx="10"/>
+        <text class="lbl" x="600" y="238">إيماءات / طبقة نبض</text><text class="lbl small muted" x="600" y="255">كل سلوك في ملف وحده</text>
+
+        <rect class="box amberbox" x="24" y="96" width="266" height="76" rx="12"/>
+        <text class="lbl" x="274" y="120">باني نصوص موحّد</text>
+        <text class="lbl small muted" x="274" y="141">الرسم وقياس الصفحة</text>
+        <text class="lbl small muted" x="274" y="159">نفس المحارف — باختبار</text>
+        <path class="arrow" d="M362 61 L298 118"/>
+        <path class="arrow" d="M362 241 L298 152"/>
+      </svg>
+    </figure>
+
+    <figure class="diagram">
+      <figcaption>الرسم ٤ — خريطة المراحل وبوابات الأمان</figcaption>
+      <p class="cap">نُصلح السلوك أولًا، ثم الحدود، ثم الحالة، ثم نُقسّم الملفات، ثم نُنظّق، ثم نُثبت بالاختبارات. بعد كل مرحلة يبقى التطبيق صالحًا للاستخدام.</p>
+      <svg viewBox="0 0 980 190" role="img" aria-labelledby="d4t d4d">
+        <title id="d4t">المراحل الست بالترتيب</title>
+        <desc id="d4d">من اليمين إلى اليسار: المرحلة صفر الأخطاء الحرجة، ثم الحدود المعمارية، ثم الحالة وتدفق البيانات، ثم إزالة التكرار وتقسيم الملفات، ثم التحسينات والوصولية، ثم الاختبارات والفحص النهائي.</desc>
+        <rect class="box badbox" x="810" y="54" width="148" height="84" rx="12"/>
+        <text class="lbl big" x="946" y="82">٠</text><text class="lbl small" x="946" y="104">أخطاء حرجة</text><text class="lbl small muted" x="946" y="122">١٠ مهام · اختبارات</text>
+        <rect class="box amberbox" x="652" y="54" width="138" height="84" rx="12"/>
+        <text class="lbl big" x="778" y="82">١</text><text class="lbl small" x="778" y="104">الحدود</text><text class="lbl small muted" x="778" y="122">٦ مهام</text>
+        <rect class="box accent" x="494" y="54" width="138" height="84" rx="12"/>
+        <text class="lbl big" x="620" y="82">٢</text><text class="lbl small" x="620" y="104">الحالة وUDF</text><text class="lbl small muted" x="620" y="122">١٠ مهام</text>
+        <rect class="box accent" x="336" y="54" width="138" height="84" rx="12"/>
+        <text class="lbl big" x="462" y="82">٣</text><text class="lbl small" x="462" y="104">إزالة التكرار</text><text class="lbl small muted" x="462" y="122">٨ مهام</text>
+        <rect class="box goodbox" x="178" y="54" width="138" height="84" rx="12"/>
+        <text class="lbl big" x="304" y="82">٤</text><text class="lbl small" x="304" y="104">اللمسات والوصول</text><text class="lbl small muted" x="304" y="122">١٢ مهمة</text>
+        <rect class="box goodbox" x="20" y="54" width="138" height="84" rx="12"/>
+        <text class="lbl big" x="146" y="82">٥</text><text class="lbl small" x="146" y="104">الإثبات والفحص</text><text class="lbl small muted" x="146" y="122">٩ مهام</text>
+        <path class="arrow" d="M806 96 L794 96"/><path class="arrow" d="M648 96 L636 96"/><path class="arrow" d="M490 96 L478 96"/><path class="arrow" d="M332 96 L320 96"/><path class="arrow" d="M174 96 L162 96"/>
+        <text class="lbl small muted" x="950" y="166">البوابة: كل إصلاح في المرحلة ٠ له اختبار يفشل إذا عاد الخطأ.</text>
+      </svg>
+    </figure>
+
+    <figure class="diagram">
+      <figcaption>الرسم ٥ — شبكة الاختبارات قبل وبعد</figcaption>
+      <p class="cap">اختبار واحد لا يغطي أيًّا من الملاحظات الـ٣٩. الهدف شبكة صغيرة متعددة الطبقات، لكل فشل فيها اختبار يسقط إذا حُذف الإصلاح.</p>
+      <svg viewBox="0 0 980 260" role="img" aria-labelledby="d5t d5d">
+        <title id="d5t">الاختبارات قبل وبعد</title>
+        <desc id="d5d">قبل: اختبار لقطة شاشة واحد واختبارات نماذج عرض للحالات الناجحة فقط. بعد: اختبارات وحدة للدوال، واختبارات نماذج للأخطاء والإعادة، واختبارات Compose للبطاقات والقارئ، ولقطات شاشة وفحوص ساكنة للرموز التصميمية.</desc>
+        <text class="lbl badlbl" x="950" y="24">اليوم</text>
+        <rect class="box badbox" x="636" y="38" width="320" height="66" rx="10"/>
+        <text class="lbl" x="942" y="62">اختبار Compose واحد للقطة شاشة</text><text class="lbl small muted" x="942" y="84">لعنوان الرئيسية فقط</text>
+        <rect class="box badbox" x="330" y="38" width="290" height="66" rx="10"/>
+        <text class="lbl" x="606" y="62">اختبارات الحالات الناجحة</text><text class="lbl small muted" x="606" y="84">الأخطاء والإعادة غير مختبرة</text>
+        <rect class="box badbox" x="24" y="38" width="290" height="66" rx="10"/>
+        <text class="lbl" x="300" y="62">صفر اختبارات للـ٣٩ ملاحظة</text><text class="lbl small muted" x="300" y="84">كل الأخطاء تمرّ من CI</text>
+
+        <line x1="24" y1="124" x2="956" y2="124" stroke="var(--border)" stroke-dasharray="4 5"/>
+        <text class="lbl goodlbl" x="950" y="150">الهدف · شبكة صغيرة متعددة الطبقات</text>
+        <rect class="box goodbox" x="732" y="164" width="224" height="70" rx="10"/>
+        <text class="lbl" x="942" y="188">اختبارات وحدة نقية</text><text class="lbl small muted" x="942" y="208">تنسيق · قياس · باني النصوص</text><text class="lbl small muted" x="942" y="224">صفحات · دورة الإعدادات</text>
+        <rect class="box goodbox" x="496" y="164" width="222" height="70" rx="10"/>
+        <text class="lbl" x="704" y="188">اختبارات نماذج العرض</text><text class="lbl small muted" x="704" y="208">خطأ · إعادة · إشارات مرجعية</text><text class="lbl small muted" x="704" y="224">آخر قراءة · الدوران</text>
+        <rect class="box goodbox" x="260" y="164" width="222" height="70" rx="10"/>
+        <text class="lbl" x="468" y="188">اختبارات Compose</text><text class="lbl small muted" x="468" y="208">بطاقة البحث · لمس القائمة</text><text class="lbl small muted" x="468" y="224">واجهة الخطأ · TalkBack</text>
+        <rect class="box goodbox" x="24" y="164" width="222" height="70" rx="10"/>
+        <text class="lbl" x="232" y="188">لقطات وفحوص ساكنة</text><text class="lbl small muted" x="232" y="208">الرموز · لا إيموجي</text><text class="lbl small muted" x="232" y="224">لا استيراد للبيانات في UI</text>
+      </svg>
+    </figure>
+  </section>
+
+  <section id="phases">
+    <h2>المراحل الست مهمة بمهمة</h2>
+    <p class="section-note">افتح المرحلة لتقرأ ماذا سيحدث ولماذا. الأرقام مطابقة تمامًا لقوائم الاختيار في الخطة المكتوبة. يمكنك التوقف بعد أي مرحلة والتطبيق يعمل.</p>
+
+    <details class="phase" open>
+      <summary>المرحلة ٠ — أخطاء حرجة يراها المستخدم <span class="count">١٠ مهام · إصلاح + اختبار لكل واحد</span></summary>
+      <div class="phase-body">
+        <p>لا إعادة هيكلة هنا. هذه نتائج خاطئة، وبيانات مستخدم تُحذف، وأزرار ميتة، وفشل غير مرئي.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>المعرّف</th><th>ماذا سيحدث</th><th>لماذا يهمّ</th></tr></thead>
+          <tbody>
+            <tr><td class="id"><code>P0-1</code></td><td>تمرير رقم الآية الحقيقي لبطاقة البحث وعرضه بالأرقام الشرقية.</td><td>إزالة الرقم المزيف ﴿٠﴾ من كل نتيجة.</td></tr>
+            <tr><td class="id"><code>P0-2</code></td><td>إعادة لوحة فشل التحديث مع رسالة وزر إغلاق.</td><td>فشل التحديث لم يعد صامتًا.</td></tr>
+            <tr><td class="id"><code>P0-3</code></td><td>حفظ كل الآيات المحددة دفعة واحدة بدل تبديل حالتها.</td><td>يمنع حذف الإشارات الموجودة.</td></tr>
+            <tr><td class="id"><code>P0-4</code></td><td>تغليف استعلامات تفاصيل الجذر وعرض الخطأ مع زر إعادة.</td><td>لا دوّان بلا نهاية عند خطأ قاعدة بيانات.</td></tr>
+            <tr><td class="id"><code>P0-5</code></td><td>عرض خطأ القارئ وزر الإعادة بدل رسالة «قاعدة البيانات مفقودة».</td><td>يقول التطبيق الحقيقة عن سبب الفشل.</td></tr>
+            <tr><td class="id"><code>P0-6</code></td><td>الإبقاء على تحميل الصفحات التالية متاحًا بعد فشل صفحة.</td><td>زر الإعادة يعمل فعلًا.</td></tr>
+            <tr><td class="id"><code>P0-7</code></td><td>إعادة داخل القائمة مع الحفاظ على النتائج وموضع التمرير.</td><td>خطأ عابر لا يمحو نتائج البحث.</td></tr>
+            <tr><td class="id"><code>P0-8</code></td><td>قراءة حالة قائمة الكلمة من الحالة الحالية عند اللمس.</td><td>النقرة خارج القائمة تُغلقها فقط ولا تبدل الشريط.</td></tr>
+            <tr><td class="id"><code>P0-9</code></td><td>مراقبة محتوى الصفحة أيضًا عند تسجيل آخر قراءة.</td><td>تعمل بعد زيارة صفحة غير مخزنة.</td></tr>
+            <tr><td class="id"><code>P0-10</code></td><td>إزالة فرض غير آمن على رقم الصفحة.</td><td>بيانات المصحف القديمة لا تُسقط التطبيق.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="phase" open>
+      <summary>المرحلة ١ — الحدود المعمارية ومعالجة الأخطاء <span class="count">٦ مهام</span></summary>
+      <div class="phase-body">
+        <p>نضع واجهة نطاق حيث كانت الواجهة تلمس البيانات، ونجعل كل فشل يحمل رسالة يمكن عرضها.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>المعرّف</th><th>ماذا سيحدث</th><th>لماذا يهمّ</th></tr></thead>
+          <tbody>
+            <tr><td class="id"><code>P1-1</code></td><td>نموذج عرض الإعداد يعتمد على منفذ نطاق بدل استيراد <code>data.remote</code>.</td><td>يعيد قاعدة التبعيات ويسمح باختبارات وهمية.</td></tr>
+            <tr><td class="id"><code>P1-2</code></td><td>نتائج مكتوبة للنسخ والمشاركة، كتابة واحدة للحافظة، وتنبيه عند غياب المتصفح.</td><td>الفشل لا يُسمى «لا يوجد ما يُنسخ».</td></tr>
+            <tr><td class="id"><code>P1-3</code></td><td>إيقاف تحويل استثناءات فحص التحديث إلى نجاح فارغ.</td><td>الفشل يظهر ويمكن إعادته.</td></tr>
+            <tr><td class="id"><code>P1-4</code></td><td>حسم التعارض بين القرارين ٣٧ و٤٢ في سجل القرارات.</td><td>سلوك واحد موثّق بدل حقل مضلل.</td></tr>
+            <tr><td class="id"><code>P1-5</code></td><td>اختيار وتوثيق قاعدة «البيانات مفقودة».</td><td>يتفق الدليل والتطبيق على سلوك واحد.</td></tr>
+            <tr><td class="id"><code>P1-6</code></td><td>حالة خطأ مستقلة وزر إعادة لفحص ملف البيانات.</td><td>«لم يُفحص» يختلف عن «فشل الفحص».</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary>المرحلة ٢ — توحيد الحالة وتنظيف التدفق <span class="count">١٠ مهام + استثناء موثّق</span></summary>
+      <div class="phase-body">
+        <p>حالة واحدة مكتوبة لكل ميزة، والمنصة في «المسار»، ولا تحويلات موضعية ولا كتابات مكررة.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>المعرّف</th><th>ماذا سيحدث</th><th>لماذا يهمّ</th></tr></thead>
+          <tbody>
+            <tr><td class="id"><code>P2-1</code></td><td>استبدال تحويلات <code>combine</code> الموضعية بتركيبات مكتوبة.</td><td>تغيير ترتيب التدفقات لا يصبح انهيارًا وقت التشغيل.</td></tr>
+            <tr><td class="id"><code>P2-2</code></td><td>حالة واجهة واحدة معتمدة لكل ميزة وحذف الفروع الميتة.</td><td>مصدر واحد للحقيقة.</td></tr>
+            <tr><td class="id"><code>P2-3</code></td><td>نقل النشاط وشريط النظام وقراءة الإعدادات إلى متحكّم يملكه المسار.</td><td>الشاشة تصبح قابلة للمعاينة والاختبار.</td></tr>
+            <tr><td class="id"><code>P2-4</code></td><td>رفع نموذج حوار البلاغ إلى <code>RootDetailRoute</code>.</td><td>المكوّنات البسيطة تبقى بلا Hilt.</td></tr>
+            <tr><td class="id"><code>P2-5</code></td><td>توثيق استثناء عقد الشاشة الرئيسية.</td><td>لا نضيف أحداثًا وسيطة بلا فائدة.</td></tr>
+            <tr><td class="id"><code>P2-6</code></td><td>نقل حالة النافذة وحجم الخط إلى العقد عند الحاجة لبقائها بعد الدوران.</td><td>نموذج التدفق يشمل الحالة المرئية.</td></tr>
+            <tr><td class="id"><code>P2-7</code></td><td>مساعد صفحات واحد وحذف تأخيرات ٨٠ مللي ثانية.</td><td>ثلاث آلات حالة متعددة تصبح واحدة.</td></tr>
+            <tr><td class="id"><code>P2-8</code></td><td>تسجيل البحث الأخير مرة واحدة وتوضيح الأسماء المكررة.</td><td>لا كتابة مزدوجة ولا أسماء مضللة.</td></tr>
+            <tr><td class="id"><code>P2-9</code></td><td>دمج مدخلي الإعدادات في <code>onEvent</code> ودورة واحدة مختبرة.</td><td>واجهة واحدة وسلوك موثّق.</td></tr>
+            <tr><td class="id"><code>P2-10</code></td><td>تحويل خطأ الانتقال السريع إلى نوع بدل نصوص <code>page</code>/<code>ayah</code>.</td><td>لا قيم نصية مخفية يمكن أن تنحرف.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><strong>استثناء موثّق:</strong> شاشة دليل الصرف (<code>MorphologyGuideScreen</code>) تحتفظ باختيار اللغة داخل المكوّن. إنها شاشة ساكنة بلا حالة وبمعاودة تنقّل واحدة، وقراءة إعداد اللغة ليست تأثيرًا على المنصة — القاعدة ١٠٫١ في AGENTS تسمح بذلك. لا نضيف عقدًا ولا نموذج عرض لها.</div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary>المرحلة ٣ — إزالة التكرار وتقسيم الملفات الضخمة <span class="count">٨ مهام · بلا تغيير سلوك</span></summary>
+      <div class="phase-body">
+        <p>نقل كود فقط: نفس التطبيق، في ملفات أصغر لكل منها مهمة واحدة، مع إصلاحَي الذاكرة والتكرار.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>المعرّف</th><th>ماذا سيحدث</th><th>لماذا يهمّ</th></tr></thead>
+          <tbody>
+            <tr><td class="id"><code>P3-1</code></td><td>باني نصوص مصحف واحد للرسم ولقياس الصفحة.</td><td>القياس يطابق ما يُرسم فعلًا.</td></tr>
+            <tr><td class="id"><code>P3-2</code></td><td>تقسيم شاشة القارئ إلى ملفات للتموضع والشريط والمحتوى والتفاعل.</td><td>إصلاح إيماءة لا يلمس شريط النظام.</td></tr>
+            <tr><td class="id"><code>P3-3</code></td><td>تقسيم كتلة المصحف إلى إيماءات ونبض وإمكانية وصول.</td><td>كل سلوك يُقرأ ويُختبر وحده.</td></tr>
+            <tr><td class="id"><code>P3-4</code></td><td>استخراج ذاكرة الصفحات والتحديد من نموذج القارئ.</td><td>النموذج ذو ٤٩٧ سطرًا يصبح منسّقًا.</td></tr>
+            <tr><td class="id"><code>P3-5</code></td><td>استخراج الصفحات وإنشاء نصوص النسخ من نموذج الجذر.</td><td>مسارات الخطأ تبقى معزولة وقابلة للاختبار.</td></tr>
+            <tr><td class="id"><code>P3-6</code></td><td>تقسيم شاشة الإعداد من ٥٧٥ سطرًا حسب حالات التنزيل.</td><td>الشاشة تعكس الحالات الخمس التي تعرضها.</td></tr>
+            <tr><td class="id"><code>P3-7</code></td><td>تقسيم معالج الأحداث وتنسيق الأسطر الطويلة جدًا.</td><td>الأحداث مقروءة بلا تمرير أفقي.</td></tr>
+            <tr><td class="id"><code>P3-8</code></td><td>إصلاح مفتاح الذاكرة في <code>CitedBodyText</code>.</td><td>النص المُقتبس لا يُعاد بناؤه في كل إعادة رسم.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary>المرحلة ٤ — العربية، الرموز التصميمية، الوصولية، والكود الميت <span class="count">١٢ مهمة</span></summary>
+      <div class="phase-body">
+        <p>نجعل التجربة العربية متسقة، ونحذف ما لم يعد يستحق البقاء.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>المعرّف</th><th>ماذا سيحدث</th><th>لماذا يهمّ</th></tr></thead>
+          <tbody>
+            <tr><td class="id"><code>P4-1</code></td><td>نقل النصوص المكتوبة داخل الواجهة إلى ملفات الموارد.</td><td>الواجهة الإنجليزية لا تتحدث العربية في البحث وأحجام الخط.</td></tr>
+            <tr><td class="id"><code>P4-2</code></td><td>تخزين إجراءات TalkBack وتطبيق قرار السورة النشطة.</td><td>قائمة ~٢٠٠ إجراء لا تُعاد في كل تحديث.</td></tr>
+            <tr><td class="id"><code>P4-3</code></td><td>أرقام شرقية لإحصاءات الصفحة الرئيسية.</td><td>اتساق الأرقام في كل التطبيق.</td></tr>
+            <tr><td class="id"><code>P4-4</code></td><td>ألوان وأشكال من الرموز التصميمية بدل قيم حرة.</td><td>الوضع الدقيق موثوق عند تغيير الثيم.</td></tr>
+            <tr><td class="id"><code>P4-5</code></td><td>مساحات لمس ٤٨ نقطة للأزرار والشرائح الصغيرة.</td><td>استخدام مريح لذوي الحركة الدقيقة.</td></tr>
+            <tr><td class="id"><code>P4-6</code></td><td>وصف صحيح لزر الإشارة المرجعية في نتائج البحث.</td><td>TalkBack يقول «أضف إشارة» قبل الحفظ.</td></tr>
+            <tr><td class="id"><code>P4-7</code></td><td>حذف الكود الميت والتعليقات القديمة وغلاف البانر الزائد.</td><td>كود أقل يعني قراءة واختبارًا أقل.</td></tr>
+            <tr><td class="id"><code>P4-8</code></td><td>مواصفة حركة واحدة وثابت بسملة واحد.</td><td>القيم الصغيرة لا تنحرف بين الشاشات.</td></tr>
+            <tr><td class="id"><code>P4-9</code></td><td>دالة نقية واحدة لتنسيق أحجام الملفات بلا <code>Context</code>.</td><td>شاشة الإعداد ولوحة التحديث لا تختلفان أبدًا.</td></tr>
+            <tr><td class="id"><code>P4-10</code></td><td>اسم <code>AppTypography</code> وأشكال مشتقة من مصدر واحد.</td><td>لا ظل للاسم ولا أنصاف مكررة.</td></tr>
+            <tr><td class="id"><code>P4-11</code></td><td>إزالة الإيموجي المتبقي واستخدام أيقونات متجهة.</td><td>القرار ١٣ يُطبّق أخيرًا في اللغتين.</td></tr>
+            <tr><td class="id"><code>P4-12</code></td><td>استخدام <code>FontSizePreference.DEFAULT</code> وتسمية أحجام النصوص.</td><td>شريط واحد يعني نفس الحجم في المصحف والبطاقات.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary>المرحلة ٥ — اختبارات مركّزة والفحص النهائي <span class="count">٩ مهام</span></summary>
+      <div class="phase-body">
+        <p>كل إصلاح في المرحلة ٠ يسمّي اختباره في الخطة المكتوبة. هذه المرحلة تُغلق الشبكة وتشغّل قائمة الفحص الكاملة التي ينفّذها المستخدم.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>المعرّف</th><th>ماذا سيحدث</th><th>لماذا يهمّ</th></tr></thead>
+          <tbody>
+            <tr><td class="id"><code>P5-1</code></td><td>مساعد صغير لاختبارات Compose بوسوم موحّدة.</td><td>الاختبارات الجديدة تبقى قصيرة ومتسقة.</td></tr>
+            <tr><td class="id"><code>P5-2</code></td><td>اختبارات رقم الآية ووصف الإشارة ولواحق الصفحة.</td><td>تثبيت P0-1 وP4-1 وP4-6.</td></tr>
+            <tr><td class="id"><code>P5-3</code></td><td>اختبار حفظ المحدد بحالات أولية مختلطة.</td><td>خطأ الحذف لا يعود.</td></tr>
+            <tr><td class="id"><code>P5-4</code></td><td>اختبارات القارئ: لمس القائمة، آخر قراءة، بيانات بلا صفحات، واجهة الخطأ.</td><td>تغطية أخطر أربعة إصلاحات.</td></tr>
+            <tr><td class="id"><code>P5-5</code></td><td>اختبارات الخطأ والإعادة لتفاصيل الجذر والكلمة.</td><td>لا دوّان ولا زر إعادة ميت.</td></tr>
+            <tr><td class="id"><code>P5-6</code></td><td>اختبار خطأ صفحات البحث.</td><td>النتائج والإزاحة تصمد.</td></tr>
+            <tr><td class="id"><code>P5-7</code></td><td>اختبار تطابق محارف باني المصحف.</td><td>خطأ النسختين يبقى مُصلَحًا للأبد.</td></tr>
+            <tr><td class="id"><code>P5-8</code></td><td>اختبارات التحديث وقاعدة البيانات والمشاركة للفشل المكتوب.</td><td>الفشل الصامت يبقى مرئيًا.</td></tr>
+            <tr><td class="id"><code>P5-9</code></td><td>المستخدم يشغّل قائمة Gradle والفحص اليدوي كاملة.</td><td>لا يُدعى نجاح فحص بلا نتيجة حقيقية.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+  </section>
+
+  <section id="decisions">
+    <h2>قرارات واستثناءات تحتاج رأيًا بشريًا</h2>
+    <p class="section-note">الخطة لا تغيّر سلوك المنتج بهدوء في هذه المواضع الأربعة.</p>
+    <div class="grid two">
+      <div class="card"><h3>القرار ٣٧ مقابل ٤٢</h3><p>الحقل <code>isActiveSurah</code> يقول إن السورة النشطة فقط تملك التحديد و TalkBack في صفحة مشتركة، بينما يمرّر العارض <code>null</code> فتصبح كل السور تفاعلية — وهو ما يطابق القرار ٤٢. تطلب P1-4 اختيار أحدهما وتوثيقه. التوصية: الإبقاء على السلوك الحالي وحذف الحقل غير المستخدم.</p></div>
+      <div class="card"><h3>قاعدة «البيانات مفقودة»</h3><p>تنص AGENTS §8.5 على عرض شاشة التنزيل فقط عند غياب قاعدة البيانات، لكن التطبيق يسمح حاليًا بالمعاينة. تطلب P1-5 قرارًا قبل أي تغيير في تقييد المسارات.</p></div>
+      <div class="card"><h3>دورة الإعدادات</h3><p>توحّد P2-9 مدخلي الواجهة في <code>onEvent</code>، مع دورة واحدة مختبرة صراحةً (بما فيها العودة إلى «حسب النظام») بدل الاعتماد على تعليق قديم.</p></div>
+      <div class="card"><h3>Paging3 أم مساعد بسيط</h3><p>القرار ١٢ أجّل Paging3 بالفعل. تُزيل P2-7 تكرار حالة الصفحات اليدوية وتأخيراتها الآن؛ أما الانتقال إلى Paging3 فيبقى قرارًا منفصلًا.</p></div>
+    </div>
+    <div class="note"><strong>ملاحظة تسمية الأمر:</strong> المشروع يستخدم Spotless مع ktlint ١٫٥، لذلك فإن المهمة الحقيقية هي <code>spotlessCheck</code>. الأمر <code>ktlintCheck</code> غير موجود في هذا البناء رغم ذكره في AGENTS؛ قائمة التحقق تستخدم الأمر الفعلي.</div>
+  </section>
+
+  <section id="verification">
+    <h2>التحقق والفحص اليدوي</h2>
+    <p class="section-note">حسب AGENTS §16 لا يشغّل الوكيل Gradle. هذه أوامر المستخدم لتنفيذها بعد التنفيذ، ولا يُدعى هنا نجاح أي فحص.</p>
+    <pre>cd /media/linux/android-projects/quran-words
+
+./gradlew spotlessCheck detekt lintDebug
+./gradlew testDebugUnitTest
+./gradlew assembleDebug</pre>
+
+    <h3>فحص المرحلة ٠ يدويًا — عربي RTL وإنجليزي LTR، فاتح وداكن</h3>
+    <ul class="tight">
+      <li>☐ ابحث عن أي كلمة: تعرض نتيجة الآية رقمها الحقيقي، لا <span dir="rtl">﴿٠﴾</span>.</li>
+      <li>☐ اختر آيات محفوظة وغير محفوظة معًا ثم اضغط حفظ: كلها تصبح محفوظة ولا يُحذف شيء.</li>
+      <li>☐ سبّب فشل تحميل صفحة: تحافظ النتائج على نفسها وزر الإعادة يحمّل الصفحة التالية في البحث والكلمة.</li>
+      <li>☐ سبّب خطأ في قاعدة البيانات: تظهر رسالة وزر إعادة، لا دوّان ولا رسالة «قاعدة البيانات مفقودة».</li>
+      <li>☐ سبّب فشل تحديث Play: تظهر لوحة فشل يمكن إخفاؤها.</li>
+      <li>☐ اضغط مطوّلًا على كلمة ثم اضغط خارج القائمة: تُغلق القائمة فقط ويبقى الشريط كما كان.</li>
+      <li>☐ في وضع الصفحات انتقل إلى صفحة غير مخزنة: يتحدّث «متابعة القراءة» إلى تلك الصفحة.</li>
+      <li>☐ افتح بيانات مصحف قديمة بلا أرقام صفحات: لا انهيار ولا رأس/فاصل صفحة.</li>
+      <li>☐ افتح رابط البلاغ بلا متصفح: يظهر تنبيه يشرح السبب.</li>
+      <li>☐ مع TalkBack: يقول زر البحث «إضافة إشارة مرجعية» قبل الحفظ و«إزالة الإشارة» بعده.</li>
+    </ul>
+    <p style="margin-top:14px">معايير القبول التفصيلية وأسماء الاختبارات لكل مهمة موجودة في <a href="UI_AUDIT_FIX_PLAN.md"><code>docs/UI_AUDIT_FIX_PLAN.md</code></a>.</p>
+  </section>
+
+  <section id="risks">
+    <h2>لماذا هذا الترتيب، وما الذي نراقبه</h2>
+    <div class="grid two">
+      <div class="card">
+        <h3>ترتيب آمن</h3>
+        <ul class="tight">
+          <li><strong>المرحلة ٠ أولًا</strong> ليحصل المستخدم على السلوك الصحيح قبل أي تغيير هيكلي.</li>
+          <li><strong>المرحلة ١ قبل إعادة الهيكلة</strong> بينما مسارات الخطأ والحدود ما زالت مألوفة.</li>
+          <li><strong>المرحلة ٢ قبل تقسيم الملفات</strong> حتى نقسّمها على نموذج حالة مستقر.</li>
+          <li><strong>المرحلة ٣ نقل فقط</strong>؛ يجب أن تظل اللقطات والاختبارات الحالية متطابقة.</li>
+          <li><strong>المرحلة ٤ بعد الاستقرار</strong> فتستقر الرموز والنصوص في أماكنها النهائية.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>مخاطر وحدود معروفة</h3>
+        <ul class="tight">
+          <li>قراران منتجيان (السورة النشطة، تقييد قاعدة البيانات) يحتاجان رأي المالك قبل تغيير الكود.</li>
+          <li>اختبارات Compose الجديدة لا تحتاج تبعية، لكن يجب التحقق من إعدادات Robolectric في المشروع.</li>
+          <li>Paging3 لا يزال مؤجّلًا؛ هذه الخطة تُزيل التكرار فقط من الأسلوب اليدوي الحالي.</li>
+          <li>لم يُنفَّذ أي شيء بعد — كل الملاحظات تحقّق ساكنًا، وما زال الفحص على الجهاز مطلوبًا.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="gate"><strong>معيار الإنجاز للخطة كلها:</strong> إغلاق ٥٥ خانة، واختبار يفشل عند عودة كل خطأ من المرحلة ٠، ونجاح أوامر Gradle الأربعة بنتيجة يقدّمها المستخدم، وخلو قائمة الفحص اليدوي من الملاحظات في اللغتين.</div>
+  </section>
+
+  <footer>
+    <p>المرجع: <a href="UI_AUDIT_FIX_PLAN.md"><code>docs/UI_AUDIT_FIX_PLAN.md</code></a> · قواعد المشروع: <code>AGENTS.md</code> · <a href="UI_AUDIT_FIX_PLAN.html">النسخة الإنجليزية</a> · لم يُعدّل أي ملف Kotlin أو XML لإنشاء هذه الصفحة.</p>
+  </footer>
+</main>
+</body>
+</html>

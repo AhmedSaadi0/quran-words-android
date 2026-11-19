@@ -145,6 +145,7 @@ class WordAyatViewModel @Inject constructor(
         val rootId = currentRootId
         val wordId = currentWordId
         if (rootId == null || wordId == null) return
+        _error.value = null
         if (_occurrences.value.isEmpty()) {
             loadWord(rootId, wordId)
         } else {
@@ -181,7 +182,7 @@ class WordAyatViewModel @Inject constructor(
                     }
                 }
                 is Result.Error -> {
-                    _hasMore.value = false
+                    // Keep paging armed: a transient failure must not make Retry a dead click.
                     _error.value = result.message
                 }
             }
@@ -190,16 +191,15 @@ class WordAyatViewModel @Inject constructor(
     }
 
     /** Suspend formatter consumed by the Route's ShareHandler (copy/share all). */
-    suspend fun getAllFormatted(): String {
-        val rootId = currentRootId ?: return ""
-        val wordIds = currentWordIds.ifEmpty { return "" }
-        if (_isCopyingAll.value) return ""
+    suspend fun getAllFormatted(): Result<String> {
+        val rootId = currentRootId ?: return Result.Success("")
+        val wordIds = currentWordIds.ifEmpty { return Result.Success("") }
+        if (_isCopyingAll.value) return Result.Success("")
         _isCopyingAll.value = true
         return try {
-            val all = repository.getAllWordOccurrences(rootId, wordIds)
-            QuranCopyFormatter.formatOccurrences(all)
-        } catch (_: Exception) {
-            "" // ShareHandler surfaces the empty-message fallback.
+            runCatchingResult {
+                QuranCopyFormatter.formatOccurrences(repository.getAllWordOccurrences(rootId, wordIds))
+            }
         } finally {
             _isCopyingAll.value = false
         }

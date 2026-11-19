@@ -5,9 +5,8 @@ import com.quranwords.domain.model.DbInstalledVersion
 import com.quranwords.domain.model.DbReleaseInfo
 
 /**
- * UI mirror of the download machine (Decision: data.remote stops leaking into
- * UI). The ViewModel maps [com.quranwords.data.remote.DownloadState]
- * 1:1 onto [SetupDownload].
+ * UI mirror of the download machine (P1-1). The ViewModel maps the domain
+ * [com.quranwords.domain.model.DownloadState] 1:1 onto [SetupDownload].
  */
 sealed interface SetupDownload {
     data object Idle : SetupDownload
@@ -41,7 +40,9 @@ data class SetupUiState(
     val download: SetupDownload = SetupDownload.Idle,
     val latestRelease: DbReleaseInfo? = null,
     val installedVersion: DbInstalledVersion = DbInstalledVersion(),
-    val isCheckingUpdate: Boolean = false
+    val isCheckingUpdate: Boolean = false,
+    /** Failure of the manual "check for update" action, with Retry in the UI. */
+    val manifestError: String? = null
 ) {
     val isBusy: Boolean
         get() = download is SetupDownload.Progress || download is SetupDownload.Extracting

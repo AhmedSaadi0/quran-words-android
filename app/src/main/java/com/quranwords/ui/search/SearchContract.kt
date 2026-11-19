@@ -34,7 +34,9 @@ data class SearchUiState(
     val bookmarkedAyat: Set<String> = emptySet(),
     val isSearching: Boolean = false,
     val isLoadingMore: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    /** Failure of a single "load more" page; results stay visible. */
+    val pagingError: String? = null
 )
 
 sealed interface SearchEvent {
@@ -47,4 +49,5 @@ sealed interface SearchEvent {
     data class RecentSearchRemoved(val query: String) : SearchEvent
     data object ClearRecents : SearchEvent
     data object Retry : SearchEvent
+    data class LoadMore(val tab: SearchTab) : SearchEvent
 }

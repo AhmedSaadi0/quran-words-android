@@ -62,8 +62,7 @@ fun groupAyatByPage(ayat: List<Ayah>, unpagedCap: Int = UNPAGED_GROUP_CAP): List
 }
 
 /** Ayah number → lazy item index of its owning block (deep-link target lookup).
- * With a straddled page [activeSurahId] is passed so a neighbour's ayah number
- * (every surah restarts at 1) can never resolve to the active surah's page. */
+ * Keys carry the surah id, so identical ayah numbers on a shared page stay distinct. */
 fun buildBlockIndexOfAyah(
     groups: List<AyahFlowGroup>,
     listOffset: Int
@@ -86,13 +85,11 @@ data class MushafPageSegment(
     val surahId: Int,
     val ayat: List<Ayah>,
     /** True when this surah's ayah 1 is part of this page (show banner + Basmalah). */
-    val startsOnPage: Boolean,
-    /** Only the active surah owns selection/bookmarks/last-read/TalkBack actions. */
-    val isActiveSurah: Boolean
+    val startsOnPage: Boolean
 )
 
 /** Splits one page's ayat into ordered surah segments, preserving page order. */
-fun splitPageIntoSegments(pageAyat: List<Ayah>, activeSurahId: Int?): List<MushafPageSegment> {
+fun splitPageIntoSegments(pageAyat: List<Ayah>): List<MushafPageSegment> {
     if (pageAyat.isEmpty()) return emptyList()
     val segments = mutableListOf<MushafPageSegment>()
     var i = 0
@@ -104,9 +101,7 @@ fun splitPageIntoSegments(pageAyat: List<Ayah>, activeSurahId: Int?): List<Musha
         segments += MushafPageSegment(
             surahId = surahId,
             ayat = part,
-            startsOnPage = part.any { it.ayah == 1 },
-            // Legacy unpaged data has no surah context — keep everything active.
-            isActiveSurah = activeSurahId == null || surahId == activeSurahId
+            startsOnPage = part.any { it.ayah == 1 }
         )
         i = j
     }

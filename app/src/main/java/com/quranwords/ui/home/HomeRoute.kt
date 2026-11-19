@@ -69,7 +69,8 @@ fun HomeRoute(
                 is DbUpdateState.UpdateAvailable -> dbUpdateViewModel.dismiss(available.info)
                 else -> Unit
             }
-        }
+        },
+        onRetryDbCheck = { dbUpdateViewModel.checkOnce() }
     )
 
     if (showSettingsDialog) {

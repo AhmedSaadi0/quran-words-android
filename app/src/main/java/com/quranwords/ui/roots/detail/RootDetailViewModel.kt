@@ -130,7 +130,14 @@ class RootDetailViewModel @Inject constructor(
             _occurrencesHasMore.value = true
             occTotalCount = 0
             _rootWords.value = emptyList()
-            val detail = repository.getRootDetail(rootId)
+            val detail = when (val result = runCatchingResult { repository.getRootDetail(rootId) }) {
+                is Result.Success -> result.data
+                is Result.Error -> {
+                    _error.value = result.message
+                    _isLoading.value = false
+                    return@launch
+                }
+            }
             _rootDetail.value = detail
             if (detail != null) {
                 _occurrences.value = detail.ayatOccurrences
@@ -142,7 +149,15 @@ class RootDetailViewModel @Inject constructor(
                 // Process-death restoration: fetch additional pages up to previously saved offset
                 if (restoreTarget > occOffset && restoreTarget <= occTotalCount) {
                     while (occOffset < restoreTarget && _occurrencesHasMore.value) {
-                        val next = repository.getRootOccurrencesPaged(rootId, occPageSize, occOffset)
+                        val next = when (val result = runCatchingResult {
+                            repository.getRootOccurrencesPaged(rootId, occPageSize, occOffset)
+                        }) {
+                            is Result.Success -> result.data
+                            is Result.Error -> {
+                                _error.value = result.message
+                                break
+                            }
+                        }
                         if (next.isEmpty()) {
                             _occurrencesHasMore.value = false
                             break
@@ -184,7 +199,16 @@ class RootDetailViewModel @Inject constructor(
         viewModelScope.launch {
             _isOccurrencesLoadingMore.value = true
             delay(80)
-            val next = repository.getRootOccurrencesPaged(rootId, occPageSize, occOffset)
+            val next = when (val result = runCatchingResult {
+                repository.getRootOccurrencesPaged(rootId, occPageSize, occOffset)
+            }) {
+                is Result.Success -> result.data
+                is Result.Error -> {
+                    _error.value = result.message
+                    _isOccurrencesLoadingMore.value = false
+                    return@launch
+                }
+            }
             if (next.isNotEmpty()) {
                 _occurrences.value = _occurrences.value + next
                 occOffset += next.size
@@ -228,14 +252,11 @@ class RootDetailViewModel @Inject constructor(
      */
     suspend fun getAllOccurrencesFormatted(
         action: CopyAction = CopyAction.COPY_OCCURRENCES_ALL,
-    ): String {
-        val rootId = currentRootIdForOcc ?: return ""
-        if (!beginCopying(action)) return ""
+    ): Result<String> {
+        val rootId = currentRootIdForOcc ?: return Result.Success("")
+        if (!beginCopying(action)) return Result.Success("")
         return try {
-            val all = repository.getAllRootOccurrences(rootId)
-            QuranCopyFormatter.formatOccurrences(all)
-        } catch (_: Exception) {
-            ""
+            runCatchingResult { QuranCopyFormatter.formatOccurrences(repository.getAllRootOccurrences(rootId)) }
         } finally {
             endCopying()
         }
@@ -247,15 +268,12 @@ class RootDetailViewModel @Inject constructor(
      */
     suspend fun getSelectedWordsOccurrencesFormatted(
         action: CopyAction = CopyAction.COPY_WORDS_SELECTED,
-    ): String {
-        val rootId = currentRootIdForOcc ?: return ""
+    ): Result<String> {
+        val rootId = currentRootIdForOcc ?: return Result.Success("")
         val wordIds = expandSelectedWordIds()
-        if (wordIds.isEmpty() || !beginCopying(action)) return ""
+        if (wordIds.isEmpty() || !beginCopying(action)) return Result.Success("")
         return try {
-            val all = repository.getAllOccurrencesForWords(rootId, wordIds)
-            QuranCopyFormatter.formatOccurrences(all)
-        } catch (_: Exception) {
-            ""
+            runCatchingResult { QuranCopyFormatter.formatOccurrences(repository.getAllOccurrencesForWords(rootId, wordIds)) }
         } finally {
             endCopying()
         }
@@ -279,16 +297,11 @@ class RootDetailViewModel @Inject constructor(
      */
     suspend fun getAllMeaningsFormatted(
         action: CopyAction = CopyAction.COPY_MEANINGS_ALL,
-    ): String {
-        val detail = _rootDetail.value ?: return ""
-        if (!beginCopying(action)) return ""
+    ): Result<String> {
+        val detail = _rootDetail.value ?: return Result.Success("")
+        if (!beginCopying(action)) return Result.Success("")
         return try {
-            QuranCopyFormatter.formatMeanings(
-                detail.item.root,
-                detail.meanings
-            )
-        } catch (_: Exception) {
-            ""
+            runCatchingResult { QuranCopyFormatter.formatMeanings(detail.item.root, detail.meanings) }
         } finally {
             endCopying()
         }
@@ -300,17 +313,17 @@ class RootDetailViewModel @Inject constructor(
      */
     suspend fun getSelectedMeaningsFormatted(
         action: CopyAction = CopyAction.COPY_MEANINGS_SELECTED,
-    ): String {
-        val detail = _rootDetail.value ?: return ""
+    ): Result<String> {
+        val detail = _rootDetail.value ?: return Result.Success("")
         val ids = _meaningSelection.value.selectedIds
-        if (ids.isEmpty() || !beginCopying(action)) return ""
+        if (ids.isEmpty() || !beginCopying(action)) return Result.Success("")
         return try {
-            QuranCopyFormatter.formatMeanings(
-                detail.item.root,
-                detail.meanings.filter { it.id in ids }
-            )
-        } catch (_: Exception) {
-            ""
+            runCatchingResult {
+                QuranCopyFormatter.formatMeanings(
+                    detail.item.root,
+                    detail.meanings.filter { it.id in ids }
+                )
+            }
         } finally {
             endCopying()
         }

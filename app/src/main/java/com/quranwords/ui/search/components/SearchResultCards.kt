@@ -87,7 +87,7 @@ fun AyahSearchCard(
                     )
                 }
             }
-            HighlightedAyahText(text = ayah.textUthmani, query = query)
+            HighlightedAyahText(text = ayah.textUthmani, query = query, ayahNumber = ayah.ayah)
         }
     }
 }
@@ -104,22 +104,41 @@ private fun pageJuzSuffix(ayah: Ayah): String {
 }
 
 @Composable
-fun HighlightedAyahText(text: String, query: String, modifier: Modifier = Modifier) {
-    val annotated = remember(text, query) {
+fun HighlightedAyahText(
+    text: String,
+    query: String,
+    ayahNumber: Int,
+    modifier: Modifier = Modifier
+) {
+    val annotated = remember(text, query, ayahNumber) {
         val ranges = AyahHighlighter.matchRanges(text, query.trim())
         if (ranges.isEmpty()) {
-            AnnotatedString("$text ﴿${0.toEasternArabicDigits()}﴾")
+            AnnotatedString("$text ${ayahMarker(ayahNumber)}")
         } else {
-            buildAnnotatedStringWithHighlight(text, ranges)
+            buildAnnotatedStringWithHighlight(text, ranges, ayahNumber)
         }
     }
-    Text(text = annotated, style = MaterialTheme.typography.bodyLarge, lineHeight = 26.sp, modifier = modifier)
+    Text(
+        text = annotated,
+        style = MaterialTheme.typography.bodyLarge,
+        lineHeight = 26.sp,
+        modifier = modifier.testTag("search_ayah_text")
+    )
 }
 
-private fun buildAnnotatedStringWithHighlight(text: String, ranges: List<IntRange>): AnnotatedString =
-    buildAnnotatedStringFix(text, ranges)
+private fun ayahMarker(ayahNumber: Int): String = "﴿${ayahNumber.toEasternArabicDigits()}﴾"
 
-private fun buildAnnotatedStringFix(text: String, ranges: List<IntRange>): AnnotatedString {
+private fun buildAnnotatedStringWithHighlight(
+    text: String,
+    ranges: List<IntRange>,
+    ayahNumber: Int
+): AnnotatedString = buildAnnotatedStringFix(text, ranges, ayahNumber)
+
+private fun buildAnnotatedStringFix(
+    text: String,
+    ranges: List<IntRange>,
+    ayahNumber: Int
+): AnnotatedString {
     val sb = AnnotatedString.Builder(text.length + 4)
     var pos = 0
     for (r in ranges) {
@@ -130,9 +149,8 @@ private fun buildAnnotatedStringFix(text: String, ranges: List<IntRange>): Annot
         pos = r.last + 1
     }
     if (pos < text.length) sb.append(text.substring(pos))
-    sb.append(" ﴿")
-    sb.append(0.toEasternArabicDigits())
-    sb.append("﴾")
+    sb.append(' ')
+    sb.append(ayahMarker(ayahNumber))
     return sb.toAnnotatedString()
 }
 

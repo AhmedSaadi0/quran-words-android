@@ -305,6 +305,7 @@
     <string name="db_show_notes">عرض ملاحظات الإصدار</string>
     <string name="db_hide_notes">إخفاء ملاحظات الإصدار</string>
     <string name="db_manifest_error">تعذر جلب معلومات الإصدار — تحقق من الاتصال ثم أعد الفحص.</string>
+    <string name="db_update_check_failed">تعذّر فحص تحديثات قاعدة البيانات: %1$s</string>
     <string name="db_speed_kbps">%1$d ك.ب/ث</string>
 
     <string name="report_title">الإبلاغ عن الملخص الذكي</string>
@@ -343,6 +344,9 @@
     <string name="copy_meanings">نسخ المعاني</string>
     <string name="share_meanings">مشاركة المعاني</string>
     <string name="copied_text">تم النسخ</string>
+    <string name="copy_failed">تعذّر النسخ، يُرجى المحاولة مرة أخرى</string>
+    <string name="share_failed">تعذّرت المشاركة، يُرجى المحاولة مرة أخرى</string>
+    <string name="no_browser">لا يوجد متصفح لفتح هذا الرابط</string>
     <!-- Long-press word action toolbar -->
     <string name="word_action_root">الجذر والتصريف</string>
     <string name="word_action_select_ayah">تحديد الآية كاملة</string>

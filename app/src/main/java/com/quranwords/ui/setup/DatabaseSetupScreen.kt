@@ -158,6 +158,7 @@ fun DatabaseSetupScreen(
                     installedName = installedVersion.versionName,
                     latestRelease = latestRelease,
                     isChecking = isCheckingUpdate,
+                    manifestError = uiState.manifestError,
                     showNotes = showNotes,
                     onToggleNotes = { showNotes = !showNotes },
                     onCheckClick = { onEvent(SetupEvent.CheckForUpdate) }
@@ -456,6 +457,7 @@ private fun VersionStatusCard(
     installedName: String,
     latestRelease: com.quranwords.domain.model.DbReleaseInfo?,
     isChecking: Boolean,
+    manifestError: String?,
     showNotes: Boolean,
     onToggleNotes: () -> Unit,
     onCheckClick: () -> Unit
@@ -540,10 +542,19 @@ private fun VersionStatusCard(
                 }
             } else if (!isChecking) {
                 Text(
-                    text = stringResource(R.string.db_manifest_error),
+                    text = manifestError ?: stringResource(R.string.db_manifest_error),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (manifestError != null) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (manifestError != null) {
+                    TextButton(
+                        onClick = onCheckClick,
+                        modifier = Modifier.testTag("manifest_retry_btn")
+                    ) {
+                        Text(stringResource(R.string.common_retry))
+                    }
+                }
             }
         }
     }

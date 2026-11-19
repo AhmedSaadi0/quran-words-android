@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  UI Audit Fix Plan — Visual Brief — كلمات القرآن (Quran Words)
+  ============================================================================
+  Companion to: docs/UI_AUDIT_FIX_PLAN.md (the actionable plan of record)
+
+  Fully self-contained on purpose:
+    * no external stylesheets, fonts, scripts, images, or trackers
+    * diagrams are inline SVG with text labels and accessible descriptions
+    * no JavaScript; no network requests; opens offline in any browser
+    * no Kotlin/XML source is changed by this document
+
+  Reading guide: start at "The short story", then the diagrams, then the
+  phase cards. Each task ID below maps 1:1 to a checkbox in the Markdown plan.
+  ============================================================================
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI Audit Fix Plan — Visual Brief | Quran Words</title>
+<meta name="description" content="A visual, plain-English guide to the Quran Words UI remediation plan: what was bad, what changes, why it helps, and the six ordered phases.">
+<meta name="theme-color" content="#56624B" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#121411" media="(prefers-color-scheme: dark)">
+<style>
+  :root {
+    --bg: #F7F8F2;
+    --surface: #FFFFFF;
+    --surface-var: #F2F5EC;
+    --border: #E1E3D9;
+    --outline: #D2D8C7;
+    --text: #1A1C18;
+    --muted: #43483E;
+    --primary: #56624B;
+    --primary-dark: #3F4E36;
+    --primary-container: #DDE5D1;
+    --amber: #8C6E2D;
+    --amber-bg: #F3E8D0;
+    --bad: #8A4930;
+    --bad-bg: #F8ECE5;
+    --good: #285C4F;
+    --good-bg: #E6F0EB;
+    --shadow: 0 2px 10px rgba(26,28,24,.06);
+    --radius: 16px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121411;
+      --surface: #191D17;
+      --surface-var: #232820;
+      --border: #363D31;
+      --outline: #3E4636;
+      --text: #E2E5DC;
+      --muted: #A2A999;
+      --primary: #A4AD96;
+      --primary-dark: #C4CCA6;
+      --primary-container: #323B2B;
+      --amber: #B5934C;
+      --amber-bg: #382A0C;
+      --bad: #D89A7B;
+      --bad-bg: #3A241B;
+      --good: #A4C9B8;
+      --good-bg: #1E332C;
+      --shadow: 0 2px 14px rgba(0,0,0,.25);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Arabic", Arial, sans-serif;
+  }
+  a { color: var(--primary-dark); text-underline-offset: 3px; }
+  a:focus-visible, summary:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 4px; }
+  .skip { position: absolute; left: -9999px; top: 0; }
+  .skip:focus { left: 12px; top: 12px; background: var(--surface); padding: 10px 14px; border-radius: 8px; z-index: 99; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 22px 72px; }
+
+  header.hero {
+    background: linear-gradient(135deg, var(--primary-container) 0%, var(--surface) 62%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-inner { max-width: 1120px; margin: 0 auto; padding: 46px 22px 34px; }
+  .eyebrow { font-size: .78rem; letter-spacing: .13em; text-transform: uppercase; color: var(--primary-dark); font-weight: 800; margin: 0 0 8px; }
+  h1 { font-size: clamp(1.9rem, 4vw, 3rem); line-height: 1.15; margin: 0 0 10px; letter-spacing: -.02em; }
+  h2 { font-size: 1.55rem; line-height: 1.25; margin: 0 0 16px; padding-top: 6px; }
+  h3 { font-size: 1.1rem; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  .lead { font-size: 1.12rem; max-width: 74ch; color: var(--muted); }
+  .arabic { direction: rtl; unicode-bidi: isolate; font-family: "Noto Naskh Arabic", "Noto Sans Arabic", serif; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 999px; padding: 6px 13px; font-size: .86rem; font-weight: 700;
+  }
+  .chip.plan { background: var(--amber-bg); border-color: var(--amber); color: var(--amber); }
+
+  nav.toc {
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+  }
+  nav.toc ul { display: flex; flex-wrap: wrap; gap: 4px; list-style: none; margin: 0 auto; padding: 9px 18px; max-width: 1120px; }
+  nav.toc a { display: block; padding: 5px 11px; border-radius: 8px; text-decoration: none; font-size: .87rem; font-weight: 700; }
+  nav.toc a:hover { background: var(--surface-var); }
+
+  section { padding-top: 42px; }
+  .section-note { color: var(--muted); max-width: 82ch; margin-bottom: 18px; }
+
+  .grid { display: grid; gap: 16px; }
+  .grid.two { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .grid.three { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow);
+  }
+  .card h3 { display: flex; align-items: baseline; gap: 9px; }
+  .num { color: var(--primary); font-variant-numeric: tabular-nums; font-weight: 900; }
+  .card p:last-child, .card ul:last-child { margin-bottom: 0; }
+  ul.tight { margin: 6px 0 0; padding-left: 20px; }
+  ul.tight li { margin-bottom: 5px; }
+
+  .before-after { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface); box-shadow: var(--shadow); }
+  .before-after > div { padding: 16px 20px; }
+  .bad { border-left: 5px solid var(--bad); background: linear-gradient(90deg, var(--bad-bg), var(--surface) 55%); }
+  .good { border-left: 5px solid var(--good); background: linear-gradient(90deg, var(--good-bg), var(--surface) 55%); }
+  .label { display: block; font-size: .72rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 7px; }
+  .bad .label { color: var(--bad); }
+  .good .label { color: var(--good); }
+  @media (max-width: 720px) { .before-after { grid-template-columns: 1fr; } }
+
+  .diagram {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; box-shadow: var(--shadow); margin-bottom: 18px;
+  }
+  .diagram figcaption { font-weight: 800; margin: 2px 0 4px 6px; }
+  .diagram p.cap { color: var(--muted); font-size: .9rem; margin: 4px 6px 8px; }
+  .diagram svg { display: block; width: 100%; height: auto; }
+  .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+  .box.accent { fill: var(--primary-container); stroke: var(--primary); }
+  .box.badbox { fill: var(--bad-bg); stroke: var(--bad); }
+  .box.goodbox { fill: var(--good-bg); stroke: var(--good); }
+  .box.amberbox { fill: var(--amber-bg); stroke: var(--amber); }
+  .lbl { fill: var(--text); font: 700 13px -apple-system, "Segoe UI", Arial, sans-serif; }
+  .lbl.small { font-size: 11.5px; font-weight: 600; }
+  .lbl.big { font-size: 15px; }
+  .lbl.muted { fill: var(--muted); }
+  .lbl.badlbl { fill: var(--bad); }
+  .lbl.goodlbl { fill: var(--good); }
+  .arrow { stroke: var(--muted); stroke-width: 1.8; fill: none; marker-end: url(#head); }
+  .arrow.goodarrow { stroke: var(--good); marker-end: url(#headgood); }
+  .arrow.badarrow { stroke: var(--bad); marker-end: url(#headbad); }
+  .dash { stroke-dasharray: 5 4; }
+
+  details.phase {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); margin-bottom: 12px; box-shadow: var(--shadow);
+  }
+  details.phase > summary {
+    cursor: pointer; padding: 15px 19px; font-weight: 800; font-size: 1.06rem;
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; list-style: none;
+  }
+  details.phase > summary::-webkit-details-marker { display: none; }
+  details.phase > summary::before { content: "▸"; color: var(--primary); font-size: .9rem; }
+  details.phase[open] > summary::before { content: "▾"; }
+  details.phase > summary .count { margin-left: auto; font-size: .78rem; color: var(--muted); font-weight: 700; }
+  .phase-body { padding: 0 19px 18px; border-top: 1px solid var(--border); }
+  .phase-body > p { margin-top: 14px; color: var(--muted); }
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .91rem; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-size: .76rem; letter-spacing: .08em; text-transform: uppercase; }
+  td.id { white-space: nowrap; font-weight: 900; color: var(--primary-dark); font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: 0; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  code { background: var(--surface-var); border: 1px solid var(--border); border-radius: 5px; padding: 1px 5px; font-size: .86em; }
+  pre { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--primary); border-radius: 10px; padding: 14px 16px; overflow-x: auto; }
+
+  .note { border: 1px solid var(--amber); background: var(--amber-bg); border-radius: 12px; padding: 13px 16px; margin: 14px 0; }
+  .note strong { color: var(--amber); }
+  .gate { border-left: 4px solid var(--primary); padding-left: 14px; margin: 12px 0; }
+
+  footer { border-top: 1px solid var(--border); margin-top: 46px; padding-top: 20px; color: var(--muted); font-size: .88rem; }
+
+  @media print {
+    nav.toc { position: static; }
+    details.phase { break-inside: avoid; }
+    details.phase:not([open]) > .phase-body { display: block; }
+    body { background: #fff; }
+    .card, .diagram, details.phase, .before-after { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="hero">
+  <div class="hero-inner">
+    <p class="eyebrow">Visual brief · companion to the plan of record</p>
+    <h1>UI Audit Fix Plan<br><span class="arabic" lang="ar">خطة تحسين واجهة تطبيق كلمات القرآن</span></h1>
+    <p class="lead">A plain-English guide to what the audit found, what will change, and why each change makes this offline Quran reader more reliable, more accessible, and easier to maintain. No source code has been changed yet — this page is a reading companion to <a href="UI_AUDIT_FIX_PLAN.md"><code>docs/UI_AUDIT_FIX_PLAN.md</code></a>.</p>
+    <div class="chips">
+      <span class="chip plan">Status: planned, not started</span>
+      <span class="chip">39 confirmed findings</span>
+      <span class="chip">55 atomic tasks</span>
+      <span class="chip">6 ordered phases</span>
+      <span class="chip">0 Kotlin/XML files touched</span>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="On this page">
+  <ul>
+    <li><a href="#story">The short story</a></li>
+    <li><a href="#why">Why it helps</a></li>
+    <li><a href="#diagrams">Diagrams</a></li>
+    <li><a href="#phases">The six phases</a></li>
+    <li><a href="#decisions">Decisions &amp; exceptions</a></li>
+    <li><a href="#verification">Verification &amp; QA</a></li>
+    <li><a href="#risks">Order &amp; risks</a></li>
+  </ul>
+</nav>
+
+<main class="wrap" id="main">
+
+  <section id="story">
+    <h2>The short story</h2>
+    <p class="section-note">One anonymous user, one phone, one 118 MB offline database. The app has strong bones — feature folders, typed navigation, ViewModels, contracts — but several user-visible bugs and a handful of architectural shortcuts grew inside those bones.</p>
+    <div class="grid three">
+      <div class="card">
+        <h3><span class="num">01</span> What the app is</h3>
+        <p>A reference utility: read the mushaf by surah or real printed page, tap any word for morphology, follow its root to classical meanings and every Quran occurrence, search across five scopes, and keep bookmarks — all offline after a one-time database download.</p>
+      </div>
+      <div class="card">
+        <h3><span class="num">02</span> What the audit found</h3>
+        <p>Search results showed a fake verse marker <span class="arabic">﴿٠﴾</span>; "Bookmark selection" could delete existing bookmarks; some Retry buttons did nothing; failures were swallowed into blank text or endless spinners. Underneath: one UI file imported the data layer directly, state lived in five different places, and two copies of the mushaf text builder had to be kept in sync by hand.</p>
+      </div>
+      <div class="card">
+        <h3><span class="num">03</span> What this plan does</h3>
+        <p>Fixes the user-visible bugs first with one test each. Then closes the architecture boundary, consolidates state, splits oversized files without changing behaviour, cleans up localization and accessibility, and finishes with focused tests. Each phase is safe to stop after.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="why">
+    <h2>Why these changes are good for this project</h2>
+    <p class="section-note">This is not a rewrite for style. Every item protects something the product promises.</p>
+    <div class="grid two">
+      <div class="card"><h3>Correct Quran data</h3><p>Removing the fake <span class="arabic">﴿٠﴾</span> marker and making verse references exact protects the one thing a reference app cannot get wrong: the ayah the user is looking at.</p></div>
+      <div class="card"><h3>User data is safe</h3><p>Bookmarks are the only data the user creates. Turning "Bookmark" into a real add (instead of a toggle) in one atomic write stops the app from silently removing them.</p></div>
+      <div class="card"><h3>Failures become recoverable</h3><p>A 118 MB download and a GitHub manifest can fail. Typed errors plus visible Retry states replace spinners and "database missing" messages that were simply wrong.</p></div>
+      <div class="card"><h3>Arabic readers come first</h3><p>Localized TalkBack labels, Eastern digits, 48dp touch targets, and vector icons instead of emoji directly serve elderly and low-vision readers — the audience the product was designed for.</p></div>
+      <div class="card"><h3>Changes stop rippling</h3><p>Six God files held seven unrelated jobs. Splitting them by responsibility means a reader gesture fix no longer risks the setup screen, and a copy/share change no longer touches database code.</p></div>
+      <div class="card"><h3>Tests can finally catch regressions</h3><p>Today there is one Compose screenshot test. Adding a focused test per fixed bug turns "we think it works" into "this exact failure cannot come back unnoticed".</p></div>
+    </div>
+
+    <h3 style="margin-top:28px">Before / after, in one glance</h3>
+    <div class="grid" style="gap:12px">
+      <div class="before-after">
+        <div class="bad"><span class="label">Before · error handling</span><p>An exception is caught and turned into an empty list or a blank string. The screen shows a spinner, a false "DB missing" message, or "nothing to copy". Nobody can tell what failed.</p></div>
+        <div class="good"><span class="label">After · error handling</span><p>The failure becomes a typed <code>Result.Error</code>, flows into <code>UiState.error</code>, and renders a message with Retry. A real failure is never confused with an empty result.</p></div>
+      </div>
+      <div class="before-after">
+        <div class="bad"><span class="label">Before · architecture</span><p>The setup ViewModel imports <code>data.remote</code> classes. UI tests need the real download implementation, and a data-layer rename forces a UI rewrite.</p></div>
+        <div class="good"><span class="label">After · architecture</span><p>A domain port sits between them. The UI knows an interface and domain models; the data layer implements it. Fakes make tests cheap.</p></div>
+      </div>
+      <div class="before-after">
+        <div class="bad"><span class="label">Before · state</span><p>Screens hold popup, font-sheet and page-jump state; one screen even reads system settings and drives the Android status bar. State is duplicated across parallel flows with positional casts.</p></div>
+        <div class="good"><span class="label">After · state</span><p>One typed <code>UiState</code> per feature, events and one-shot effects, and a Route that owns the platform boundary. Screens become previewable and testable.</p></div>
+      </div>
+      <div class="before-after">
+        <div class="bad"><span class="label">Before · duplication</span><p>Two mushaf text builders with a "keep in sync" comment, two file-size formatters, two clipboard writes, three paging state machines, five copies of the default font size.</p></div>
+        <div class="good"><span class="label">After · duplication</span><p>One builder, one pure formatter, one clipboard write, one paging helper, one <code>FontSizePreference.DEFAULT</code>. Drift becomes impossible rather than a review chore.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="diagrams">
+    <h2>Diagrams — how the code flows today and tomorrow</h2>
+    <p class="section-note">Each diagram is a simplified picture of the actual files. Green is the target, terracotta is the current problem.</p>
+
+    <figure class="diagram">
+      <figcaption>Diagram 1 — Unidirectional data flow and the dependency boundary</figcaption>
+      <p class="cap">Today the screen mixes platform work with rendering and reaches into data; after Phase 1–2 the Route owns the platform, the ViewModel owns one state, and the domain interface is the only door to data.</p>
+      <svg viewBox="0 0 980 340" role="img" aria-labelledby="d1t d1d">
+        <title id="d1t">Current versus target data flow</title>
+        <desc id="d1d">Left: the screen owns local state and platform calls, talks to a ViewModel with many flows, and the UI imports data layer classes. Right: events flow from screen to ViewModel, a single UI state flows back, the Route owns platform calls, and the ViewModel depends on a domain interface implemented by the data layer.</desc>
+        <defs>
+          <marker id="head" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--muted)"/></marker>
+          <marker id="headgood" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--good)"/></marker>
+          <marker id="headbad" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="var(--bad)"/></marker>
+        </defs>
+        <text class="lbl badlbl" x="36" y="26">TODAY</text>
+        <text class="lbl goodlbl" x="530" y="26">AFTER PHASES 1–2</text>
+        <line x1="490" y1="12" x2="490" y2="320" stroke="var(--border)" stroke-dasharray="4 5"/>
+
+        <rect class="box badbox" x="40" y="56" width="180" height="86" rx="12"/>
+        <text class="lbl" x="56" y="80">Screen / Composable</text>
+        <text class="lbl small muted" x="56" y="101">popup + fonts + pulse state</text>
+        <text class="lbl small muted" x="56" y="117">Activity, Settings.Global,</text>
+        <text class="lbl small muted" x="56" y="132">window insets in the UI</text>
+
+        <rect class="box" x="276" y="70" width="170" height="64" rx="12"/>
+        <text class="lbl" x="292" y="95">ViewModel</text>
+        <text class="lbl small muted" x="292" y="115">many parallel flows</text>
+
+        <rect class="box badbox" x="276" y="220" width="170" height="64" rx="12"/>
+        <text class="lbl" x="292" y="245">Data implementation</text>
+        <text class="lbl small muted" x="292" y="265">data.remote imported by UI</text>
+
+        <path class="arrow badarrow" d="M220 96 L272 96"/>
+        <text class="lbl small badlbl" x="222" y="88">calls</text>
+        <path class="arrow badarrow dash" d="M130 142 L130 250 L272 250"/>
+        <text class="lbl small badlbl" x="138" y="205">direct UI → Data leak</text>
+
+        <rect class="box goodbox" x="530" y="48" width="170" height="52" rx="12"/>
+        <text class="lbl" x="546" y="70">Route</text>
+        <text class="lbl small muted" x="546" y="88">platform boundary</text>
+
+        <rect class="box" x="530" y="130" width="170" height="66" rx="12"/>
+        <text class="lbl" x="546" y="154">Screen</text>
+        <text class="lbl small muted" x="546" y="174">UiState in · onEvent out</text>
+
+        <rect class="box accent" x="758" y="130" width="170" height="66" rx="12"/>
+        <text class="lbl" x="774" y="154">ViewModel</text>
+        <text class="lbl small muted" x="774" y="174">one typed UiState</text>
+
+        <rect class="box amberbox" x="758" y="242" width="170" height="60" rx="12"/>
+        <text class="lbl" x="774" y="266">Domain port</text>
+        <text class="lbl small muted" x="774" y="285">interface only</text>
+
+        <rect class="box" x="530" y="242" width="170" height="60" rx="12"/>
+        <text class="lbl" x="546" y="266">Data implementation</text>
+        <text class="lbl small muted" x="546" y="285">implements the port</text>
+
+        <path class="arrow goodarrow" d="M615 100 L615 126"/>
+        <path class="arrow goodarrow" d="M700 158 L754 158"/>
+        <text class="lbl small goodlbl" x="707" y="150">Event</text>
+        <path class="arrow goodarrow" d="M754 180 L700 180"/>
+        <text class="lbl small goodlbl" x="707" y="198">UiState</text>
+        <path class="arrow goodarrow" d="M843 196 L843 238"/>
+        <path class="arrow goodarrow" d="M700 272 L754 272"/>
+        <text class="lbl small goodlbl" x="704" y="264">implements</text>
+      </svg>
+    </figure>
+
+    <figure class="diagram">
+      <figcaption>Diagram 2 — What happens when something fails</figcaption>
+      <p class="cap">The same database or network error takes two very different paths. The target path always ends in something the user can act on.</p>
+      <svg viewBox="0 0 980 220" role="img" aria-labelledby="d2t d2d">
+        <title id="d2t">Error handling before and after</title>
+        <desc id="d2d">Before, a thrown error is caught and converted to an empty list or blank string, leading to a spinner or a false message. After, it becomes a typed error in UI state and shows a message with a retry action.</desc>
+        <text class="lbl badlbl" x="24" y="26">BEFORE · silent failure</text>
+        <rect class="box badbox" x="24" y="42" width="170" height="56" rx="10"/><text class="lbl" x="38" y="65">Query / DB throws</text><text class="lbl small muted" x="38" y="84">or returns Error</text>
+        <rect class="box badbox" x="246" y="42" width="190" height="56" rx="10"/><text class="lbl" x="260" y="65">catch (_ : Exception)</text><text class="lbl small muted" x="260" y="84">→ "" or emptyList()</text>
+        <rect class="box badbox" x="488" y="42" width="190" height="56" rx="10"/><text class="lbl" x="502" y="65">No state change</text><text class="lbl small muted" x="502" y="84">spinner / blank result</text>
+        <rect class="box badbox" x="730" y="42" width="220" height="56" rx="10"/><text class="lbl" x="744" y="65">User sees nothing useful</text><text class="lbl small muted" x="744" y="84">"DB missing" even when it is not</text>
+        <path class="arrow badarrow" d="M194 70 L242 70"/><path class="arrow badarrow" d="M436 70 L484 70"/><path class="arrow badarrow" d="M678 70 L726 70"/>
+
+        <line x1="24" y1="120" x2="950" y2="120" stroke="var(--border)" stroke-dasharray="4 5"/>
+        <text class="lbl goodlbl" x="24" y="146">AFTER · typed failure with recovery</text>
+        <rect class="box goodbox" x="24" y="160" width="170" height="52" rx="10"/><text class="lbl" x="38" y="182">Query throws</text><text class="lbl small muted" x="38" y="200">same as before</text>
+        <rect class="box goodbox" x="246" y="160" width="190" height="52" rx="10"/><text class="lbl" x="260" y="182">runCatchingResult</text><text class="lbl small muted" x="260" y="200">→ Result.Error(message)</text>
+        <rect class="box goodbox" x="488" y="160" width="190" height="52" rx="10"/><text class="lbl" x="502" y="182">UiState.error</text><text class="lbl small muted" x="502" y="200">+ hasMore kept intact</text>
+        <rect class="box goodbox" x="730" y="160" width="220" height="52" rx="10"/><text class="lbl" x="744" y="182">Message + Retry button</text><text class="lbl small muted" x="744" y="200">results and scroll preserved</text>
+        <path class="arrow goodarrow" d="M194 186 L242 186"/><path class="arrow goodarrow" d="M436 186 L484 186"/><path class="arrow goodarrow" d="M678 186 L726 186"/>
+      </svg>
+    </figure>
+
+    <figure class="diagram">
+      <figcaption>Diagram 3 — Splitting the reader without changing it</figcaption>
+      <p class="cap">Phase 3 moves code, not behaviour. One 567-line screen and one 559-line text block become small files with one job each. The shared text builder removes the "keep in sync" risk.</p>
+      <svg viewBox="0 0 980 300" role="img" aria-labelledby="d3t d3d">
+        <title id="d3t">Reader decomposition</title>
+        <desc id="d3d">A single large reader screen containing scroll, placement, chrome, selection, gesture, loading and mode-switch jobs is split into placement effects, chrome host, content switch and interaction callbacks; a separate gesture block uses one shared mushaf text builder.</desc>
+        <rect class="box badbox" x="24" y="50" width="280" height="200" rx="14"/>
+        <text class="lbl badlbl" x="42" y="76">SurahDetailScreen.kt · 567 lines</text>
+        <text class="lbl small" x="42" y="102">scroll physics &amp; edge switches</text>
+        <text class="lbl small" x="42" y="124">deep-link placement + pulse</text>
+        <text class="lbl small" x="42" y="146">last-read reporting</text>
+        <text class="lbl small" x="42" y="168">system bars + immersive toggle</text>
+        <text class="lbl small" x="42" y="190">selection bar + word popup</text>
+        <text class="lbl small" x="42" y="212">pager vs list + loading states</text>
+        <text class="lbl small" x="42" y="234">MushafFlowBlock.kt · 559 lines</text>
+
+        <path class="arrow goodarrow" d="M304 150 L360 150"/>
+
+        <rect class="box goodbox" x="366" y="36" width="250" height="50" rx="10"/><text class="lbl" x="380" y="58">ReaderPlacementEffects</text><text class="lbl small muted" x="380" y="75">scroll · pulse · last read</text>
+        <rect class="box goodbox" x="366" y="96" width="250" height="50" rx="10"/><text class="lbl" x="380" y="118">ReaderChromeHost</text><text class="lbl small muted" x="380" y="135">top bar · scrim · selection</text>
+        <rect class="box goodbox" x="366" y="156" width="250" height="50" rx="10"/><text class="lbl" x="380" y="178">ReaderContentSwitch</text><text class="lbl small muted" x="380" y="195">pager · list · empty · error</text>
+        <rect class="box goodbox" x="366" y="216" width="250" height="50" rx="10"/><text class="lbl" x="380" y="238">MushafGestures / PulseOverlay</text><text class="lbl small muted" x="380" y="255">separate gesture and draw jobs</text>
+
+        <rect class="box amberbox" x="680" y="96" width="266" height="76" rx="12"/>
+        <text class="lbl" x="696" y="120">One shared text builder</text>
+        <text class="lbl small muted" x="696" y="141">render + page-fit measure the same</text>
+        <text class="lbl small muted" x="696" y="159">characters — tested, not trusted</text>
+        <path class="arrow" d="M616 61 L676 118"/>
+        <path class="arrow" d="M616 241 L676 152"/>
+      </svg>
+    </figure>
+
+    <figure class="diagram">
+      <figcaption>Diagram 4 — The roadmap and its safety gates</figcaption>
+      <p class="cap">Fix behaviour, close boundaries, consolidate state, then restructure, polish, and prove it with tests. Each phase leaves the app in a usable state.</p>
+      <svg viewBox="0 0 980 190" role="img" aria-labelledby="d4t d4d">
+        <title id="d4t">Six phase roadmap</title>
+        <desc id="d4d">Phase 0 fixes user-visible bugs; Phase 1 sets architecture and error boundaries; Phase 2 consolidates state; Phase 3 de-duplicates and splits large files; Phase 4 handles localization, design tokens, accessibility and dead code; Phase 5 adds focused tests and final verification.</desc>
+        <g>
+          <rect class="box badbox" x="20" y="54" width="138" height="84" rx="12"/><text class="lbl big" x="34" y="82">0</text><text class="lbl small" x="34" y="104">Critical bugs</text><text class="lbl small muted" x="34" y="122">10 tasks · tests</text>
+          <rect class="box amberbox" x="178" y="54" width="138" height="84" rx="12"/><text class="lbl big" x="192" y="82">1</text><text class="lbl small" x="192" y="104">Boundaries</text><text class="lbl small muted" x="192" y="122">6 tasks</text>
+          <rect class="box accent" x="336" y="54" width="138" height="84" rx="12"/><text class="lbl big" x="350" y="82">2</text><text class="lbl small" x="350" y="104">State &amp; UDF</text><text class="lbl small muted" x="350" y="122">10 tasks</text>
+          <rect class="box accent" x="494" y="54" width="138" height="84" rx="12"/><text class="lbl big" x="508" y="82">3</text><text class="lbl small" x="508" y="104">De-duplicate</text><text class="lbl small muted" x="508" y="122">8 tasks</text>
+          <rect class="box goodbox" x="652" y="54" width="138" height="84" rx="12"/><text class="lbl big" x="666" y="82">4</text><text class="lbl small" x="666" y="104">Polish &amp; a11y</text><text class="lbl small muted" x="666" y="122">12 tasks</text>
+          <rect class="box goodbox" x="810" y="54" width="148" height="84" rx="12"/><text class="lbl big" x="824" y="82">5</text><text class="lbl small" x="824" y="104">Proof &amp; QA</text><text class="lbl small muted" x="824" y="122">9 tasks</text>
+        </g>
+        <path class="arrow" d="M158 96 L174 96"/><path class="arrow" d="M316 96 L332 96"/><path class="arrow" d="M474 96 L490 96"/><path class="arrow" d="M632 96 L648 96"/><path class="arrow" d="M790 96 L806 96"/>
+        <text class="lbl small muted" x="20" y="166">Gate: every bug fix has a regression test before the next phase starts.</text>
+      </svg>
+    </figure>
+
+    <figure class="diagram">
+      <figcaption>Diagram 5 — The test net before and after</figcaption>
+      <p class="cap">One screenshot did not cover any of the 39 findings. The target is a small, layered net where each failure has a test that would fail if the fix were removed.</p>
+      <svg viewBox="0 0 980 260" role="img" aria-labelledby="d5t d5d">
+        <title id="d5t">Test coverage before and after</title>
+        <desc id="d5d">Before: one Compose screenshot test and happy-path ViewModel tests. After: pure unit tests for formatters and builders, ViewModel tests for errors and retry, Compose tests for cards, search and reader interactions, and screenshot checks for theme changes.</desc>
+        <text class="lbl badlbl" x="24" y="24">TODAY</text>
+        <rect class="box badbox" x="24" y="38" width="290" height="66" rx="10"/><text class="lbl" x="40" y="62">1 Compose screenshot test</text><text class="lbl small muted" x="40" y="84">Home title only</text>
+        <rect class="box badbox" x="330" y="38" width="290" height="66" rx="10"/><text class="lbl" x="346" y="62">Happy-path VM tests</text><text class="lbl small muted" x="346" y="84">errors and retries untested</text>
+        <rect class="box badbox" x="636" y="38" width="320" height="66" rx="10"/><text class="lbl" x="652" y="62">0 tests for the 39 findings</text><text class="lbl small muted" x="652" y="84">all bugs could pass CI</text>
+
+        <line x1="24" y1="124" x2="956" y2="124" stroke="var(--border)" stroke-dasharray="4 5"/>
+        <text class="lbl goodlbl" x="24" y="150">TARGET · focused, not coverage theatre</text>
+        <rect class="box goodbox" x="24" y="164" width="222" height="70" rx="10"/><text class="lbl" x="38" y="188">Pure unit tests</text><text class="lbl small muted" x="38" y="208">formatter · fit · builder</text><text class="lbl small muted" x="38" y="224">paging · settings cycle</text>
+        <rect class="box goodbox" x="260" y="164" width="222" height="70" rx="10"/><text class="lbl" x="274" y="188">ViewModel tests</text><text class="lbl small muted" x="274" y="208">error · retry · bookmarks</text><text class="lbl small muted" x="274" y="224">last read · rotation</text>
+        <rect class="box goodbox" x="496" y="164" width="222" height="70" rx="10"/><text class="lbl" x="510" y="188">Compose UI tests</text><text class="lbl small muted" x="510" y="208">search card · popup tap</text><text class="lbl small muted" x="510" y="224">error UI · TalkBack</text>
+        <rect class="box goodbox" x="732" y="164" width="224" height="70" rx="10"/><text class="lbl" x="746" y="188">Screenshots &amp; static checks</text><text class="lbl small muted" x="746" y="208">theme tokens · no emoji</text><text class="lbl small muted" x="746" y="224">no UI → Data imports</text>
+      </svg>
+    </figure>
+  </section>
+
+  <section id="phases">
+    <h2>The six phases, task by task</h2>
+    <p class="section-note">Open a phase to see what happens and why. IDs match the checkboxes in the Markdown plan exactly. You can stop after any phase and still have a working app.</p>
+
+    <details class="phase" open>
+      <summary>Phase 0 — Critical user-facing bugs <span class="count">10 tasks · fix first, test each</span></summary>
+      <div class="phase-body">
+        <p>No refactors here. These are wrong results, destroyed user data, dead buttons and invisible failures.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>ID</th><th>What will happen</th><th>Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td class="id">P0-1</td><td>Search cards receive the real ayah number and render it in Eastern digits.</td><td>Removes the false <span class="arabic">﴿٠﴾</span> reference from every result.</td></tr>
+            <tr><td class="id">P0-2</td><td>The failed-update banner is restored with a message and dismiss action.</td><td>Play update failures stop being invisible.</td></tr>
+            <tr><td class="id">P0-3</td><td>Bookmarking a selection adds all verses in one atomic write.</td><td>Stops the action from deleting already-bookmarked ayat.</td></tr>
+            <tr><td class="id">P0-4</td><td>Root detail wraps its database calls and exposes failures with Retry.</td><td>No more endless spinner on one bad query.</td></tr>
+            <tr><td class="id">P0-5</td><td>The reader renders its error state and Retry instead of "DB missing".</td><td>Tells the truth about what failed.</td></tr>
+            <tr><td class="id">P0-6</td><td>WordAyat keeps paging alive after a failed page.</td><td>Its Retry button stops being a dead click.</td></tr>
+            <tr><td class="id">P0-7</td><td>Search paging errors show an inline retry and preserve loaded results.</td><td>A transient network/DB error no longer wipes the list.</td></tr>
+            <tr><td class="id">P0-8</td><td>Reader gestures read the current word-toolbar state via <code>rememberUpdatedState</code>.</td><td>An outside tap only dismisses the popup; it no longer toggles chrome.</td></tr>
+            <tr><td class="id">P0-9</td><td>Last-read observes page content as well as page number.</td><td>Continue Reading works after visiting an uncached mushaf page.</td></tr>
+            <tr><td class="id">P0-10</td><td>Remove <code>pageNumber!!</code> from the ayah list.</td><td>Legacy unpaged data cannot crash the reader.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="phase" open>
+      <summary>Phase 1 — Architecture &amp; error boundaries <span class="count">6 tasks</span></summary>
+      <div class="phase-body">
+        <p>Put a domain interface where the UI used to touch data, and make every failure carry a message the UI can show.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>ID</th><th>What will happen</th><th>Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td class="id">P1-1</td><td>Setup ViewModel depends on a domain download port instead of <code>data.remote</code>.</td><td>Restores the Clean Architecture dependency rule and enables fakes.</td></tr>
+            <tr><td class="id">P1-2</td><td>Copy/share formatters return typed results; one clipboard write; no-browser snackbar.</td><td>"Failed" is no longer reported as "nothing to copy"; double writes disappear.</td></tr>
+            <tr><td class="id">P1-3</td><td><code>CheckDbUpdateUseCase</code> stops converting throws into <code>Success(Unknown)</code>.</td><td>DB-update failures become visible and retryable.</td></tr>
+            <tr><td class="id">P1-4</td><td>Resolve the Decision #37/#42 active-surah contradiction in the Decision Log.</td><td>One documented behaviour instead of a dead field with a misleading comment.</td></tr>
+            <tr><td class="id">P1-5</td><td>Choose and document the DB-missing product rule.</td><td>AGENTS, README and runtime finally agree.</td></tr>
+            <tr><td class="id">P1-6</td><td>Manifest check failures get their own error state and Retry.</td><td>"Not checked yet" and "check failed" are no longer the same screen.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary>Phase 2 — State consolidation &amp; UDF cleanup <span class="count">10 tasks + 1 documented exception</span></summary>
+      <div class="phase-body">
+        <p>One typed state owner per feature; platform work lives in Routes; no more positional casts or duplicated writes.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>ID</th><th>What will happen</th><th>Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td class="id">P2-1</td><td>Replace <code>combine { args[i] as ... }</code> with typed combinations in five ViewModels.</td><td>A reordered flow can no longer become a runtime cast crash.</td></tr>
+            <tr><td class="id">P2-2</td><td>Expose one authoritative <code>uiState</code> per feature; delete dead flows.</td><td>Readers know which state to trust; less code to maintain.</td></tr>
+            <tr><td class="id">P2-3</td><td>Move Activity walking, system bars and Settings reads into a Route-owned controller.</td><td>The reader screen becomes previewable and testable.</td></tr>
+            <tr><td class="id">P2-4</td><td>Hoist the report dialog's ViewModel to <code>RootDetailRoute</code>.</td><td>Leaf components stay pure and Hilt-free.</td></tr>
+            <tr><td class="id">P2-5</td><td>Document Home's callback-only contract as the allowed exception.</td><td>No trivial pass-through events added for no benefit.</td></tr>
+            <tr><td class="id">P2-6</td><td>Move popup/font-sheet/page-jump state into contracts where it needs to survive rotation.</td><td>UDF applies to user-visible state, not just data loading.</td></tr>
+            <tr><td class="id">P2-7</td><td>One paging helper; remove the <code>delay(80)</code> hacks.</td><td>Three drifting state machines become one tested one.</td></tr>
+            <tr><td class="id">P2-8</td><td>Record each recent search once; clarify duplicated names and parameters.</td><td>No double writes; names match what they do.</td></tr>
+            <tr><td class="id">P2-9</td><td>Settings dialog and Home toggle both go through <code>onEvent</code>; one tested cycle.</td><td>One API, one documented dark/light behaviour.</td></tr>
+            <tr><td class="id">P2-10</td><td>QuickJump error becomes an enum/boolean instead of "page"/"ayah" strings.</td><td>No invisible string sentinels that can drift.</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note"><strong>Documented exception:</strong> <code>MorphologyGuideScreen</code> keeps its locale branch inside the composable. It is static, has one navigation callback, and reads configuration rather than causing a platform side-effect — AGENTS §10.1 allows this. No Contract or ViewModel is added.</div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary>Phase 3 — De-duplication &amp; God-file decomposition <span class="count">8 tasks · behaviour-preserving</span></summary>
+      <div class="phase-body">
+        <p>Pure moves only: the same app, in smaller files with one job each, plus the two memoization/duplication fixes.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>ID</th><th>What will happen</th><th>Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td class="id">P3-1</td><td>One shared mushaf annotated-string builder for render and page-fit measurement.</td><td>The fit can no longer measure different characters from what is drawn.</td></tr>
+            <tr><td class="id">P3-2</td><td>Split the 567-line reader screen into placement, chrome, content and interaction files.</td><td>A gesture fix no longer touches deep-link or status-bar code.</td></tr>
+            <tr><td class="id">P3-3</td><td>Split the 559-line mushaf block into gestures, pulse geometry/overlay and accessibility.</td><td>Each visual behaviour can be read and tested alone.</td></tr>
+            <tr><td class="id">P3-4</td><td>Extract the reader page cache and selection helpers from the ViewModel.</td><td>497-line VM becomes an orchestrator with bounded pieces.</td></tr>
+            <tr><td class="id">P3-5</td><td>Extract RootDetail pagination and copy formatting.</td><td>Error paths from Phase 0 stay isolated and testable.</td></tr>
+            <tr><td class="id">P3-6</td><td>Split the 575-line setup screen by download state and version card.</td><td>Screen logic matches the five states it renders.</td></tr>
+            <tr><td class="id">P3-7</td><td>Split the long Route event handler and format 800-character lines.</td><td>Platform actions are readable without scrolling sideways.</td></tr>
+            <tr><td class="id">P3-8</td><td>Fix <code>CitedBodyText</code>'s fresh-collection <code>remember</code> key.</td><td>Cited text stops rebuilding its whole annotated string on every recomposition.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary>Phase 4 — Localization, tokens, accessibility &amp; dead code <span class="count">12 tasks</span></summary>
+      <div class="phase-body">
+        <p>Make the Arabic-first experience consistent and remove code that no longer earns its place.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>ID</th><th>What will happen</th><th>Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td class="id">P4-1</td><td>Hardcoded AR/EN chrome strings move to <code>values</code>/<code>values-ar</code>.</td><td>English UI stops speaking Arabic in search and font controls.</td></tr>
+            <tr><td class="id">P4-2</td><td>TalkBack actions are memoized and follow the active-surah decision.</td><td>No ~200-action list rebuilt on every recomposition.</td></tr>
+            <tr><td class="id">P4-3</td><td>Home statistics use Eastern digits in Arabic.</td><td>One digit convention across the whole app.</td></tr>
+            <tr><td class="id">P4-4</td><td>Raw colors and shapes become theme tokens.</td><td>Dark theme and future re-theming stay consistent.</td></tr>
+            <tr><td class="id">P4-5</td><td>Small icon buttons and chips get 48dp touch areas.</td><td>Readers with large fingers or tremor can use them reliably.</td></tr>
+            <tr><td class="id">P4-6</td><td>Search bookmark button announces the correct action.</td><td>TalkBack no longer says "Remove bookmark" for an unbookmarked ayah.</td></tr>
+            <tr><td class="id">P4-7</td><td>Delete dead code, stale comments and the no-op <code>HomeUpdateBanner</code> wrapper.</td><td>Less code to read, test and misunderstand.</td></tr>
+            <tr><td class="id">P4-8</td><td>One placement animation spec and one Basmalah constant.</td><td>Small values stop drifting between screens.</td></tr>
+            <tr><td class="id">P4-9</td><td>One pure, Context-free file-size formatter.</td><td>Setup and update banner can never disagree on MB/KB.</td></tr>
+            <tr><td class="id">P4-10</td><td><code>AppTypography</code> name and shape aliases derive from one token set.</td><td>No name shadowing, no duplicate radii to sync.</td></tr>
+            <tr><td class="id">P4-11</td><td>Remove remaining emoji glyphs; use vectors and clean strings.</td><td>Decision #13 finally applies everywhere, in both locales.</td></tr>
+            <tr><td class="id">P4-12</td><td>Use <code>FontSizePreference.DEFAULT</code> everywhere; name repeated text sizes.</td><td>One slider means the same size in the mushaf and in cards.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+
+    <details class="phase">
+      <summary>Phase 5 — Focused tests &amp; final verification <span class="count">9 tasks</span></summary>
+      <div class="phase-body">
+        <p>Each bug fix already names its test in the Markdown plan. This phase closes the net and runs the full user-owned verification set.</p>
+        <div class="table-scroll"><table>
+          <thead><tr><th>ID</th><th>What will happen</th><th>Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td class="id">P5-1</td><td>A tiny Compose test helper with unified test tags.</td><td>New UI tests stay short and consistent.</td></tr>
+            <tr><td class="id">P5-2</td><td>Search card marker, bookmark label and suffix tests.</td><td>Locks down P0-1, P4-1 and P4-6.</td></tr>
+            <tr><td class="id">P5-3</td><td>Bookmark-selection tests with mixed initial states.</td><td>The deletion bug cannot come back.</td></tr>
+            <tr><td class="id">P5-4</td><td>Reader tests: popup tap, uncached last read, unpaged data, error UI.</td><td>Covers the four riskiest reader fixes.</td></tr>
+            <tr><td class="id">P5-5</td><td>RootDetail and WordAyat error/retry tests.</td><td>No spinner-only or dead-retry regressions.</td></tr>
+            <tr><td class="id">P5-6</td><td>Search paging-error tests.</td><td>Results and offsets survive a failed page.</td></tr>
+            <tr><td class="id">P5-7</td><td>Mushaf builder character-equivalence test.</td><td>The two-builders bug stays fixed permanently.</td></tr>
+            <tr><td class="id">P5-8</td><td>Update/DB/share tests for typed failures and visible banners.</td><td>Silent failures stay visible.</td></tr>
+            <tr><td class="id">P5-9</td><td>User runs the full Gradle + manual QA checklist.</td><td>No check is claimed as passing without real output.</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </details>
+  </section>
+
+  <section id="decisions">
+    <h2>Decisions &amp; exceptions that need a human answer</h2>
+    <p class="section-note">The plan does not silently change product behaviour in these four spots.</p>
+    <div class="grid two">
+      <div class="card"><h3>Decision #37 vs #42</h3><p>The field <code>isActiveSurah</code> says only the active surah owns selection and TalkBack on a shared page; the pager passes <code>null</code> so every surah is interactive, which matches Decision #42. P1-4 asks the owner to pick one and record it. Recommendation: keep current behaviour, delete the unused field.</p></div>
+      <div class="card"><h3>DB-missing product rule</h3><p>AGENTS §8.5 says only the download screen shows when the database is missing; the app currently offers a preview. P1-5 asks for a decision before any route gating changes.</p></div>
+      <div class="card"><h3>Settings cycle</h3><p>P2-9 unifies both entry points on one event API. The cycle will be explicitly chosen and tested (including a path back to System) instead of being implied by a stale comment.</p></div>
+      <div class="card"><h3>Paging3 vs helper</h3><p>Decision #12 already deferred Paging3. P2-7 removes duplicated manual paging state and delays now; adopting Paging3 remains a separate ADR, not a hidden part of this plan.</p></div>
+    </div>
+    <div class="note"><strong>Naming note:</strong> the build uses Spotless with ktlint 1.5.0, so the real formatting task is <code>spotlessCheck</code>. <code>ktlintCheck</code> does not exist in this build, even though AGENTS mentions it; the verification checklist uses the actual task.</div>
+  </section>
+
+  <section id="verification">
+    <h2>Verification &amp; manual QA</h2>
+    <p class="section-note">Per AGENTS §16, agents do not run Gradle. These are the exact commands for the user to run after implementation; no result is claimed here.</p>
+    <pre>cd /media/linux/android-projects/quran-words
+
+./gradlew spotlessCheck detekt lintDebug
+./gradlew testDebugUnitTest
+./gradlew assembleDebug</pre>
+
+    <h3>Phase 0 manual checks — Arabic RTL and English LTR, light and dark</h3>
+    <ul class="tight">
+      <li>☐ Search any word: the ayah result shows its real number, never <span class="arabic">﴿٠﴾</span>.</li>
+      <li>☐ Select bookmarked and unbookmarked ayat together, press Bookmark: all end up bookmarked; nothing is removed.</li>
+      <li>☐ Force a paging failure: WordAyat and Search keep results and their Retry loads the next page.</li>
+      <li>☐ Force a reader database failure: an explicit error and Retry appear, not a spinner or a false "DB missing".</li>
+      <li>☐ Force a Play update failure: a failure banner appears and can be dismissed.</li>
+      <li>☐ Long-press a word, tap outside: only the toolbar closes; the top bar stays as it was.</li>
+      <li>☐ Pages mode: swipe to an uncached page; Continue Reading on Home updates to that page.</li>
+      <li>☐ Open legacy unpaged data: no crash, no page header or separator.</li>
+      <li>☐ Open the report link with no browser installed: a snackbar explains it.</li>
+      <li>☐ TalkBack on a search result announces "Bookmark ayah" before saving and "Remove bookmark" after.</li>
+    </ul>
+    <p style="margin-top:14px">Full task-level acceptance criteria and test names live in <a href="UI_AUDIT_FIX_PLAN.md"><code>docs/UI_AUDIT_FIX_PLAN.md</code></a>.</p>
+  </section>
+
+  <section id="risks">
+    <h2>Why this order, and what to watch</h2>
+    <div class="grid two">
+      <div class="card">
+        <h3>Safe ordering</h3>
+        <ul class="tight">
+          <li><strong>Phase 0 first</strong> so users get correct behaviour before any structural change.</li>
+          <li><strong>Phase 1 before refactors</strong> so error paths and boundaries are fixed while code is still familiar.</li>
+          <li><strong>Phase 2 before splits</strong> so files are divided along a state model that is already settled.</li>
+          <li><strong>Phase 3 is move-only</strong>; screenshots and existing tests must stay identical.</li>
+          <li><strong>Phase 4 after structure</strong>; tokens and strings then land in stable homes.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Known risks / limits</h3>
+        <ul class="tight">
+          <li>Two product decisions (active surah, DB gating) need the owner before code changes.</li>
+          <li>New Compose tests need no new dependency, but must be verified on the project's Robolectric setup.</li>
+          <li>Paging3 remains deferred; this plan only removes duplication in the current manual approach.</li>
+          <li>Nothing here has been built or run yet — all findings are static-verified, and device QA is still required.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="gate"><strong>Definition of done for the whole plan:</strong> 55 checkboxes closed, each Phase 0 bug has a failing-if-reverted test, the four Gradle checks above pass with user-provided output, and the manual QA list is clean in both locales.</div>
+  </section>
+
+  <footer>
+    <p>Source of truth: <a href="UI_AUDIT_FIX_PLAN.md"><code>docs/UI_AUDIT_FIX_PLAN.md</code></a> · Project rules: <code>AGENTS.md</code> · No Kotlin or XML files were modified to create this page.</p>
+  </footer>
+</main>
+</body>
+</html>

@@ -37,6 +37,8 @@ class FakeUserPreferences(
     val dynamicColorState = MutableStateFlow(false)
     val languageState = MutableStateFlow("system")
     val recentSearchesState = MutableStateFlow<List<String>>(emptyList())
+    var lastAyahBookmarkWrite: Pair<Set<String>, Boolean>? = null
+        private set
 
     override val language: Flow<String> = languageState
     override val fontSize: Flow<Float> = fontSizeState
@@ -103,6 +105,11 @@ class FakeUserPreferences(
         ayahBookmarkState.value =
             if (key in ayahBookmarkState.value) ayahBookmarkState.value - key
             else ayahBookmarkState.value + key
+    }
+
+    override suspend fun setAyahBookmarked(keys: Set<String>, bookmarked: Boolean) {
+        lastAyahBookmarkWrite = keys to bookmarked
+        ayahBookmarkState.value = if (bookmarked) ayahBookmarkState.value + keys else ayahBookmarkState.value - keys
     }
 
     override suspend fun addRecentSearch(query: String) {

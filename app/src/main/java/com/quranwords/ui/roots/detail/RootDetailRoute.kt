@@ -79,7 +79,8 @@ private fun handleRootDetailEvent(
                     R.plurals.copied_meanings_count,
                     uiState.meanings.meanings.size, uiState.meanings.meanings.size
                 ),
-                emptyMessage = context.getString(R.string.no_meanings_copy)
+                emptyMessage = context.getString(R.string.no_meanings_copy),
+                failureMessage = context.getString(R.string.copy_failed)
             )
         }
         RootDetailEvent.ShareAllMeanings -> scope.launch {
@@ -87,7 +88,8 @@ private fun handleRootDetailEvent(
                 provider = { viewModel.getAllMeaningsFormatted(CopyAction.SHARE_MEANINGS_ALL) },
                 chooserTitle = context.getString(R.string.share_meanings),
                 emptyMessage = context.getString(R.string.no_meanings_share),
-                noAppMessage = context.getString(R.string.no_share_app)
+                noAppMessage = context.getString(R.string.no_share_app),
+                failureMessage = context.getString(R.string.share_failed)
             )
         }
         RootDetailEvent.CopySelectedMeanings -> scope.launch {
@@ -95,7 +97,8 @@ private fun handleRootDetailEvent(
             shareHandler.copyFormatted(
                 provider = { viewModel.getSelectedMeaningsFormatted(CopyAction.COPY_MEANINGS_SELECTED) },
                 successMessage = context.resources.getQuantityString(R.plurals.copied_meanings_count, n, n),
-                emptyMessage = context.getString(R.string.no_meanings_copy)
+                emptyMessage = context.getString(R.string.no_meanings_copy),
+                failureMessage = context.getString(R.string.copy_failed)
             )
         }
         RootDetailEvent.ShareSelectedMeanings -> scope.launch {
@@ -103,14 +106,16 @@ private fun handleRootDetailEvent(
                 provider = { viewModel.getSelectedMeaningsFormatted(CopyAction.SHARE_MEANINGS_SELECTED) },
                 chooserTitle = context.getString(R.string.share_meanings),
                 emptyMessage = context.getString(R.string.no_meanings_share),
-                noAppMessage = context.getString(R.string.no_share_app)
+                noAppMessage = context.getString(R.string.no_share_app),
+                failureMessage = context.getString(R.string.share_failed)
             )
         }
         RootDetailEvent.CopySelectedWords -> scope.launch {
             shareHandler.copyFormatted(
                 provider = { viewModel.getSelectedWordsOccurrencesFormatted(CopyAction.COPY_WORDS_SELECTED) },
                 successMessage = context.getString(R.string.root_copied_selected),
-                emptyMessage = context.getString(R.string.no_ayat_copy)
+                emptyMessage = context.getString(R.string.no_ayat_copy),
+                failureMessage = context.getString(R.string.copy_failed)
             )
         }
         RootDetailEvent.ShareSelectedWords -> scope.launch {
@@ -118,7 +123,8 @@ private fun handleRootDetailEvent(
                 provider = { viewModel.getSelectedWordsOccurrencesFormatted(CopyAction.SHARE_WORDS_SELECTED) },
                 chooserTitle = context.getString(R.string.share_ayat),
                 emptyMessage = context.getString(R.string.no_ayat_share),
-                noAppMessage = context.getString(R.string.no_share_app)
+                noAppMessage = context.getString(R.string.no_share_app),
+                failureMessage = context.getString(R.string.share_failed)
             )
         }
         RootDetailEvent.CopyAllOccurrences -> scope.launch {
@@ -126,7 +132,8 @@ private fun handleRootDetailEvent(
             shareHandler.copyFormatted(
                 provider = { viewModel.getAllOccurrencesFormatted(CopyAction.COPY_OCCURRENCES_ALL) },
                 successMessage = context.resources.getQuantityString(R.plurals.copied_ayat_count, total, total),
-                emptyMessage = context.getString(R.string.no_ayat_copy)
+                emptyMessage = context.getString(R.string.no_ayat_copy),
+                failureMessage = context.getString(R.string.copy_failed)
             )
         }
         RootDetailEvent.ShareAllOccurrences -> scope.launch {
@@ -134,7 +141,8 @@ private fun handleRootDetailEvent(
                 provider = { viewModel.getAllOccurrencesFormatted(CopyAction.SHARE_OCCURRENCES_ALL) },
                 chooserTitle = context.getString(R.string.share_ayat),
                 emptyMessage = context.getString(R.string.no_ayat_share),
-                noAppMessage = context.getString(R.string.no_share_app)
+                noAppMessage = context.getString(R.string.no_share_app),
+                failureMessage = context.getString(R.string.share_failed)
             )
         }
         is RootDetailEvent.CopyReport ->
@@ -144,7 +152,9 @@ private fun handleRootDetailEvent(
             context.getString(R.string.report_share_title),
             context.getString(R.string.no_share_app)
         )
-        is RootDetailEvent.OpenReportUrl -> shareHandler.openUrl(event.url)
+        is RootDetailEvent.OpenReportUrl -> shareHandler.openUrl(
+            event.url, context.getString(R.string.no_browser)
+        )
         // State + navigation-decision events go to the ViewModel (nav via Effect).
         else -> viewModel.onEvent(event)
     }

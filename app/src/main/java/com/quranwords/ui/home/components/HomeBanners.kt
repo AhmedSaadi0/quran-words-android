@@ -112,3 +112,33 @@ fun HomeUpdateBanner(
         modifier = modifier
     )
 }
+
+/** Visible failure for the manual DB-version check (P1-3). */
+@Composable
+fun DbUpdateCheckFailedBanner(
+    message: String,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth().testTag("db_update_check_failed_banner"),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+        shape = ShapeMedium
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.db_update_check_failed, message),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.weight(1f)
+            )
+            Button(onClick = onRetry, shape = ShapeSmall) {
+                Text(stringResource(R.string.common_retry))
+            }
+        }
+    }
+}

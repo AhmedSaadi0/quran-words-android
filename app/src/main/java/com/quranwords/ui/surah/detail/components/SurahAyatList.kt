@@ -172,12 +172,14 @@ fun MushafPageContent(
     ) {
         // 0. Page header (Full Plan v2): surah name | juz (+ hizb start) | page.
         if (chrome.showHeader) {
-            PageHeaderRow(
-                surahIds = listOf(first.surah),
-                juz = first.juz,
-                hizb = if (chrome.isHizbStart) first.hizb else null,
-                pageNumber = first.pageNumber!!
-            )
+            first.pageNumber?.let { pageNumber ->
+                PageHeaderRow(
+                    surahIds = listOf(first.surah),
+                    juz = first.juz,
+                    hizb = if (chrome.isHizbStart) first.hizb else null,
+                    pageNumber = pageNumber
+                )
+            }
         }
 
         // 1. كتلة آيات الصفحة
@@ -207,12 +209,14 @@ fun MushafPageContent(
 
         // 2. رقم الصفحة أسفل كتلة الآيات مباشرة
         if (chrome.showPageNumber) {
-            PageSeparator(
-                pageNumber = first.pageNumber!!,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 6.dp)
-            )
+            first.pageNumber?.let { pageNumber ->
+                PageSeparator(
+                    pageNumber = pageNumber,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 6.dp)
+                )
+            }
         }
     }
 }

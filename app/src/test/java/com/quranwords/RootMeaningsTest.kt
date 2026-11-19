@@ -128,7 +128,7 @@ class RootMeaningsTest {
         val vm = RootDetailViewModel(FakeMeaningsRepository(), FakeUserPreferences(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
-        val formatted = vm.getAllMeaningsFormatted()
+        val formatted = (vm.getAllMeaningsFormatted() as com.quranwords.core.util.Result.Success).data
         assertTrue(formatted.contains("[معاني الجذر: كتب]"))
         assertTrue(formatted.contains("▪ لسان العرب"))
         assertTrue(formatted.contains("▪ الصحاح"))
@@ -141,7 +141,7 @@ class RootMeaningsTest {
         vm.loadRootDetail(1)
         advanceUntilIdle()
         vm.onEvent(RootDetailEvent.EnterMeaningSelection(2))
-        val formatted = vm.getSelectedMeaningsFormatted()
+        val formatted = (vm.getSelectedMeaningsFormatted() as com.quranwords.core.util.Result.Success).data
         assertTrue(formatted.contains("▪ الصحاح"))
         assertFalse(formatted.contains("▪ لسان العرب"))
         assertFalse(formatted.contains("▪ المقاييس"))
@@ -152,7 +152,7 @@ class RootMeaningsTest {
         val vm = RootDetailViewModel(FakeMeaningsRepository(), FakeUserPreferences(), SavedStateHandle())
         vm.loadRootDetail(1)
         advanceUntilIdle()
-        assertEquals("", vm.getSelectedMeaningsFormatted())
+        assertEquals("", (vm.getSelectedMeaningsFormatted() as com.quranwords.core.util.Result.Success).data)
     }
 
     @Test

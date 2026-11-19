@@ -36,6 +36,58 @@ class SurahDetailViewModelTest {
         wordCount = 1, pageNumber = page
     )
 
+    private class FailingAyatRepository : FakeQuranRepository() {
+        var failRead = true
+
+        override suspend fun getAyatBySurahFull(surahId: Int): List<Ayah> {
+            if (failRead) throw IllegalStateException("read failed")
+            return ayatBySurah[surahId].orEmpty()
+        }
+    }
+
+    @Test
+    fun load_error_sets_error_state_and_retry_reloads() = runTest {
+        val repo = FailingAyatRepository()
+        val vm = SurahDetailViewModel(repo, FakeUserPreferences())
+
+        vm.onEvent(SurahDetailEvent.Load(2))
+        advanceUntilIdle()
+
+        assertEquals("read failed", vm.screenState.value.error)
+        assertFalse(vm.screenState.value.isLoading)
+
+        repo.failRead = false
+        vm.onEvent(SurahDetailEvent.Load(2))
+        advanceUntilIdle()
+
+        assertEquals(null, vm.screenState.value.error)
+        assertFalse(vm.screenState.value.isLoading)
+    }
+
+    @Test
+    fun last_read_sequence_page_change_then_content_arrives_on_same_page() = runTest {
+        val pageAyat = listOf(pageAyah(2, 10, 60))
+        val repo = FakeQuranRepository(
+            ayatBySurah = mapOf(2 to pageAyat),
+            ayatByPage = mapOf(60 to pageAyat),
+            failPages = mutableSetOf(60)
+        )
+        val vm = SurahDetailViewModel(repo, FakeUserPreferences())
+        vm.onEvent(SurahDetailEvent.Load(2))
+        advanceUntilIdle()
+
+        vm.onEvent(SurahDetailEvent.PageChanged(60))
+        advanceUntilIdle()
+        assertEquals(60, vm.screenState.value.currentPage)
+        assertTrue(vm.screenState.value.pageAyahs.isEmpty())
+
+        repo.failPages.clear()
+        vm.onEvent(SurahDetailEvent.RetryPage(60))
+        advanceUntilIdle()
+        assertEquals(60, vm.screenState.value.currentPage)
+        assertEquals(pageAyat, vm.screenState.value.pageAyahs)
+    }
+
     @Test
     fun `bookmark selection clears selection immediately and persists pair keys`() = runTest {
         val prefs = FakeUserPreferences()
@@ -52,6 +104,22 @@ class SurahDetailViewModelTest {
         assertFalse(vm.selection.value.isSelectionMode)
         advanceUntilIdle()
         assertEquals(setOf("2:3", "2:5"), prefs.ayahBookmarkState.value)
+    }
+
+    @Test
+    fun `bookmark_selection_preserves_existing_bookmarks`() = runTest {
+        val prefs = FakeUserPreferences(initialAyahBookmarks = setOf("2:3"))
+        val vm = SurahDetailViewModel(FakeQuranRepository(), prefs)
+        vm.onEvent(SurahDetailEvent.Load(2))
+        advanceUntilIdle()
+
+        vm.onEvent(SurahDetailEvent.EnterSelection(AyahRef(2, 3)))
+        vm.onEvent(SurahDetailEvent.ToggleAyahSelection(AyahRef(2, 5)))
+        vm.onEvent(SurahDetailEvent.BookmarkSelection)
+        advanceUntilIdle()
+
+        assertEquals(setOf("2:3", "2:5"), prefs.ayahBookmarkState.value)
+        assertEquals(setOf("2:3", "2:5") to true, prefs.lastAyahBookmarkWrite)
     }
 
     @Test

@@ -340,6 +340,7 @@
     <string name="db_show_notes">Show release notes</string>
     <string name="db_hide_notes">Hide release notes</string>
     <string name="db_manifest_error">Could not fetch version info — check connection and retry.</string>
+    <string name="db_update_check_failed">Could not check for database updates: %1$s</string>
     <string name="db_speed_kbps">%1$d KB/s</string>
 
     <!-- Meaning report dialog (issue body itself stays bilingual by design) -->
@@ -381,6 +382,9 @@
     <string name="copy_meanings">Copy meanings</string>
     <string name="share_meanings">Share meanings</string>
     <string name="copied_text">Copied</string>
+    <string name="copy_failed">Could not copy — please try again</string>
+    <string name="share_failed">Could not share — please try again</string>
+    <string name="no_browser">No browser available to open this link</string>
     <!-- Long-press word action toolbar -->
     <string name="word_action_root">Word root &amp; morphology</string>
     <string name="word_action_select_ayah">Select full ayah</string>

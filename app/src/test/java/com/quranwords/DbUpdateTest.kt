@@ -42,7 +42,7 @@ private class FakeDbUpdateRepository(
     }
 
     override suspend fun checkForUpdate(): DbCheckResult<DbUpdateState> {
-        if (fail || latest == null) return DbCheckResult.Success(DbUpdateState.Unknown)
+        if (fail || latest == null) return DbCheckResult.Error("network")
         if (installed.versionCode <= 0) return DbCheckResult.Success(DbUpdateState.NoLocalDb)
         if (latest.versionCode <= installed.versionCode) {
             return DbCheckResult.Success(DbUpdateState.UpToDate)
@@ -162,10 +162,20 @@ class DbUpdateTest {
     }
 
     @Test
-    fun `network failure maps to unknown not crash`() = runTest {
+    fun network_failure_is_surfaced_as_check_failed() = runTest {
         val repo = FakeDbUpdateRepository(fail = true)
-        val state = (CheckDbUpdateUseCase(repo)() as DbCheckResult.Success).data
-        assertEquals(DbUpdateState.Unknown, state)
+        val result = CheckDbUpdateUseCase(repo)()
+        assertTrue(result is DbCheckResult.Error)
+        assertEquals("network", (result as DbCheckResult.Error).message)
+    }
+
+    @Test(expected = IllegalStateException::class)
+    fun thrown_check_exception_is_not_hidden() = runTest {
+        val repo = object : DbUpdateRepository by FakeDbUpdateRepository() {
+            override suspend fun checkForUpdate(): DbCheckResult<DbUpdateState> =
+                throw IllegalStateException("boom")
+        }
+        CheckDbUpdateUseCase(repo)()
     }
 
     @Test

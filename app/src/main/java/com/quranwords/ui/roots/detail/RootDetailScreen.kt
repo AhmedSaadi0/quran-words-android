@@ -2,6 +2,7 @@ package com.quranwords.ui.roots.detail
 
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
@@ -11,17 +12,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.quranwords.R
 import com.quranwords.ui.components.ReportMeaningDialog
 import com.quranwords.ui.roots.detail.components.RootDetailHeader
 import com.quranwords.ui.roots.detail.tabs.AiSummaryTab
@@ -76,11 +82,29 @@ fun RootDetailScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        if (uiState.isLoading || detail == null) {
-            Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+        when {
+            uiState.error != null && detail == null && !uiState.isLoading -> {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(innerPadding).padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = uiState.error.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Button(onClick = { onEvent(RootDetailEvent.Retry) }) {
+                        Text(stringResource(R.string.common_retry))
+                    }
+                }
             }
-        } else {
+            uiState.isLoading || detail == null -> {
+                Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
+            else -> {
             Column(Modifier.fillMaxSize().padding(innerPadding)) {
                 RootDetailHeader(
                     rootText = uiState.rootText,
@@ -114,6 +138,7 @@ fun RootDetailScreen(
                     uiState.ayat.occurrences.take(2).map { ReportAyahSample(it.surahNameAr, it.ayahNum, it.textUthmani) }
                 }
                 ReportMeaningDialog(rootText = uiState.rootText, rootId = detail.item.id, aiSummary = detail.aiSummary ?: "", samples = samples, onDismissRequest = { onEvent(RootDetailEvent.DismissReport) }, onCopyReport = { onEvent(RootDetailEvent.CopyReport(it)) }, onShareReport = { onEvent(RootDetailEvent.ShareReport(it)) }, onOpenUrl = { onEvent(RootDetailEvent.OpenReportUrl(it)) })
+            }
             }
         }
     }

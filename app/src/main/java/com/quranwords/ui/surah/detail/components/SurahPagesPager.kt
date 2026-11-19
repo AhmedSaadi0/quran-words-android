@@ -154,7 +154,7 @@ private fun MushafPageContent(
     // Full-bleed: chrome is an overlay, never part of this layout.
     val topPadding = 8.dp
     val bottomPadding = 8.dp
-    val segments = remember(ayat) { splitPageIntoSegments(ayat, activeSurahId = null) }
+    val segments = remember(ayat) { splitPageIntoSegments(ayat) }
     val first = ayat.first()
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()

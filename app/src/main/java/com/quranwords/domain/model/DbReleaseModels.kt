@@ -24,4 +24,6 @@ sealed interface DbUpdateState {
     data class UpdateAvailable(val info: DbReleaseInfo) : DbUpdateState
     data object NoLocalDb : DbUpdateState
     data object Unknown : DbUpdateState
+    /** Manual check failed; [message] is safe to show in the Home banner. */
+    data class CheckFailed(val message: String) : DbUpdateState
 }

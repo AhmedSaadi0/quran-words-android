@@ -11,6 +11,7 @@ import com.quranwords.data.remote.DatabaseDownloadManager
 import com.quranwords.data.remote.ManifestRemoteDataSource
 import com.quranwords.data.repository.DbUpdateRepositoryImpl
 import com.quranwords.data.repository.QuranRepositoryImpl
+import com.quranwords.domain.repository.DatabaseDownloadRepository
 import com.quranwords.domain.repository.DbUpdateRepository
 import com.quranwords.domain.repository.QuranRepository
 import com.quranwords.domain.repository.UserPreferencesRepository
@@ -43,6 +44,12 @@ object AppModule {
     ): DatabaseDownloadManager {
         return DatabaseDownloadManager(context, client)
     }
+
+    @Provides
+    @Singleton
+    fun provideDatabaseDownloadRepository(
+        manager: DatabaseDownloadManager
+    ): DatabaseDownloadRepository = manager
 
     @Provides
     @Singleton

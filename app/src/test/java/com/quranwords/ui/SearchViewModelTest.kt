@@ -88,6 +88,40 @@ class SearchViewModelTest {
         assertEquals(pageSize + 3, vm.uiState.value.results.roots.size)
     }
 
+    private class PagingFailureRepository(size: Int) : FakeQuranRepository(
+        searchResult = SearchResult(roots = (1..size).map { RootItem(it, "جذر$it") })
+    ) {
+        var failPage = false
+
+        override suspend fun searchRootsPaged(query: String, limit: Int, offset: Int): List<RootItem> {
+            if (offset > 0 && failPage) throw IllegalStateException("page failed")
+            return super.searchRootsPaged(query, limit, offset)
+        }
+    }
+
+    @Test
+    fun paging_error_preserves_results_and_offset() = runTest {
+        val repo = PagingFailureRepository(pageSize + 3)
+        val vm = viewModel(repo)
+        vm.onEvent(SearchEvent.QueryChanged("كتب"))
+        advanceTimeBy(200)
+        advanceUntilIdle()
+
+        repo.failPage = true
+        vm.onEvent(SearchEvent.NearingEnd(SearchTab.ROOTS, lastVisibleIndex = pageSize - 1))
+        advanceUntilIdle()
+
+        assertEquals(pageSize, vm.uiState.value.results.roots.size)
+        assertEquals("page failed", vm.uiState.value.pagingError)
+        assertNull(vm.uiState.value.error)
+
+        repo.failPage = false
+        vm.onEvent(SearchEvent.LoadMore(SearchTab.ROOTS))
+        advanceUntilIdle()
+        assertEquals(pageSize + 3, vm.uiState.value.results.roots.size)
+        assertNull(vm.uiState.value.pagingError)
+    }
+
     @Test
     fun `blank query resets results`() = runTest {
         val vm = viewModel(repository())

@@ -14,19 +14,23 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalOverscrollConfiguration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -49,11 +53,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.flow.distinctUntilChanged
+import com.quranwords.R
 import com.quranwords.core.util.AyahRef
 import com.quranwords.core.util.ReadingModePreference
 import com.quranwords.core.util.SurahMetadata
@@ -83,6 +89,44 @@ import com.quranwords.ui.theme.AppMotion
 private fun SurahLoadingPlaceholder() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+    }
+}
+
+@Composable
+internal fun SurahErrorState(message: String, onRetry: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
+            12.dp,
+            Alignment.CenterVertically
+        ),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+        Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
+    }
+}
+
+@Composable
+private fun SurahErrorBanner(message: String, onRetry: () -> Unit) {
+    androidx.compose.material3.Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        color = MaterialTheme.colorScheme.errorContainer,
+        shape = MaterialTheme.shapes.small
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.weight(1f)
+            )
+            Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
+        }
     }
 }
 
@@ -343,9 +387,10 @@ fun SurahDetailScreen(
     // Last-read tracking, keyed by surah + ayah on both modes.
     LaunchedEffect(listState, isPagesMode, uiState.ayat, uiState.currentPage, hasHandledInitialScroll) {
         if (isPagesMode) {
-            snapshotFlow { uiState.currentPage }.distinctUntilChanged().collect { page ->
+            snapshotFlow { uiState.currentPage to uiState.pageAyahs }
+                .distinctUntilChanged()
+                .collect { (page, ayat) ->
                 if (!hasHandledInitialScroll || page < 1) return@collect
-                val ayat = uiState.pageAyahs
                 val active = ayat.firstOrNull { it.surah == uiState.activeSurahId }
                     ?: ayat.firstOrNull() ?: return@collect
                 onEvent(SurahDetailEvent.AyahVisible(AyahRef(active.surah, active.ayah)))
@@ -416,6 +461,10 @@ fun SurahDetailScreen(
                 if (isPagesMode) {
                     when {
                         !pagesReady || uiState.isLoading -> SurahLoadingPlaceholder()
+                        uiState.error != null && uiState.pageAyahs.isEmpty() -> SurahErrorState(
+                            message = uiState.error.orEmpty(),
+                            onRetry = { onEvent(SurahDetailEvent.Load(surahId, targetAyah, immediate = true)) }
+                        )
                         uiState.pageAyahs.isEmpty() -> SurahDbMissingState()
                         else -> CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
                             SurahPagesPager(
@@ -447,6 +496,10 @@ fun SurahDetailScreen(
                 } else {
                     when {
                         (uiState.isLoading && uiState.ayat.isEmpty()) || awaitingPlacement -> SurahLoadingPlaceholder()
+                        uiState.error != null && uiState.ayat.isEmpty() -> SurahErrorState(
+                            message = uiState.error.orEmpty(),
+                            onRetry = { onEvent(SurahDetailEvent.Load(surahId, targetAyah, immediate = true)) }
+                        )
                         uiState.ayat.isEmpty() -> SurahDbMissingState()
                         else -> CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
                             SurahAyatList(
@@ -475,6 +528,17 @@ fun SurahDetailScreen(
                         }
                     }
                 }
+                if (uiState.error != null &&
+                    (if (isPagesMode) uiState.pageAyahs.isNotEmpty() else uiState.ayat.isNotEmpty())
+                ) {
+                    Box(Modifier.align(Alignment.BottomCenter)) {
+                        SurahErrorBanner(
+                            message = uiState.error.orEmpty(),
+                            onRetry = { onEvent(SurahDetailEvent.Load(surahId, targetAyah, immediate = true)) }
+                        )
+                    }
+                }
+
                 SurahSwitchHints(
                     direction = nestedScrollConnection.hintDirection,
                     surahId = if (isPagesMode) uiState.activeSurahId else surahId,

@@ -46,7 +46,8 @@ fun WordAyatRoute(
                     successMessage = context.resources.getQuantityString(
                         R.plurals.copied_ayat_count, total, total
                     ),
-                    emptyMessage = context.getString(R.string.no_ayat_copy)
+                    emptyMessage = context.getString(R.string.no_ayat_copy),
+                    failureMessage = context.getString(R.string.copy_failed)
                 )
             }
             WordAyatEvent.ShareAll -> scope.launch {
@@ -54,7 +55,8 @@ fun WordAyatRoute(
                     provider = { viewModel.getAllFormatted() },
                     chooserTitle = context.getString(R.string.share_ayat),
                     emptyMessage = context.getString(R.string.no_ayat_share),
-                    noAppMessage = context.getString(R.string.no_share_app)
+                    noAppMessage = context.getString(R.string.no_share_app),
+                    failureMessage = context.getString(R.string.share_failed)
                 )
             }
             else -> viewModel.onEvent(event)

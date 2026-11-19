@@ -3,12 +3,12 @@ package com.quranwords.ui.setup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import com.quranwords.data.remote.DatabaseDownloadManager
-import com.quranwords.data.remote.DownloadError
-import com.quranwords.data.remote.DownloadPhase
-import com.quranwords.data.remote.DownloadState
 import com.quranwords.domain.model.DbInstalledVersion
 import com.quranwords.domain.model.DbReleaseInfo
+import com.quranwords.domain.model.DownloadError
+import com.quranwords.domain.model.DownloadPhase
+import com.quranwords.domain.model.DownloadState
+import com.quranwords.domain.repository.DatabaseDownloadRepository
 import com.quranwords.domain.repository.DbCheckResult
 import com.quranwords.domain.repository.DbUpdateRepository
 import com.quranwords.domain.repository.QuranRepository
@@ -23,17 +23,18 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class DatabaseSetupViewModel @Inject constructor(
-    private val downloadManager: DatabaseDownloadManager,
+    private val downloadRepository: DatabaseDownloadRepository,
     private val dbUpdateRepository: DbUpdateRepository,
     private val quranRepository: QuranRepository
 ) : ViewModel() {
 
     private val _download = MutableStateFlow<SetupDownload>(
-        if (downloadManager.isDatabaseReady()) SetupDownload.Completed() else SetupDownload.Idle
+        if (downloadRepository.isDatabaseReady()) SetupDownload.Completed() else SetupDownload.Idle
     )
     private val _latestRelease = MutableStateFlow<DbReleaseInfo?>(null)
     private val _installedVersion = MutableStateFlow(DbInstalledVersion())
     private val _isCheckingUpdate = MutableStateFlow(false)
+    private val _manifestError = MutableStateFlow<String?>(null)
 
     init {
         viewModelScope.launch {
@@ -49,13 +50,15 @@ class DatabaseSetupViewModel @Inject constructor(
         _download,
         _latestRelease,
         _installedVersion,
-        _isCheckingUpdate
-    ) { download, latestRelease, installedVersion, isCheckingUpdate ->
+        _isCheckingUpdate,
+        _manifestError
+    ) { download, latestRelease, installedVersion, isCheckingUpdate, manifestError ->
         SetupUiState(
             download = download,
             latestRelease = latestRelease,
             installedVersion = installedVersion,
-            isCheckingUpdate = isCheckingUpdate
+            isCheckingUpdate = isCheckingUpdate,
+            manifestError = manifestError
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SetupUiState())
 
@@ -71,11 +74,12 @@ class DatabaseSetupViewModel @Inject constructor(
         if (_isCheckingUpdate.value) return
         viewModelScope.launch {
             _isCheckingUpdate.value = true
+            _manifestError.value = null
             try {
                 _installedVersion.value = dbUpdateRepository.getInstalledVersion()
                 when (val r = dbUpdateRepository.getLatestRelease()) {
                     is DbCheckResult.Success -> _latestRelease.value = r.data
-                    is DbCheckResult.Error -> Unit
+                    is DbCheckResult.Error -> _manifestError.value = r.message
                 }
             } finally {
                 _isCheckingUpdate.value = false
@@ -86,7 +90,7 @@ class DatabaseSetupViewModel @Inject constructor(
     fun startDownload() {
         viewModelScope.launch {
             val info = resolveReleaseForDownload() ?: return@launch
-            downloadManager.downloadRelease(info).collectLatest { state ->
+            downloadRepository.downloadRelease(info).collectLatest { state ->
                 _download.value = state.toUi()
                 if (state is DownloadState.Completed && state.versionCode > 0) {
                     quranRepository.closeDb()
@@ -113,7 +117,7 @@ class DatabaseSetupViewModel @Inject constructor(
 
     fun importDatabase(uri: android.net.Uri) {
         viewModelScope.launch {
-            downloadManager.importDatabase(uri).collectLatest { state ->
+            downloadRepository.importDatabase(uri.toString()).collectLatest { state ->
                 _download.value = state.toUi()
                 if (state is DownloadState.Completed) {
                     quranRepository.closeDb()

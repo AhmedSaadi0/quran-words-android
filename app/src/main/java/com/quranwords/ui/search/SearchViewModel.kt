@@ -42,6 +42,7 @@ class SearchViewModel @Inject constructor(
     private val _isSearching = MutableStateFlow(false)
     private val _isLoadingMore = MutableStateFlow(false)
     private val _error = MutableStateFlow<String?>(null)
+    private val _pagingError = MutableStateFlow<String?>(null)
 
     private val rootsHasMore = MutableStateFlow(false)
     private val masadirHasMore = MutableStateFlow(false)
@@ -76,7 +77,7 @@ class SearchViewModel @Inject constructor(
 
     val uiState: StateFlow<SearchUiState> = combine(
         _query, _results, _scope, _lexiconSubScope, _surahFilter,
-        _recentSearches, _topRoots, _bookmarkedAyat, _isSearching, _isLoadingMore, _error
+        _recentSearches, _topRoots, _bookmarkedAyat, _isSearching, _isLoadingMore, _error, _pagingError
     ) { flows ->
         @Suppress("UNCHECKED_CAST")
         val query = flows[0] as String
@@ -91,10 +92,12 @@ class SearchViewModel @Inject constructor(
         val searching = flows[8] as Boolean
         val loadingMore = flows[9] as Boolean
         val error = flows[10] as String?
+        val pagingError = flows[11] as String?
         SearchUiState(
             query = query, results = results, scope = scope, lexiconSubScope = sub,
             surahFilter = filter, recentSearches = recents, topRoots = top, bookmarkedAyat = bookmarks,
-            isSearching = searching, isLoadingMore = loadingMore, error = error
+            isSearching = searching, isLoadingMore = loadingMore, error = error,
+            pagingError = pagingError
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SearchUiState())
 
@@ -109,6 +112,7 @@ class SearchViewModel @Inject constructor(
             is SearchEvent.RecentSearchRemoved -> viewModelScope.launch { preferences.removeRecentSearch(event.query) }
             SearchEvent.ClearRecents -> viewModelScope.launch { preferences.clearRecentSearches() }
             SearchEvent.Retry -> retry()
+            is SearchEvent.LoadMore -> loadMore(event.tab)
         }
     }
 
@@ -120,6 +124,7 @@ class SearchViewModel @Inject constructor(
             _results.value = SearchResult()
             _isSearching.value = false
             _error.value = null
+            _pagingError.value = null
             return
         }
         runSearch(newQuery)
@@ -136,6 +141,7 @@ class SearchViewModel @Inject constructor(
             when (result) {
                 is Result.Success -> {
                     _error.value = null
+                    _pagingError.value = null
                     _results.value = result.data
                     rootsOffset = result.data.roots.size
                     masadirOffset = result.data.masadir.size
@@ -177,6 +183,7 @@ class SearchViewModel @Inject constructor(
         rootsHasMore.value = false; masadirHasMore.value = false
         derivativesHasMore.value = false; ayatHasMore.value = false; wordsHasMore.value = false
         _isLoadingMore.value = false
+        _pagingError.value = null
     }
 
     private fun hasMoreFor(tab: SearchTab): Boolean = when (tab) {
@@ -253,8 +260,15 @@ class SearchViewModel @Inject constructor(
                 }
             }
             when (fetched) {
-                is Result.Success -> { _error.value = null; setHasMore(tab, fetched.data == pageSize) }
-                is Result.Error -> { setHasMore(tab, false); _error.value = fetched.message }
+                is Result.Success -> {
+                    _error.value = null
+                    _pagingError.value = null
+                    setHasMore(tab, fetched.data == pageSize)
+                }
+                is Result.Error -> {
+                    // Keep paging armed; only this page failed.
+                    _pagingError.value = fetched.message
+                }
             }
             _isLoadingMore.value = false
         }

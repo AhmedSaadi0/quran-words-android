@@ -193,6 +193,14 @@ class UserPreferencesDataStore @Inject constructor(
         }
     }
 
+    override suspend fun setAyahBookmarked(keys: Set<String>, bookmarked: Boolean) {
+        if (keys.isEmpty()) return
+        context.preferencesDataStore.edit { prefs ->
+            val current = prefs[KEY_BOOKMARKED_AYAT] ?: emptySet()
+            prefs[KEY_BOOKMARKED_AYAT] = if (bookmarked) current + keys else current - keys
+        }
+    }
+
     override suspend fun addRecentSearch(query: String) {
         val q = query.trim()
         if (q.isBlank() || q.contains('\n') || q.length > 80) return
