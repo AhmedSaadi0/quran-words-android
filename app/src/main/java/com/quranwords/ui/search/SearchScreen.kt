@@ -79,7 +79,6 @@ fun SearchScreen(
     onNavigateToRootDetail: (Int) -> Unit,
     onNavigateToSurahDetail: (Int, Int) -> Unit,
     onRecordRecent: (String) -> Unit = {},
-    bookmarkedAyat: Set<String> = emptySet(),
     onToggleAyahBookmark: (Int, Int) -> Unit = { _, _ -> }
 ) {
     val listState = rememberLazyListState()
@@ -192,7 +191,6 @@ fun SearchScreen(
                 else -> SearchBody(
                     uiState = uiState,
                     listState = listState,
-                    bookmarkedAyat = bookmarkedAyat,
                     onEvent = onEvent,
                     onNavigateToRootDetail = onNavigateToRootDetail,
                     onNavigateToSurahDetail = onNavigateToSurahDetail,
@@ -210,7 +208,6 @@ fun SearchScreen(
 private fun SearchBody(
     uiState: SearchUiState,
     listState: androidx.compose.foundation.lazy.LazyListState,
-    bookmarkedAyat: Set<String>,
     onEvent: (SearchEvent) -> Unit,
     onNavigateToRootDetail: (Int) -> Unit,
     onNavigateToSurahDetail: (Int, Int) -> Unit,
@@ -224,7 +221,7 @@ private fun SearchBody(
             query = uiState.query,
             results = uiState.results,
             listState = listState,
-            bookmarkedAyat = bookmarkedAyat,
+            bookmarkedAyat = uiState.bookmarkedAyat,
             onSelectSurah = { id -> onRecordRecent(uiState.query); onNavigateToSurahDetail(id, 1) },
             onSelectAyah = { s, a -> onRecordRecent(uiState.query); onNavigateToSurahDetail(s, a) },
             onToggleAyahBookmark = onToggleAyahBookmark,
@@ -248,7 +245,7 @@ private fun SearchBody(
                         AyahSearchCard(
                             ayah = ayah,
                             query = uiState.query,
-                            isBookmarked = bookmarkedAyat.contains(key),
+                            isBookmarked = uiState.bookmarkedAyat.contains(key),
                             onToggleBookmark = { onToggleAyahBookmark(ayah.surah, ayah.ayah) },
                             onClick = { onRecordRecent(uiState.query); onNavigateToSurahDetail(ayah.surah, ayah.ayah) }
                         )

@@ -35,6 +35,8 @@ class DatabaseSetupViewModel @Inject constructor(
     private val _installedVersion = MutableStateFlow(DbInstalledVersion())
     private val _isCheckingUpdate = MutableStateFlow(false)
     private val _manifestError = MutableStateFlow<String?>(null)
+    private val _importDialogVisible = MutableStateFlow(false)
+    private val _releaseNotesExpanded = MutableStateFlow(false)
 
     init {
         viewModelScope.launch {
@@ -46,20 +48,31 @@ class DatabaseSetupViewModel @Inject constructor(
      * Single-collection UiState; the raw download flow is mapped to the UI
      * mirror so data.remote types never reach the screen.
      */
-    val uiState: StateFlow<SetupUiState> = combine(
-        _download,
-        _latestRelease,
-        _installedVersion,
-        _isCheckingUpdate,
-        _manifestError
-    ) { download, latestRelease, installedVersion, isCheckingUpdate, manifestError ->
-        SetupUiState(
-            download = download,
-            latestRelease = latestRelease,
-            installedVersion = installedVersion,
-            isCheckingUpdate = isCheckingUpdate,
-            manifestError = manifestError
-        )
+    private data class SetupCoreFlows(
+        val download: SetupDownload,
+        val latestRelease: DbReleaseInfo?,
+        val installedVersion: DbInstalledVersion,
+        val isCheckingUpdate: Boolean,
+        val manifestError: String?
+    )
+
+    val uiState: StateFlow<SetupUiState> = run {
+        val coreFlow = combine(
+            _download, _latestRelease, _installedVersion, _isCheckingUpdate, _manifestError
+        ) { download, latest, installed, checking, error ->
+            SetupCoreFlows(download, latest, installed, checking, error)
+        }
+        combine(coreFlow, _importDialogVisible, _releaseNotesExpanded) { core, importDialog, notes ->
+            SetupUiState(
+                download = core.download,
+                latestRelease = core.latestRelease,
+                installedVersion = core.installedVersion,
+                isCheckingUpdate = core.isCheckingUpdate,
+                manifestError = core.manifestError,
+                importDialogVisible = importDialog,
+                releaseNotesExpanded = notes
+            )
+        }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SetupUiState())
 
     fun onEvent(event: SetupEvent) {
@@ -67,6 +80,8 @@ class DatabaseSetupViewModel @Inject constructor(
             SetupEvent.StartDownload -> startDownload()
             SetupEvent.CheckForUpdate -> checkForUpdate()
             is SetupEvent.ImportDatabase -> importDatabase(event.uri)
+            is SetupEvent.SetImportDialogVisible -> _importDialogVisible.value = event.visible
+            is SetupEvent.SetReleaseNotesExpanded -> _releaseNotesExpanded.value = event.expanded
         }
     }
 

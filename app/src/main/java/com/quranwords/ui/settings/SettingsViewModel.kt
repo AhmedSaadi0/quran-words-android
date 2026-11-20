@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import com.quranwords.core.util.AppLanguage
 import com.quranwords.core.util.LanguageManager
+import com.quranwords.core.util.nextDarkMode
 import com.quranwords.core.util.ReadingModePreference
 import com.quranwords.domain.repository.UserPreferencesRepository
 import com.quranwords.ui.theme.QuranFont
@@ -73,27 +74,11 @@ class SettingsViewModel @Inject constructor(
     fun onEvent(event: SettingsEvent) {
         when (event) {
             is SettingsEvent.DarkModeChanged -> setDarkMode(event.mode)
+            SettingsEvent.ToggleDarkMode -> setDarkMode(nextDarkMode(_darkModeSetting.value))
             is SettingsEvent.DynamicColorChanged -> setDynamicColor(event.enabled)
+            SettingsEvent.ToggleDynamicColor -> setDynamicColor(!_dynamicColorEnabled.value)
             is SettingsEvent.LanguageChanged -> setLanguage(event.tag)
             is SettingsEvent.QuranFontChanged -> setQuranFont(event.key)
-        }
-    }
-
-    /** Cycles system → dark → light (legacy toggle behavior). */
-    fun toggleDarkMode() {
-        viewModelScope.launch {
-            val next = when (_darkModeSetting.value) {
-                1 -> 2 // light → dark
-                2 -> 1 // dark → light
-                else -> 2 // system → dark
-            }
-            preferences.setDarkModeSetting(next)
-        }
-    }
-
-    fun toggleDynamicColor() {
-        viewModelScope.launch {
-            preferences.setDynamicColorEnabled(!_dynamicColorEnabled.value)
         }
     }
 

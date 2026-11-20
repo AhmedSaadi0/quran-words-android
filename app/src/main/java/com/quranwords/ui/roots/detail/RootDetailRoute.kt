@@ -10,8 +10,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quranwords.R
+import com.quranwords.core.util.MarkdownBlocks
 import com.quranwords.core.util.QuranCopyFormatter
+import com.quranwords.ui.components.ReportMeaningDialog
+import com.quranwords.ui.components.ReportMeaningUiState
+import com.quranwords.ui.roots.detail.report.ReportMeaningViewModel
 import com.quranwords.ui.roots.detail.util.rememberShareHandler
+import com.quranwords.util.ReportAyahSample
+import com.quranwords.util.buildMeaningReportIssueUrl
+import com.quranwords.util.buildMeaningReportMarkdown
 import kotlinx.coroutines.launch
 
 /**
@@ -27,8 +34,13 @@ fun RootDetailRoute(
     onNavigateToSurahDetail: (Int, Int) -> Unit,
     onNavigateToWordAyat: (Int, Int) -> Unit = { _, _ -> },
     viewModel: RootDetailViewModel = hiltViewModel(),
+    reportViewModel: ReportMeaningViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val reportType by reportViewModel.reportType.collectAsStateWithLifecycle()
+    val reportDescription by reportViewModel.description.collectAsStateWithLifecycle()
+    val reportSuggestion by reportViewModel.suggestion.collectAsStateWithLifecycle()
+    val reportCanSubmit by reportViewModel.canSubmit.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val shareHandler = rememberShareHandler(snackbarHostState, scope)
@@ -56,6 +68,49 @@ fun RootDetailRoute(
         onNavigateBack = onNavigateBack,
         snackbarHostState = snackbarHostState
     )
+
+    if (uiState.reportDialogVisible) {
+        val detail = uiState.detail
+        val samples = uiState.ayat.occurrences.take(2).map {
+            ReportAyahSample(it.surahNameAr, it.ayahNum, it.textUthmani)
+        }
+        fun reportMarkdown(): String = buildMeaningReportMarkdown(
+            reportViewModel.buildContent(
+                rootText = uiState.rootText,
+                rootId = detail?.item?.id,
+                aiSummary = detail?.aiSummary.orEmpty(),
+                samples = samples
+            )
+        )
+        fun reportUrl(): String = buildMeaningReportIssueUrl(
+            reportViewModel.buildContent(
+                rootText = uiState.rootText,
+                rootId = detail?.item?.id,
+                // Raw markdown from the corpus would corrupt the issue template.
+                aiSummary = detail?.aiSummary.orEmpty().let { text ->
+                    if (MarkdownBlocks.hasMarkdown(text)) MarkdownBlocks.renderPlain(text) else text
+                },
+                samples = samples
+            )
+        )
+        ReportMeaningDialog(
+            rootText = uiState.rootText,
+            aiSummary = detail?.aiSummary.orEmpty(),
+            state = ReportMeaningUiState(reportType, reportDescription, reportSuggestion, reportCanSubmit),
+            onReportTypeChange = reportViewModel::setReportType,
+            onDescriptionChange = reportViewModel::setDescription,
+            onSuggestionChange = reportViewModel::setSuggestion,
+            onCopyReport = { shareHandler.copyImmediate(reportMarkdown(), context.getString(R.string.report_copied)) },
+            onShareReport = { shareHandler.shareImmediate(
+                reportMarkdown(), context.getString(R.string.report_share_title), context.getString(R.string.no_share_app)
+            ) },
+            onOpenUrl = { shareHandler.openUrl(reportUrl(), context.getString(R.string.no_browser)) },
+            onDismiss = {
+                reportViewModel.reset()
+                viewModel.onEvent(RootDetailEvent.DismissReport)
+            }
+        )
+    }
 }
 
 private fun handleRootDetailEvent(

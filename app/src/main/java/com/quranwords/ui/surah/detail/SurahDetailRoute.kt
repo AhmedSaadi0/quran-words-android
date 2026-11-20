@@ -1,7 +1,9 @@
 package com.quranwords.ui.surah.detail
 
+import android.provider.Settings
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,11 +32,20 @@ fun SurahDetailRoute(
     onNavigateToRootDetail: (Int) -> Unit,
     viewModel: SurahDetailViewModel = hiltViewModel()
 ) {
-    val uiState by viewModel.screenState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val barsController = rememberReaderSystemBarsController()
+    val animatorScale = remember {
+        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
+    }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val shareHandler = rememberShareHandler(snackbarHostState, scope)
-    val context = LocalContext.current
+
+    LaunchedEffect(uiState.isImmersive) { barsController.setImmersive(uiState.isImmersive) }
+    DisposableEffect(barsController) {
+        onDispose { barsController.restore() }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.effect.collect { effect ->
@@ -90,6 +101,7 @@ fun SurahDetailRoute(
         surahId = surahId,
         targetAyah = targetAyah,
         enter = enter,
+        animationsEnabled = animatorScale != 0f,
         onEvent = { event -> onEvent(event) },
         onNavigateBack = onNavigateBack,
         onNavigateToAdjacentSurah = onNavigateToAdjacentSurah,

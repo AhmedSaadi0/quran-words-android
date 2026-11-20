@@ -157,20 +157,20 @@ class RootWordsTest {
         val vm = RootDetailViewModel(FakeQuranRepository(), FakeUserPreferences(), SavedStateHandle())
         advanceUntilIdle()
 
-        assertFalse(vm.wordSelection.value.isSelectionMode)
+        assertFalse(vm.uiState.value.words.isSelectionMode)
         vm.onEvent(RootDetailEvent.WordLongPressed(10))
-        assertTrue(vm.wordSelection.value.isSelectionMode)
-        assertEquals(setOf(10), vm.wordSelection.value.selectedIds)
+        assertTrue(vm.uiState.value.words.isSelectionMode)
+        assertEquals(setOf(10), vm.uiState.value.words.selectedIds)
 
         vm.onEvent(RootDetailEvent.WordClicked(rootId = 1, wordId = 11))
-        assertEquals(setOf(10, 11), vm.wordSelection.value.selectedIds)
+        assertEquals(setOf(10, 11), vm.uiState.value.words.selectedIds)
 
         vm.onEvent(RootDetailEvent.WordClicked(rootId = 1, wordId = 10))
-        assertEquals(setOf(11), vm.wordSelection.value.selectedIds)
+        assertEquals(setOf(11), vm.uiState.value.words.selectedIds)
 
         vm.clearWordSelection()
-        assertTrue(vm.wordSelection.value.selectedIds.isEmpty())
-        assertFalse(vm.wordSelection.value.isSelectionMode)
+        assertTrue(vm.uiState.value.words.selectedIds.isEmpty())
+        assertFalse(vm.uiState.value.words.isSelectionMode)
     }
 
     @Test
@@ -179,8 +179,8 @@ class RootWordsTest {
         vm.loadRootDetail(1)
         advanceUntilIdle()
         vm.onEvent(RootDetailEvent.SelectAllWords)
-        assertEquals(setOf(10, 11, 12), vm.wordSelection.value.selectedIds)
-        assertTrue(vm.wordSelection.value.isSelectionMode)
+        assertEquals(setOf(10, 11, 12), vm.uiState.value.words.selectedIds)
+        assertTrue(vm.uiState.value.words.isSelectionMode)
     }
 
     @Test
@@ -197,9 +197,9 @@ class RootWordsTest {
         val vm = WordAyatViewModel(FakeQuranRepository())
         vm.loadWord(1, 10)
         advanceUntilIdle()
-        assertEquals("كَتَبَ", vm.wordText.value)
-        assertEquals(3, vm.occurrences.value.size)
-        assertFalse(vm.hasMore.value)
+        assertEquals("كَتَبَ", vm.uiState.value.wordText)
+        assertEquals(3, vm.uiState.value.ayat.occurrences.size)
+        assertFalse(vm.uiState.value.hasMore)
         val formatted = (vm.getAllFormatted() as com.quranwords.core.util.Result.Success).data
         assertTrue(formatted.contains("[سورة البقرة: 183]"))
         assertTrue(formatted.contains("[سورة البقرة: 282]"))
@@ -234,8 +234,8 @@ class RootWordsTest {
         vm.loadWord(1, 10)
         advanceUntilIdle()
         // Clean group title, shared ayah counted once across variants
-        assertEquals("كتب", vm.wordText.value)
-        assertEquals(3, vm.occurrences.value.size)
-        assertEquals(3, vm.totalCount.value)
+        assertEquals("كتب", vm.uiState.value.wordText)
+        assertEquals(3, vm.uiState.value.ayat.occurrences.size)
+        assertEquals(3, vm.uiState.value.totalCount)
     }
 }

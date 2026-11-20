@@ -3,17 +3,16 @@ package com.quranwords.ui.roots.word
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import com.quranwords.core.util.PagedListState
 import com.quranwords.core.util.QuranCopyFormatter
 import com.quranwords.core.util.Result
 import com.quranwords.core.util.runCatchingResult
 import com.quranwords.domain.model.AyahOccurrenceModel
 import com.quranwords.domain.repository.QuranRepository
 import javax.inject.Inject
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -24,25 +23,12 @@ class WordAyatViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _wordText = MutableStateFlow("")
-    val wordText: StateFlow<String> = _wordText.asStateFlow()
-
     private val _occurrences = MutableStateFlow<List<AyahOccurrenceModel>>(emptyList())
-    val occurrences: StateFlow<List<AyahOccurrenceModel>> = _occurrences.asStateFlow()
-
     private val _hasMore = MutableStateFlow(true)
-    val hasMore: StateFlow<Boolean> = _hasMore.asStateFlow()
-
     private val _isLoading = MutableStateFlow(true)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-
     private val _isLoadingMore = MutableStateFlow(false)
-    val isLoadingMore: StateFlow<Boolean> = _isLoadingMore.asStateFlow()
-
     private val _isCopyingAll = MutableStateFlow(false)
-    val isCopyingAll: StateFlow<Boolean> = _isCopyingAll.asStateFlow()
-
     private val _totalCount = MutableStateFlow(0)
-    val totalCount: StateFlow<Int> = _totalCount.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
 
@@ -56,27 +42,33 @@ class WordAyatViewModel @Inject constructor(
      * Single-collection UiState; granular flows above stay as source of truth
      * until Phase 11 closure (RootDetail adapter precedent, Decision 14).
      */
-    val uiState: StateFlow<WordAyatUiState> = combine(
-        _wordText,
-        _occurrences,
-        _totalCount,
-        _hasMore,
-        _isLoading,
-        _isLoadingMore,
-        _isCopyingAll,
-        _error
-    ) { values ->
-        @Suppress("UNCHECKED_CAST")
-        WordAyatUiState(
-            wordText = values[0] as String,
-            occurrences = values[1] as List<AyahOccurrenceModel>,
-            totalCount = values[2] as Int,
-            hasMore = values[3] as Boolean,
-            isLoading = values[4] as Boolean,
-            isLoadingMore = values[5] as Boolean,
-            isCopyingAll = values[6] as Boolean,
-            error = values[7] as String?
-        )
+    private data class WordFlowsA(
+        val wordText: String,
+        val occurrences: List<AyahOccurrenceModel>,
+        val totalCount: Int,
+        val hasMore: Boolean,
+        val isLoading: Boolean
+    )
+
+    /** Typed state assembly (P2-1/P2-2). */
+    val uiState: StateFlow<WordAyatUiState> = run {
+        val coreFlow = combine(
+            _wordText, _occurrences, _totalCount, _hasMore, _isLoading
+        ) { text, occurrences, total, hasMore, loading ->
+            WordFlowsA(text, occurrences, total, hasMore, loading)
+        }
+        combine(coreFlow, _isLoadingMore, _isCopyingAll, _error) { core, loadingMore, copying, error ->
+            WordAyatUiState(
+                wordText = core.wordText,
+                occurrences = core.occurrences,
+                totalCount = core.totalCount,
+                hasMore = core.hasMore,
+                isLoading = core.isLoading,
+                isLoadingMore = loadingMore,
+                isCopyingAll = copying,
+                error = error
+            )
+        }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, WordAyatUiState())
 
     fun onEvent(event: WordAyatEvent) {
@@ -130,7 +122,7 @@ class WordAyatViewModel @Inject constructor(
         _hasMore.value = if (_totalCount.value > 0) {
             offset < _totalCount.value
         } else {
-            first.size == pageSize
+            PagedListState.hasMoreAfter(first.size, pageSize)
         }
     }
 
@@ -159,7 +151,6 @@ class WordAyatViewModel @Inject constructor(
         if (_isLoadingMore.value || !_hasMore.value) return
         viewModelScope.launch {
             _isLoadingMore.value = true
-            delay(80)
             when (val result = runCatchingResult {
                 repository.getWordOccurrencesPaged(rootId, wordIds, pageSize, offset)
             }) {
@@ -175,7 +166,7 @@ class WordAyatViewModel @Inject constructor(
                         _hasMore.value = if (_totalCount.value > 0) {
                             offset < _totalCount.value
                         } else {
-                            next.size == pageSize
+                            PagedListState.hasMoreAfter(next.size, pageSize)
                         }
                     } else {
                         _hasMore.value = false

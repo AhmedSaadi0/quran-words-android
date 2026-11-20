@@ -27,23 +27,16 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quranwords.R
 import com.quranwords.core.util.MarkdownBlocks
-import com.quranwords.ui.roots.detail.report.ReportMeaningViewModel
 import com.quranwords.util.MeaningReportLimits
 import com.quranwords.util.MeaningReportType
-import com.quranwords.util.ReportAyahSample
-import com.quranwords.util.buildMeaningReportIssueUrl
-import com.quranwords.util.buildMeaningReportMarkdown
 
 /**
  * حوار البلاغ عن الملخص الذكي: نوع البلاغ + وصف + تصحيح مقترح.
@@ -52,42 +45,37 @@ import com.quranwords.util.buildMeaningReportMarkdown
  *
  * Platform side-effects (clipboard, share sheet, browser) are hoisted to the
  * caller via [onCopyReport]/[onShareReport]/[onOpenUrl] (Phase 2c) so this
- * dialog stays previewable and unit-testable. [viewModel] stays internally
- * owned for this phase; it will be hoisted in Phase 3.
+ * dialog is fully stateless (P2-4): the Route owns the ViewModel and supplies
+ * plain state + callbacks.
  */
+data class ReportMeaningUiState(
+    val reportType: MeaningReportType = MeaningReportType.INCORRECT,
+    val description: String = "",
+    val suggestion: String = "",
+    val canSubmit: Boolean = false
+)
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ReportMeaningDialog(
     rootText: String,
-    rootId: Int?,
     aiSummary: String,
-    samples: List<ReportAyahSample>,
-    onDismissRequest: () -> Unit,
-    onCopyReport: (markdown: String) -> Unit,
-    onShareReport: (markdown: String) -> Unit,
-    onOpenUrl: (url: String) -> Unit,
-    viewModel: ReportMeaningViewModel = hiltViewModel(),
+    state: ReportMeaningUiState,
+    onReportTypeChange: (MeaningReportType) -> Unit,
+    onDescriptionChange: (String) -> Unit,
+    onSuggestionChange: (String) -> Unit,
+    onCopyReport: () -> Unit,
+    onShareReport: () -> Unit,
+    onOpenUrl: () -> Unit,
+    onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val reportType by viewModel.reportType.collectAsStateWithLifecycle()
-    val description by viewModel.description.collectAsStateWithLifecycle()
-    val suggestion by viewModel.suggestion.collectAsStateWithLifecycle()
-    val canSubmit by viewModel.canSubmit.collectAsStateWithLifecycle()
+    val reportType = state.reportType
+    val description = state.description
+    val suggestion = state.suggestion
+    val canSubmit = state.canSubmit
 
-    fun currentMarkdown(): String {
-        val content = viewModel.buildContent(
-            rootText = rootText,
-            rootId = rootId,
-            aiSummary = aiSummary,
-            samples = samples
-        )
-        return buildMeaningReportMarkdown(content)
-    }
-
-    fun dismissAndReset() {
-        viewModel.reset()
-        onDismissRequest()
-    }
+    fun dismissAndReset() = onDismiss()
 
     AlertDialog(
         onDismissRequest = ::dismissAndReset,
@@ -168,7 +156,7 @@ fun ReportMeaningDialog(
                     MeaningReportType.entries.forEach { type ->
                         FilterChip(
                             selected = reportType == type,
-                            onClick = { viewModel.setReportType(type) },
+                            onClick = { onReportTypeChange(type) },
                             label = { Text(stringResource(type.labelRes)) },
                             modifier = Modifier.testTag("report_type_${type.name}")
                         )
@@ -177,7 +165,7 @@ fun ReportMeaningDialog(
 
                 OutlinedTextField(
                     value = description,
-                    onValueChange = { viewModel.setDescription(it.take(2000)) },
+                    onValueChange = { onDescriptionChange(it.take(2000)) },
                     label = { Text(stringResource(R.string.report_desc_label)) },
                     placeholder = { Text(stringResource(R.string.report_desc_hint)) },
                     minLines = 3,
@@ -207,7 +195,7 @@ fun ReportMeaningDialog(
 
                 OutlinedTextField(
                     value = suggestion,
-                    onValueChange = { viewModel.setSuggestion(it.take(2000)) },
+                    onValueChange = { onSuggestionChange(it.take(2000)) },
                     label = { Text(stringResource(R.string.report_suggest_label)) },
                     placeholder = { Text(stringResource(R.string.report_suggest_hint)) },
                     minLines = 2,
@@ -222,7 +210,7 @@ fun ReportMeaningDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { onCopyReport(currentMarkdown()) },
+                        onClick = onCopyReport,
                         enabled = canSubmit,
                         modifier = Modifier
                             .weight(1f)
@@ -235,7 +223,7 @@ fun ReportMeaningDialog(
                         Text(stringResource(R.string.report_copy))
                     }
                     OutlinedButton(
-                        onClick = { onShareReport(currentMarkdown()) },
+                        onClick = onShareReport,
                         enabled = canSubmit,
                         modifier = Modifier
                             .weight(1f)
@@ -253,20 +241,7 @@ fun ReportMeaningDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val content = viewModel.buildContent(
-                        rootText = rootText,
-                        rootId = rootId,
-                        // Issue bodies are Markdown, but shipping raw `- ` / `**`
-                        // from the source data would corrupt the report template.
-                        aiSummary = if (MarkdownBlocks.hasMarkdown(aiSummary)) {
-                            MarkdownBlocks.renderPlain(aiSummary)
-                        } else {
-                            aiSummary
-                        },
-                        samples = samples
-                    )
-                    val url = buildMeaningReportIssueUrl(content)
-                    onOpenUrl(url)
+                    onOpenUrl()
                     dismissAndReset()
                 },
                 enabled = canSubmit,

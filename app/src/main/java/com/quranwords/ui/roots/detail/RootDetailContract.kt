@@ -63,8 +63,6 @@ data class RootDetailUiState(
     val words: WordsTabState = WordsTabState(),
     val ayat: AyatTabState = AyatTabState(),
     val copyingAction: CopyAction? = null,
-    /** Derived: true while any copy/share is in flight (backward compat for old `isCopyingAll`). */
-    val isCopying: Boolean = false,
     val reportDialogVisible: Boolean = false,
     val error: String? = null,
 )

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.quranwords.core.util.ArabicNormalizer
 import com.quranwords.core.util.DatabaseConstants
+import com.quranwords.core.util.PagedListState
 import com.quranwords.core.util.Result
 import com.quranwords.core.util.runCatchingResult
 import com.quranwords.domain.model.RootItem
@@ -17,7 +18,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -75,30 +75,43 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    val uiState: StateFlow<SearchUiState> = combine(
-        _query, _results, _scope, _lexiconSubScope, _surahFilter,
-        _recentSearches, _topRoots, _bookmarkedAyat, _isSearching, _isLoadingMore, _error, _pagingError
-    ) { flows ->
-        @Suppress("UNCHECKED_CAST")
-        val query = flows[0] as String
-        val results = flows[1] as SearchResult
-        val scope = flows[2] as SearchScope
-        val sub = flows[3] as LexiconSubScope
-        val filter = flows[4] as Int?
-        val recents = flows[5] as List<String>
-        @Suppress("UNCHECKED_CAST")
-        val top = flows[6] as List<RootItem>
-        val bookmarks = flows[7] as Set<String>
-        val searching = flows[8] as Boolean
-        val loadingMore = flows[9] as Boolean
-        val error = flows[10] as String?
-        val pagingError = flows[11] as String?
-        SearchUiState(
-            query = query, results = results, scope = scope, lexiconSubScope = sub,
-            surahFilter = filter, recentSearches = recents, topRoots = top, bookmarkedAyat = bookmarks,
-            isSearching = searching, isLoadingMore = loadingMore, error = error,
-            pagingError = pagingError
-        )
+    private data class QueryFlows(
+        val query: String,
+        val results: SearchResult,
+        val scope: SearchScope,
+        val subScope: LexiconSubScope,
+        val surahFilter: Int?
+    )
+
+    private data class ResultFlows(
+        val recents: List<String>,
+        val top: List<RootItem>,
+        val bookmarks: Set<String>,
+        val searching: Boolean
+    )
+
+    /** Typed state assembly (P2-1); no positional Any casts. */
+    val uiState: StateFlow<SearchUiState> = run {
+        val queryFlow = combine(
+            _query, _results, _scope, _lexiconSubScope, _surahFilter
+        ) { query, results, scope, sub, filter ->
+            QueryFlows(query, results, scope, sub, filter)
+        }
+        val resultsFlow = combine(
+            queryFlow, _recentSearches, _topRoots, _bookmarkedAyat, _isSearching
+        ) { query, recents, top, bookmarks, searching ->
+            query to ResultFlows(recents, top, bookmarks, searching)
+        }
+        combine(resultsFlow, _isLoadingMore, _error, _pagingError) { pair, loadingMore, error, pagingError ->
+            val (query, results) = pair
+            SearchUiState(
+                query = query.query, results = query.results, scope = query.scope,
+                lexiconSubScope = query.subScope, surahFilter = query.surahFilter,
+                recentSearches = results.recents, topRoots = results.top, bookmarkedAyat = results.bookmarks,
+                isSearching = results.searching, isLoadingMore = loadingMore,
+                error = error, pagingError = pagingError
+            )
+        }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SearchUiState())
 
     fun onEvent(event: SearchEvent) {
@@ -113,10 +126,12 @@ class SearchViewModel @Inject constructor(
             SearchEvent.ClearRecents -> viewModelScope.launch { preferences.clearRecentSearches() }
             SearchEvent.Retry -> retry()
             is SearchEvent.LoadMore -> loadMore(event.tab)
+            is SearchEvent.RecordRecent -> recordRecent(event.query)
+            is SearchEvent.ToggleAyahBookmark -> toggleAyahBookmark(event.surahId, event.ayahNum)
         }
     }
 
-    fun onQueryChanged(newQuery: String) {
+    private fun onQueryChanged(newQuery: String) {
         _query.value = newQuery
         if (newQuery.isBlank()) {
             searchJob?.cancel()
@@ -148,11 +163,11 @@ class SearchViewModel @Inject constructor(
                     derivativesOffset = result.data.derivatives.size
                     ayatOffset = result.data.ayat.size
                     wordsOffset = result.data.words.size
-                    rootsHasMore.value = result.data.roots.size == pageSize
-                    masadirHasMore.value = result.data.masadir.size == pageSize
-                    derivativesHasMore.value = result.data.derivatives.size == pageSize
-                    ayatHasMore.value = result.data.ayat.size == pageSize
-                    wordsHasMore.value = result.data.words.size == pageSize
+                    rootsHasMore.value = PagedListState.hasMoreAfter(result.data.roots.size, pageSize)
+                    masadirHasMore.value = PagedListState.hasMoreAfter(result.data.masadir.size, pageSize)
+                    derivativesHasMore.value = PagedListState.hasMoreAfter(result.data.derivatives.size, pageSize)
+                    ayatHasMore.value = PagedListState.hasMoreAfter(result.data.ayat.size, pageSize)
+                    wordsHasMore.value = PagedListState.hasMoreAfter(result.data.words.size, pageSize)
                 }
                 is Result.Error -> {
                     resetPagination()
@@ -164,11 +179,11 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    fun recordRecent(query: String) {
+    private fun recordRecent(query: String) {
         viewModelScope.launch { preferences.addRecentSearch(query) }
     }
 
-    fun toggleAyahBookmark(surahId: Int, ayahNum: Int) {
+    private fun toggleAyahBookmark(surahId: Int, ayahNum: Int) {
         viewModelScope.launch { preferences.toggleAyahBookmark(surahId, ayahNum) }
     }
 
@@ -202,7 +217,7 @@ class SearchViewModel @Inject constructor(
         SearchTab.WORDS -> _results.value.words.size
     }
 
-    fun loadMoreIfNeeded(tab: SearchTab, lastVisibleIndex: Int) {
+    private fun loadMoreIfNeeded(tab: SearchTab, lastVisibleIndex: Int) {
         if (_isSearching.value || _isLoadingMore.value) return
         if (!hasMoreFor(tab)) return
         if (lastVisibleIndex < sizeFor(tab) - 5) return
@@ -214,7 +229,6 @@ class SearchViewModel @Inject constructor(
         if (q.isBlank() || _isLoadingMore.value || !hasMoreFor(tab)) return
         viewModelScope.launch {
             _isLoadingMore.value = true
-            delay(80)
             val fetched = runCatchingResult {
                 when (tab) {
                     SearchTab.ROOTS -> {
@@ -263,7 +277,7 @@ class SearchViewModel @Inject constructor(
                 is Result.Success -> {
                     _error.value = null
                     _pagingError.value = null
-                    setHasMore(tab, fetched.data == pageSize)
+                    setHasMore(tab, PagedListState.hasMoreAfter(fetched.data, pageSize))
                 }
                 is Result.Error -> {
                     // Keep paging armed; only this page failed.

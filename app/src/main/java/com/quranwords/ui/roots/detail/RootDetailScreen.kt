@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
-import com.quranwords.ui.components.ReportMeaningDialog
 import com.quranwords.ui.roots.detail.components.RootDetailHeader
 import com.quranwords.ui.roots.detail.tabs.AiSummaryTab
 import com.quranwords.ui.roots.detail.tabs.AyatTab
@@ -38,7 +37,6 @@ import com.quranwords.ui.roots.detail.tabs.MeaningsTab
 import com.quranwords.ui.roots.detail.tabs.WordsTab
 import com.quranwords.ui.roots.detail.util.RootDetailTab
 import com.quranwords.ui.theme.AppMotion
-import com.quranwords.util.ReportAyahSample
 import kotlinx.coroutines.launch
 
 /**
@@ -132,12 +130,6 @@ fun RootDetailScreen(
                         RootDetailTab.AYAT -> AyatTab(occurrences = uiState.ayat.occurrences, totalCount = uiState.ayat.totalCount, hasMore = uiState.ayat.hasMore, isLoadingMore = uiState.ayat.isLoadingMore, isCopyingAll = copyOccAll, fontSize = uiState.fontSize, quranFont = uiState.quranFont, onCopyAll = { onEvent(RootDetailEvent.CopyAllOccurrences) }, onShareAll = { onEvent(RootDetailEvent.ShareAllOccurrences) }, onOccurrenceClick = { s, a -> onEvent(RootDetailEvent.OccurrenceClicked(s, a)) }, onNearEnd = { onEvent(RootDetailEvent.AyatNearingEnd(it)) }, listState = ayatState)
                     }
                 }
-            }
-            if (uiState.reportDialogVisible) {
-                val samples = remember(uiState.ayat.occurrences) {
-                    uiState.ayat.occurrences.take(2).map { ReportAyahSample(it.surahNameAr, it.ayahNum, it.textUthmani) }
-                }
-                ReportMeaningDialog(rootText = uiState.rootText, rootId = detail.item.id, aiSummary = detail.aiSummary ?: "", samples = samples, onDismissRequest = { onEvent(RootDetailEvent.DismissReport) }, onCopyReport = { onEvent(RootDetailEvent.CopyReport(it)) }, onShareReport = { onEvent(RootDetailEvent.ShareReport(it)) }, onOpenUrl = { onEvent(RootDetailEvent.OpenReportUrl(it)) })
             }
             }
         }

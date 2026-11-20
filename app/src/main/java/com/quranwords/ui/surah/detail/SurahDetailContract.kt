@@ -6,14 +6,13 @@ import com.quranwords.domain.model.Ayah
 import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.domain.model.Surah
 import com.quranwords.domain.model.WordToken
+import com.quranwords.ui.surah.detail.components.WordActionTarget
 import com.quranwords.ui.theme.QuranFont
 
 data class SurahDetailUiState(
     val surah: Surah? = null,
     /** Surah-scoped ayat — vertical reading mode only. */
     val ayat: List<Ayah> = emptyList(),
-    /** Full mushaf page range of the surah — legacy/fallback only. */
-    val pageRangeAyat: List<Ayah> = emptyList(),
     /** Lazy 1..N pager: only a small window of pages is cached at a time. */
     val totalPages: Int = 0,
     val entryPage: Int = 0,
@@ -32,6 +31,11 @@ data class SurahDetailUiState(
     val isLoading: Boolean = true,
     val selectedWord: WordToken? = null,
     val selectedWordAyah: Ayah? = null,
+    /** Floating word-action toolbar; owned by the VM so rotation keeps it. */
+    val wordAction: WordActionTarget? = null,
+    /** Page-chip jump target that has not been applied yet. */
+    val pendingPage: Int? = null,
+    val fontSheetVisible: Boolean = false,
     val aiExtended: AiExtendedSummary? = null,
     val aiModel: String? = null,
     val aiGeneratedAt: String? = null,
@@ -66,6 +70,9 @@ sealed interface SurahDetailEvent {
     data class CopyWord(val text: String) : SurahDetailEvent
     data class SetImmersive(val value: Boolean) : SurahDetailEvent
     data class SetPulseAyah(val ref: AyahRef?) : SurahDetailEvent
+    data class SetWordAction(val target: WordActionTarget?) : SurahDetailEvent
+    data class SetPendingPage(val page: Int?) : SurahDetailEvent
+    data class SetFontSheetVisible(val visible: Boolean) : SurahDetailEvent
     data object DismissWord : SurahDetailEvent
     data class AyahVisible(val ref: AyahRef) : SurahDetailEvent
     data class PageChanged(val page: Int) : SurahDetailEvent

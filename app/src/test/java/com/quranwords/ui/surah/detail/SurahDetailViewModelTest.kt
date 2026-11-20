@@ -53,15 +53,15 @@ class SurahDetailViewModelTest {
         vm.onEvent(SurahDetailEvent.Load(2))
         advanceUntilIdle()
 
-        assertEquals("read failed", vm.screenState.value.error)
-        assertFalse(vm.screenState.value.isLoading)
+        assertEquals("read failed", vm.uiState.value.error)
+        assertFalse(vm.uiState.value.isLoading)
 
         repo.failRead = false
         vm.onEvent(SurahDetailEvent.Load(2))
         advanceUntilIdle()
 
-        assertEquals(null, vm.screenState.value.error)
-        assertFalse(vm.screenState.value.isLoading)
+        assertEquals(null, vm.uiState.value.error)
+        assertFalse(vm.uiState.value.isLoading)
     }
 
     @Test
@@ -78,14 +78,14 @@ class SurahDetailViewModelTest {
 
         vm.onEvent(SurahDetailEvent.PageChanged(60))
         advanceUntilIdle()
-        assertEquals(60, vm.screenState.value.currentPage)
-        assertTrue(vm.screenState.value.pageAyahs.isEmpty())
+        assertEquals(60, vm.uiState.value.currentPage)
+        assertTrue(vm.uiState.value.pageAyahs.isEmpty())
 
         repo.failPages.clear()
         vm.onEvent(SurahDetailEvent.RetryPage(60))
         advanceUntilIdle()
-        assertEquals(60, vm.screenState.value.currentPage)
-        assertEquals(pageAyat, vm.screenState.value.pageAyahs)
+        assertEquals(60, vm.uiState.value.currentPage)
+        assertEquals(pageAyat, vm.uiState.value.pageAyahs)
     }
 
     @Test
@@ -97,11 +97,11 @@ class SurahDetailViewModelTest {
 
         vm.onEvent(SurahDetailEvent.EnterSelection(AyahRef(2, 3)))
         vm.onEvent(SurahDetailEvent.ToggleAyahSelection(AyahRef(2, 5)))
-        assertTrue(vm.selection.value.isSelectionMode)
+        assertTrue(vm.uiState.value.isSelectionMode)
 
         vm.onEvent(SurahDetailEvent.BookmarkSelection)
-        assertEquals(emptySet<AyahRef>(), vm.selection.value.selected)
-        assertFalse(vm.selection.value.isSelectionMode)
+        assertEquals(emptySet<AyahRef>(), vm.uiState.value.selectedAyahs)
+        assertFalse(vm.uiState.value.isSelectionMode)
         advanceUntilIdle()
         assertEquals(setOf("2:3", "2:5"), prefs.ayahBookmarkState.value)
     }
@@ -131,7 +131,19 @@ class SurahDetailViewModelTest {
         vm.onEvent(SurahDetailEvent.BookmarkSelection)
         advanceUntilIdle()
         assertEquals(emptySet<String>(), prefs.ayahBookmarkState.value)
-        assertFalse(vm.selection.value.isSelectionMode)
+        assertFalse(vm.uiState.value.isSelectionMode)
+    }
+
+    @Test
+    fun font_sheet_and_pending_page_survive_process_death() = runTest {
+        val handle = SavedStateHandle()
+        val first = SurahDetailViewModel(FakeQuranRepository(), FakeUserPreferences(), handle)
+        first.onEvent(SurahDetailEvent.SetFontSheetVisible(true))
+        first.onEvent(SurahDetailEvent.SetPendingPage(42))
+
+        val restored = SurahDetailViewModel(FakeQuranRepository(), FakeUserPreferences(), handle)
+        assertTrue(restored.uiState.value.fontSheetVisible)
+        assertEquals(42, restored.uiState.value.pendingPage)
     }
 
     @Test
@@ -139,10 +151,10 @@ class SurahDetailViewModelTest {
         val vm = SurahDetailViewModel(FakeQuranRepository(), FakeUserPreferences())
         vm.onEvent(SurahDetailEvent.EnterSelection(AyahRef(2, 1)))
         vm.onEvent(SurahDetailEvent.ToggleAyahSelection(AyahRef(2, 2)))
-        assertEquals(setOf(AyahRef(2, 1), AyahRef(2, 2)), vm.selection.value.selected)
+        assertEquals(setOf(AyahRef(2, 1), AyahRef(2, 2)), vm.uiState.value.selectedAyahs)
         vm.onEvent(SurahDetailEvent.ClearSelection)
-        assertEquals(emptySet<AyahRef>(), vm.selection.value.selected)
-        assertFalse(vm.selection.value.isSelectionMode)
+        assertEquals(emptySet<AyahRef>(), vm.uiState.value.selectedAyahs)
+        assertFalse(vm.uiState.value.isSelectionMode)
     }
 
     @Test
@@ -150,12 +162,12 @@ class SurahDetailViewModelTest {
         val vm = SurahDetailViewModel(FakeQuranRepository(), FakeUserPreferences())
         vm.onEvent(SurahDetailEvent.EnterSelection(AyahRef(113, 1)))
         vm.onEvent(SurahDetailEvent.ToggleAyahSelection(AyahRef(114, 1)))
-        assertEquals(setOf(AyahRef(113, 1), AyahRef(114, 1)), vm.selection.value.selected)
+        assertEquals(setOf(AyahRef(113, 1), AyahRef(114, 1)), vm.uiState.value.selectedAyahs)
         // Range stays inside the anchor's surah (114): 113:1 is untouched.
         vm.onEvent(SurahDetailEvent.RangeSelect(AyahRef(114, 3)))
         assertEquals(
             setOf(AyahRef(113, 1), AyahRef(114, 1), AyahRef(114, 2), AyahRef(114, 3)),
-            vm.selection.value.selected
+            vm.uiState.value.selectedAyahs
         )
     }
 
@@ -166,8 +178,8 @@ class SurahDetailViewModelTest {
         advanceUntilIdle()
         vm.onEvent(SurahDetailEvent.EnterSelection(AyahRef(2, 3)))
         vm.onEvent(SurahDetailEvent.RangeSelect(AyahRef(2, 7)))
-        assertEquals((3..7).mapTo(mutableSetOf()) { AyahRef(2, it) }, vm.selection.value.selected)
-        assertTrue(vm.selection.value.isSelectionMode)
+        assertEquals((3..7).mapTo(mutableSetOf()) { AyahRef(2, it) }, vm.uiState.value.selectedAyahs)
+        assertTrue(vm.uiState.value.isSelectionMode)
     }
 
     @Test
@@ -180,7 +192,7 @@ class SurahDetailViewModelTest {
         vm.onEvent(SurahDetailEvent.RangeSelect(AyahRef(2, 7)))
         assertEquals(
             setOf(AyahRef(2, 4), AyahRef(2, 7), AyahRef(2, 8), AyahRef(2, 9), AyahRef(2, 10)),
-            vm.selection.value.selected
+            vm.uiState.value.selectedAyahs
         )
     }
 
@@ -198,7 +210,7 @@ class SurahDetailViewModelTest {
         vm.onEvent(SurahDetailEvent.Load(4, targetAyah = 2))
         advanceUntilIdle()
 
-        val state = vm.screenState.value
+        val state = vm.uiState.value
         assertEquals(604, state.totalPages)
         assertEquals(51, state.entryPage)
         assertEquals(51, state.currentPage)
@@ -220,8 +232,7 @@ class SurahDetailViewModelTest {
         vm.onEvent(SurahDetailEvent.Load(113))
         advanceUntilIdle()
 
-        val state = vm.screenState.value
-        assertEquals(listOf(112, 113, 113, 114), state.pageRangeAyat.map { it.surah })
+        val state = vm.uiState.value
         assertEquals(604, state.entryPage)
         assertEquals(listOf(112, 113, 113, 114), state.pageAyahs.map { it.surah })
     }
@@ -234,8 +245,7 @@ class SurahDetailViewModelTest {
         vm.onEvent(SurahDetailEvent.Load(4))
         advanceUntilIdle()
 
-        val state = vm.screenState.value
-        assertEquals(emptyList<Ayah>(), state.pageRangeAyat)
+        val state = vm.uiState.value
         assertEquals(listOf(1, 2), state.ayat.map { it.ayah })
         assertFalse(state.isPagesReady)
     }
@@ -249,7 +259,7 @@ class SurahDetailViewModelTest {
         vm.onEvent(SurahDetailEvent.Load(4))
         advanceUntilIdle()
 
-        val state = vm.screenState.value
+        val state = vm.uiState.value
         assertTrue(repo.pageRangeFetchCalls.isEmpty())
         assertEquals(1, state.totalPages)
         assertEquals(1, state.entryPage)
@@ -281,13 +291,13 @@ class SurahDetailViewModelTest {
         val handle = SavedStateHandle(mapOf("initialImmersive" to true))
         val vm = SurahDetailViewModel(repo, FakeUserPreferences(), handle)
 
-        assertTrue(vm.screenState.value.isImmersive)
+        assertTrue(vm.uiState.value.isImmersive)
         vm.onEvent(SurahDetailEvent.Load(4))
         advanceUntilIdle()
-        assertTrue(vm.screenState.value.isImmersive)
+        assertTrue(vm.uiState.value.isImmersive)
 
         vm.onEvent(SurahDetailEvent.SetImmersive(false))
-        assertFalse(vm.screenState.value.isImmersive)
+        assertFalse(vm.uiState.value.isImmersive)
         // Rotation-safe: the route input key is never overwritten by a toggle.
         assertEquals(true, handle.get<Boolean>("initialImmersive"))
         assertEquals(false, handle.get<Boolean>("immersiveState"))
@@ -302,13 +312,13 @@ class SurahDetailViewModelTest {
         val vm = SurahDetailViewModel(repo, FakeUserPreferences())
         vm.onEvent(SurahDetailEvent.Load(4))
         advanceUntilIdle()
-        assertFalse(vm.screenState.value.isPagesReady)
+        assertFalse(vm.uiState.value.isPagesReady)
 
         vm.onEvent(SurahDetailEvent.SetEntryPage(60))
-        assertTrue(vm.screenState.value.entryPage == 60)
-        assertFalse(vm.screenState.value.isPagesReady) // remount gate
+        assertTrue(vm.uiState.value.entryPage == 60)
+        assertFalse(vm.uiState.value.isPagesReady) // remount gate
         advanceUntilIdle()
-        val state = vm.screenState.value
+        val state = vm.uiState.value
         assertTrue(state.isPagesReady)
         assertEquals(listOf(5), state.pageAyahs.map { it.surah })
     }
@@ -322,8 +332,8 @@ class SurahDetailViewModelTest {
         val vm = SurahDetailViewModel(repo, FakeUserPreferences())
         vm.onEvent(SurahDetailEvent.Load(4, targetAyah = 1))
         advanceUntilIdle()
-        assertTrue(vm.screenState.value.isPagesReady)
-        assertTrue(vm.screenState.value.pagesByNumber.containsKey(50))
+        assertTrue(vm.uiState.value.isPagesReady)
+        assertTrue(vm.uiState.value.pagesByNumber.containsKey(50))
 
         // Swipe far beyond the 18-page window; the old screen gate watched
         // pagesByNumber[entryPage] and unmounted the pager into a dead spinner.
@@ -331,7 +341,7 @@ class SurahDetailViewModelTest {
             vm.onEvent(SurahDetailEvent.PageChanged(page))
             advanceUntilIdle()
         }
-        val state = vm.screenState.value
+        val state = vm.uiState.value
         assertTrue(state.isPagesReady)
         assertEquals(75, state.currentPage)
         assertTrue(state.pagesByNumber.containsKey(75))
@@ -357,7 +367,7 @@ class SurahDetailViewModelTest {
 
         val fetchesOf58 = repo.pageRangeFetchCalls.count { it == 58 to 58 }
         assertEquals(1, fetchesOf58)
-        assertTrue(vm.screenState.value.pagesByNumber.containsKey(58))
+        assertTrue(vm.uiState.value.pagesByNumber.containsKey(58))
     }
 
     @Test
@@ -390,14 +400,14 @@ class SurahDetailViewModelTest {
 
         vm.onEvent(SurahDetailEvent.PageChanged(60))
         advanceUntilIdle()
-        assertTrue(vm.screenState.value.failedPages.contains(60))
-        assertFalse(vm.screenState.value.pagesByNumber.containsKey(60))
+        assertTrue(vm.uiState.value.failedPages.contains(60))
+        assertFalse(vm.uiState.value.pagesByNumber.containsKey(60))
 
         repo.failPages.clear()
         vm.onEvent(SurahDetailEvent.RetryPage(60))
         advanceUntilIdle()
-        assertFalse(vm.screenState.value.failedPages.contains(60))
-        assertTrue(vm.screenState.value.pagesByNumber.containsKey(60))
-        assertEquals(listOf(4), vm.screenState.value.pageAyahs.map { it.surah })
+        assertFalse(vm.uiState.value.failedPages.contains(60))
+        assertTrue(vm.uiState.value.pagesByNumber.containsKey(60))
+        assertEquals(listOf(4), vm.uiState.value.pageAyahs.map { it.surah })
     }
 }

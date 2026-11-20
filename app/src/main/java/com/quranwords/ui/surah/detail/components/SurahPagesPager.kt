@@ -112,7 +112,7 @@ internal fun SurahPagesPager(
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else {
-            MushafPageContent(
+            SurahMushafPage(
                 pageNumber = pageNumber,
                 ayat = ayat,
                 previousPageLast = pagesByNumber[pageNumber - 1]?.lastOrNull(),
@@ -134,7 +134,7 @@ internal fun SurahPagesPager(
 }
 
 @Composable
-private fun MushafPageContent(
+private fun SurahMushafPage(
     pageNumber: Int,
     ayat: List<Ayah>,
     previousPageLast: Ayah?,

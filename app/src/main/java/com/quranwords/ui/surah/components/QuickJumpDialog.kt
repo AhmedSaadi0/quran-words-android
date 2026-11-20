@@ -30,6 +30,8 @@ import com.quranwords.core.util.SurahMetadata
  * Quick-jump dialog (Full Plan v2, D3): jump by page (1..604) or by
  * surah:ayah (validated against metadata ayah counts).
  */
+private enum class QuickJumpError { PAGE, SURAH_AYAH }
+
 @Composable
 fun QuickJumpDialog(
     onJumpToPage: (Int) -> Unit,
@@ -40,7 +42,7 @@ fun QuickJumpDialog(
     var pageText by remember { mutableStateOf("") }
     var surahText by remember { mutableStateOf("") }
     var ayahText by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<QuickJumpError?>(null) }
     val page = pageText.trim().toIntOrNull()
     val surahId = surahText.trim().toIntOrNull()
     val ayahNum = ayahText.trim().toIntOrNull()
@@ -67,7 +69,7 @@ fun QuickJumpDialog(
                         if (page != null && page in 1..604) {
                             onJumpToPage(page)
                         } else {
-                            error = "page"
+                            error = QuickJumpError.PAGE
                         }
                     },
                     modifier = Modifier.fillMaxWidth().testTag("quick_jump_go_page")
@@ -98,7 +100,7 @@ fun QuickJumpDialog(
                         if (surahId != null && ayahNum != null && meta != null && ayahNum in 1..meta.ayahCount) {
                             onJumpToSurahAyah(surahId, ayahNum)
                         } else {
-                            error = "ayah"
+                            error = QuickJumpError.SURAH_AYAH
                         }
                     },
                     modifier = Modifier.fillMaxWidth().testTag("quick_jump_go_ayah")

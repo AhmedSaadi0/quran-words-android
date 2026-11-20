@@ -12,6 +12,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quranwords.domain.model.DbUpdateState
 import com.quranwords.ui.appstate.DbUpdateViewModel
 import com.quranwords.ui.settings.SettingsDialog
+import com.quranwords.ui.settings.SettingsEvent
 import com.quranwords.ui.settings.SettingsViewModel
 
 /**
@@ -54,8 +55,8 @@ fun HomeRoute(
         uiState = uiState,
         updateState = updateState,
         onOpenSettings = { showSettingsDialog = true },
-        onToggleDynamicColor = settingsViewModel::toggleDynamicColor,
-        onToggleDarkMode = settingsViewModel::toggleDarkMode,
+        onToggleDynamicColor = { settingsViewModel.onEvent(SettingsEvent.ToggleDynamicColor) },
+        onToggleDarkMode = { settingsViewModel.onEvent(SettingsEvent.ToggleDarkMode) },
         onNavigateToSurahIndex = onNavigateToSurahIndex,
         onNavigateToSurahDetail = onNavigateToSurahDetail,
         onNavigateToRoots = onNavigateToRoots,

@@ -1,7 +1,5 @@
 package com.quranwords.ui.surah.detail
 
-import android.app.Activity
-import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -34,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -49,15 +46,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import kotlinx.coroutines.flow.distinctUntilChanged
 import com.quranwords.R
 import com.quranwords.core.util.AyahRef
@@ -75,7 +68,6 @@ import com.quranwords.ui.surah.detail.components.SurahDbMissingState
 import com.quranwords.ui.surah.detail.components.SurahPagesPager
 import com.quranwords.ui.surah.detail.components.SurahSwitchHints
 import com.quranwords.ui.surah.detail.components.MushafFitCache
-import com.quranwords.ui.surah.detail.components.WordActionTarget
 import com.quranwords.ui.surah.detail.components.WordInteractionCallbacks
 import com.quranwords.ui.surah.detail.components.buildBlockIndexOfAyah
 import com.quranwords.ui.surah.detail.components.currentPageFor
@@ -142,6 +134,7 @@ fun SurahDetailScreen(
     surahId: Int,
     targetAyah: Int,
     enter: SurahEnter,
+    animationsEnabled: Boolean,
     onEvent: (SurahDetailEvent) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToAdjacentSurah: (surahId: Int, ayah: Int, fromNext: Boolean, initialImmersive: Boolean) -> Unit,
@@ -169,9 +162,6 @@ fun SurahDetailScreen(
     var isInitialPositionSettled by rememberSaveable(surahId, targetAyah) { mutableStateOf(targetAyah <= 1) }
     var entryDidScroll by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
     var pulseDone by rememberSaveable(surahId, targetAyah) { mutableStateOf(false) }
-    var pendingPage by remember { mutableStateOf<Int?>(null) }
-    var showFontSheet by rememberSaveable { mutableStateOf(false) }
-    var wordAction by remember { mutableStateOf<WordActionTarget?>(null) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     // Small result-only cache; survives page disposal so revisits don't refit.
     val fitCache = remember { MushafFitCache() }
@@ -238,39 +228,32 @@ fun SurahDetailScreen(
         (statusBarTopPx + ReadingChromePillHeight.roundToPx() + 8.dp.roundToPx()).toDp()
     }
 
-    val view = LocalView.current
-    val context = LocalContext.current
-    val activity = remember(context) {
-        var ctx = context
-        while (ctx is android.content.ContextWrapper && ctx !is Activity) ctx = ctx.baseContext
-        ctx as? Activity
-    }
     val immersiveState = rememberUpdatedState(uiState.isImmersive)
     val immersiveInteractionLocked = uiState.isSelectionMode || uiState.selectedWord != null
 
     val wordInteraction = WordInteractionCallbacks(
         onOpenWord = { word, ayah ->
-            wordAction = null
+            onEvent(SurahDetailEvent.SetWordAction(null))
             onEvent(SurahDetailEvent.WordSelected(word, ayah))
         },
-        onWordLongPressed = { target -> wordAction = target },
+        onWordLongPressed = { target -> onEvent(SurahDetailEvent.SetWordAction(target)) },
         onToggleChrome = {
-            if (wordAction != null) {
-                wordAction = null
+            if (uiState.wordAction != null) {
+                onEvent(SurahDetailEvent.SetWordAction(null))
             } else {
                 onEvent(SurahDetailEvent.SetImmersive(!immersiveState.value))
             }
         },
-        onDismissWordAction = { wordAction = null },
+        onDismissWordAction = { onEvent(SurahDetailEvent.SetWordAction(null)) },
         onCopyWord = { text ->
-            wordAction = null
+            onEvent(SurahDetailEvent.SetWordAction(null))
             onEvent(SurahDetailEvent.CopyWord(text))
         }
     )
 
     // A page change / scroll retires the toolbar.
     LaunchedEffect(if (isPagesMode) uiState.currentPage else listState.firstVisibleItemIndex, isPagesMode) {
-        wordAction = null
+        onEvent(SurahDetailEvent.SetWordAction(null))
     }
 
     // Vertical-only auto-chrome. Pages mode is tap-only.
@@ -297,36 +280,17 @@ fun SurahDetailScreen(
         }
     }
 
-    LaunchedEffect(uiState.isImmersive) {
-        val window = activity?.window ?: return@LaunchedEffect
-        val controller = WindowInsetsControllerCompat(window, view)
-        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        if (uiState.isImmersive) {
-            controller.hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
-        } else {
-            controller.show(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
-        }
-    }
-    DisposableEffect(activity, view) {
-        onDispose {
-            val window = activity?.window ?: return@onDispose
-            WindowInsetsControllerCompat(window, view).show(
-                WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars()
-            )
-        }
-    }
-
     // Back priority: sheet → popup → selection → exit.
     BackHandler(enabled = uiState.isSelectionMode && uiState.selectedWord == null) {
         onEvent(SurahDetailEvent.ClearSelection)
     }
-    BackHandler(enabled = wordAction != null && uiState.selectedWord == null) { wordAction = null }
+    BackHandler(enabled = uiState.wordAction != null && uiState.selectedWord == null) { onEvent(SurahDetailEvent.SetWordAction(null)) }
     BackHandler(enabled = uiState.selectedWord != null) { onEvent(SurahDetailEvent.DismissWord) }
 
     // Load once per route. The VM preloads the page window before emitting.
     LaunchedEffect(surahId) {
         if (uiState.surah?.id != surahId || uiState.ayat.isEmpty()) {
-            wordAction = null
+            onEvent(SurahDetailEvent.SetWordAction(null))
             hasHandledInitialScroll = false
             isInitialPositionSettled = targetAyah <= 1
             onEvent(
@@ -345,10 +309,6 @@ fun SurahDetailScreen(
             hasHandledInitialScroll = true
             isInitialPositionSettled = true
         }
-    }
-
-    val animatorScale = remember {
-        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f)
     }
 
     // Vertical deep-link placement (instant, silent).
@@ -372,7 +332,7 @@ fun SurahDetailScreen(
 
     // One-shot pulse: vertical deep link or a Pages-mode jump beyond the surah's first page.
     LaunchedEffect(hasHandledInitialScroll, uiState.ayat, pagesReady, uiState.entryPage) {
-        if (!hasHandledInitialScroll || pulseDone || enter != SurahEnter.Normal || animatorScale == 0f) return@LaunchedEffect
+        if (!hasHandledInitialScroll || pulseDone || enter != SurahEnter.Normal || !animationsEnabled) return@LaunchedEffect
         val ref = AyahRef(surahId, targetAyah)
         val shouldPulse = if (isPagesMode) {
             pagesReady && uiState.pageAyahs.any { it.surah == ref.surahId && it.ayah == ref.ayah } &&
@@ -406,13 +366,13 @@ fun SurahDetailScreen(
     }
 
     // Page chip jump in scroll mode; the pager handles its own in Pages mode.
-    LaunchedEffect(uiState.ayat, pendingPage, isPagesMode, flowGroups) {
+    LaunchedEffect(uiState.ayat, uiState.pendingPage, isPagesMode, flowGroups) {
         if (isPagesMode) return@LaunchedEffect
-        val page = pendingPage ?: return@LaunchedEffect
+        val page = uiState.pendingPage ?: return@LaunchedEffect
         val index = flowGroups.indexOfFirst { it.pageNumber == page }
         if (index >= 0) {
             listState.animateScrollToItem(index + listOffset)
-            pendingPage = null
+            onEvent(SurahDetailEvent.SetPendingPage(null))
         }
     }
 
@@ -420,7 +380,7 @@ fun SurahDetailScreen(
     // vertical → pages re-anchors on the visible mushaf page before mounting.
     var previousReadingMode by rememberSaveable { mutableStateOf<Int?>(null) }
     LaunchedEffect(uiState.readingMode) {
-        wordAction = null
+        onEvent(SurahDetailEvent.SetWordAction(null))
         val previous = previousReadingMode
         previousReadingMode = uiState.readingMode
         if (previous == null || previous == uiState.readingMode || !hasHandledInitialScroll) return@LaunchedEffect
@@ -481,8 +441,8 @@ fun SurahDetailScreen(
                                 pulseAyah = uiState.pulseAyah,
                                 onPulseDone = { onEvent(SurahDetailEvent.SetPulseAyah(null)) },
                                 wordInteraction = wordInteraction,
-                                activeWordAction = wordAction,
-                                pendingPage = pendingPage,
+                                activeWordAction = uiState.wordAction,
+                                pendingPage = uiState.pendingPage,
                                 onPageChanged = { onEvent(SurahDetailEvent.PageChanged(it)) },
                                 onRetryPage = { onEvent(SurahDetailEvent.RetryPage(it)) },
                                 onToggleSelection = { onEvent(SurahDetailEvent.ToggleAyahSelection(it)) },
@@ -518,7 +478,7 @@ fun SurahDetailScreen(
                                 onPulseDone = { onEvent(SurahDetailEvent.SetPulseAyah(null)) },
                                 listState = listState,
                                 wordInteraction = wordInteraction,
-                                activeWordAction = wordAction,
+                                activeWordAction = uiState.wordAction,
                                 onToggleSelection = { onEvent(SurahDetailEvent.ToggleAyahSelection(it)) },
                                 onEnterSelection = {
                                     if (uiState.isSelectionMode) onEvent(SurahDetailEvent.RangeSelect(it))
@@ -593,8 +553,8 @@ fun SurahDetailScreen(
                             currentPage = { currentPageState.value },
                             pillTransparency = uiState.pillTransparency,
                             onBack = onNavigateBack,
-                            onOpenFontSize = { showFontSheet = true },
-                            onPageSelected = { page -> pendingPage = page }
+                            onOpenFontSize = { onEvent(SurahDetailEvent.SetFontSheetVisible(true)) },
+                            onPageSelected = { page -> onEvent(SurahDetailEvent.SetPendingPage(page)) }
                         )
                     }
                 }
@@ -615,7 +575,7 @@ fun SurahDetailScreen(
             )
         }
 
-        if (showFontSheet) {
+        if (uiState.fontSheetVisible) {
             FontSizeSheet(
                 fontSize = uiState.fontSize,
                 quranFont = uiState.quranFont,
@@ -624,7 +584,7 @@ fun SurahDetailScreen(
                 onFontSizeChange = { onEvent(SurahDetailEvent.SetFontSize(it)) },
                 onPillTransparencyChange = { onEvent(SurahDetailEvent.SetPillTransparency(it)) },
                 onReadingModeChange = { onEvent(SurahDetailEvent.SetReadingMode(it)) },
-                onDismiss = { showFontSheet = false }
+                onDismiss = { onEvent(SurahDetailEvent.SetFontSheetVisible(false)) }
             )
         }
     }

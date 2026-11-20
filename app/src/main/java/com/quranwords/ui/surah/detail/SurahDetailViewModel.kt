@@ -20,6 +20,7 @@ import com.quranwords.domain.model.Surah
 import com.quranwords.domain.model.WordToken
 import com.quranwords.domain.repository.QuranRepository
 import com.quranwords.domain.repository.UserPreferencesRepository
+import com.quranwords.ui.surah.detail.components.WordActionTarget
 import com.quranwords.ui.theme.QuranFont
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -40,6 +41,8 @@ import kotlinx.coroutines.launch
  * in SEPARATE keys — rotation must not reset a toggled chrome choice. */
 private const val KEY_INITIAL_IMMERSIVE = "initialImmersive"
 private const val KEY_IMMERSIVE_STATE = "immersiveState"
+private const val KEY_FONT_SHEET_VISIBLE = "fontSheetVisible"
+private const val KEY_PENDING_PAGE = "pendingPage"
 private const val PAGE_CACHE_CAPACITY = 18
 private const val PREFETCH_RADIUS = 2
 
@@ -47,7 +50,6 @@ private const val PREFETCH_RADIUS = 2
 private data class LoadedReader(
     val surah: Surah?,
     val ayat: List<Ayah>,
-    val pageRangeAyat: List<Ayah>,
     val pageCount: Int,
     val entry: Int,
     val activeId: Int,
@@ -58,7 +60,6 @@ private data class LoadedReader(
 private data class ReaderCoreState(
     val surah: Surah? = null,
     val ayat: List<Ayah> = emptyList(),
-    val pageRangeAyat: List<Ayah> = emptyList(),
     val totalPages: Int = 0,
     val entryPage: Int = 0,
     val currentPage: Int = 0,
@@ -72,6 +73,9 @@ private data class ReaderCoreState(
     val isLoading: Boolean = true,
     val selectedWord: WordToken? = null,
     val selectedWordAyah: Ayah? = null,
+    val wordAction: WordActionTarget? = null,
+    val pendingPage: Int? = null,
+    val fontSheetVisible: Boolean = false,
     val aiExtended: AiExtendedSummary? = null,
     val aiModel: String? = null,
     val aiGeneratedAt: String? = null,
@@ -115,7 +119,11 @@ class SurahDetailViewModel @Inject constructor(
     private var lastWrittenLastRead: Pair<Int, Int>? = null
 
     private val _core = MutableStateFlow(
-        ReaderCoreState(isImmersive = savedStateHandle.get<Boolean>(KEY_IMMERSIVE_STATE) ?: initialImmersive)
+        ReaderCoreState(
+            isImmersive = savedStateHandle.get<Boolean>(KEY_IMMERSIVE_STATE) ?: initialImmersive,
+            fontSheetVisible = savedStateHandle.get<Boolean>(KEY_FONT_SHEET_VISIBLE) ?: false,
+            pendingPage = savedStateHandle.get<Int>(KEY_PENDING_PAGE)
+        )
     )
     private val _effect = MutableSharedFlow<SurahDetailEffect>(extraBufferCapacity = 8)
     val effect: SharedFlow<SurahDetailEffect> = _effect
@@ -127,38 +135,54 @@ class SurahDetailViewModel @Inject constructor(
     private val bookmarkAyahState = MutableStateFlow<Set<String>>(emptySet())
     private val dbReadyState = MutableStateFlow(repository.isDatabaseReady())
 
-    val ayat: StateFlow<List<Ayah>> = _core.map { it.ayat }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val selection: StateFlow<AyahSelectionState> = _core.map { it.selection }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, AyahSelectionState())
+    private data class ReaderPrefsA(
+        val fontSize: Float,
+        val quranFont: QuranFont,
+        val bookmarks: Set<String>
+    )
 
-    val uiState: StateFlow<SurahDetailUiState> = _core.map { state ->
-        SurahDetailUiState(
-            surah = state.surah,
-            ayat = state.ayat,
-            pageRangeAyat = state.pageRangeAyat,
-            totalPages = state.totalPages,
-            entryPage = state.entryPage,
-            currentPage = state.currentPage,
-            pagesByNumber = state.pagesByNumber,
-            failedPages = state.failedPages,
-            isPagesReady = state.isPagesReady,
-            activeSurah = state.activeSurah,
-            activeSurahId = state.activeSurahId,
-            pageAyahs = state.pageAyahs,
-            isImmersive = state.isImmersive,
-            isLoading = state.isLoading,
-            selectedWord = state.selectedWord,
-            selectedWordAyah = state.selectedWordAyah,
-            aiExtended = state.aiExtended,
-            aiModel = state.aiModel,
-            aiGeneratedAt = state.aiGeneratedAt,
-            pulseAyah = state.pulseAyah,
-            isSelectionMode = state.selection.isSelectionMode,
-            selectedAyahs = state.selection.selected,
-            surahPages = state.surahPages,
-            error = state.error
-        )
+    /** Single authoritative state for the reader (P2-1/P2-2). */
+    val uiState: StateFlow<SurahDetailUiState> = run {
+        val prefsFlow = combine(fontState, quranFontState, bookmarkAyahState) { size, font, bookmarks ->
+            ReaderPrefsA(size, font, bookmarks)
+        }
+        combine(prefsFlow, dbReadyState, pillTransparencyState, pageModeState, _core) {
+                prefs, dbReady, pill, mode, state ->
+            SurahDetailUiState(
+                surah = state.surah,
+                ayat = state.ayat,
+                totalPages = state.totalPages,
+                entryPage = state.entryPage,
+                currentPage = state.currentPage,
+                pagesByNumber = state.pagesByNumber,
+                failedPages = state.failedPages,
+                isPagesReady = state.isPagesReady,
+                activeSurah = state.activeSurah,
+                activeSurahId = state.activeSurahId,
+                pageAyahs = state.pageAyahs,
+                isImmersive = state.isImmersive,
+                isLoading = state.isLoading,
+                selectedWord = state.selectedWord,
+                selectedWordAyah = state.selectedWordAyah,
+                wordAction = state.wordAction,
+                pendingPage = state.pendingPage,
+                fontSheetVisible = state.fontSheetVisible,
+                aiExtended = state.aiExtended,
+                aiModel = state.aiModel,
+                aiGeneratedAt = state.aiGeneratedAt,
+                pulseAyah = state.pulseAyah,
+                isSelectionMode = state.selection.isSelectionMode,
+                selectedAyahs = state.selection.selected,
+                surahPages = state.surahPages,
+                error = state.error,
+                fontSize = prefs.fontSize,
+                quranFont = prefs.quranFont,
+                bookmarkedAyat = prefs.bookmarks,
+                isDbReady = dbReady,
+                pillTransparency = pill,
+                readingMode = mode
+            )
+        }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, SurahDetailUiState())
 
     init {
@@ -168,21 +192,6 @@ class SurahDetailViewModel @Inject constructor(
         viewModelScope.launch { preferences.quranFontKey.collectLatest { quranFontState.value = QuranFont.fromKey(it) } }
         viewModelScope.launch { preferences.bookmarkedAyat.collectLatest { bookmarkAyahState.value = it } }
     }
-
-    val screenState: StateFlow<SurahDetailUiState> = combine(
-        uiState, fontState, quranFontState, bookmarkAyahState, dbReadyState,
-        pillTransparencyState, pageModeState
-    ) { values ->
-        @Suppress("UNCHECKED_CAST")
-        (values[0] as SurahDetailUiState).copy(
-            fontSize = values[1] as Float,
-            quranFont = values[2] as QuranFont,
-            bookmarkedAyat = values[3] as Set<String>,
-            isDbReady = values[4] as Boolean,
-            pillTransparency = values[5] as Float,
-            readingMode = values[6] as Int
-        )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, SurahDetailUiState())
 
     fun onEvent(event: SurahDetailEvent) {
         when (event) {
@@ -195,6 +204,16 @@ class SurahDetailViewModel @Inject constructor(
                 savedStateHandle[KEY_IMMERSIVE_STATE] = event.value
             }
             is SurahDetailEvent.SetPulseAyah -> _core.update { it.copy(pulseAyah = event.ref) }
+            is SurahDetailEvent.SetWordAction -> _core.update { it.copy(wordAction = event.target) }
+            is SurahDetailEvent.SetPendingPage -> {
+                _core.update { it.copy(pendingPage = event.page) }
+                if (event.page == null) savedStateHandle.remove<Int>(KEY_PENDING_PAGE)
+                else savedStateHandle[KEY_PENDING_PAGE] = event.page
+            }
+            is SurahDetailEvent.SetFontSheetVisible -> {
+                _core.update { it.copy(fontSheetVisible = event.visible) }
+                savedStateHandle[KEY_FONT_SHEET_VISIBLE] = event.visible
+            }
             SurahDetailEvent.DismissWord -> clearSelectedWord()
             is SurahDetailEvent.AyahVisible -> updateLastRead(event.ref)
             is SurahDetailEvent.PageChanged -> onPageChanged(event.page)
@@ -245,7 +264,7 @@ class SurahDetailViewModel @Inject constructor(
         pageCache.pinnedPage = null
         _core.update {
             it.copy(
-                isLoading = true, ayat = emptyList(), pageRangeAyat = emptyList(),
+                isLoading = true, ayat = emptyList(),
                 totalPages = 0, entryPage = 0, currentPage = 0, pagesByNumber = emptyMap(),
                 failedPages = emptySet(),
                 isPagesReady = false, activeSurah = null, activeSurahId = 0, pageAyahs = emptyList(),
@@ -262,10 +281,6 @@ class SurahDetailViewModel @Inject constructor(
                 val maxPage = repository.getMaxPageNumber().coerceAtLeast(1)
                 val target = allAyat.firstOrNull { it.ayah == targetAyah }
                 val firstPage = allAyat.firstOrNull()?.pageNumber
-                val lastPage = allAyat.lastOrNull()?.pageNumber
-                val rangeAyat = if (firstPage != null && lastPage != null) {
-                    repository.getAyatByPageRangeFull(firstPage, lastPage).orEmptyIfError()
-                } else emptyList()
 
                 val paged = target?.pageNumber != null || firstPage != null
                 val (pageCount, entry, initialPages) = if (paged) {
@@ -290,16 +305,15 @@ class SurahDetailViewModel @Inject constructor(
                 pageCache.pinnedPage = entry
                 val entryAyat = initialPages[entry].orEmpty()
                 val activeId = entryAyat.firstOrNull()?.surah ?: surahId
-                LoadedReader(surah, allAyat, rangeAyat, pageCount, entry, activeId, entryAyat)
+                LoadedReader(surah, allAyat, pageCount, entry, activeId, entryAyat)
             }
             when (result) {
                 is Result.Success -> {
-                    val (surah, allAyat, rangeAyat, pageCount, entry, activeId, entryAyat) = result.data
+                    val (surah, allAyat, pageCount, entry, activeId, entryAyat) = result.data
                     _core.update {
                         it.copy(
                             surah = surah,
                             ayat = allAyat,
-                            pageRangeAyat = rangeAyat,
                             totalPages = pageCount,
                             entryPage = entry,
                             currentPage = entry,
@@ -456,7 +470,6 @@ class SurahDetailViewModel @Inject constructor(
         return state.pageAyahs.find()
             ?: state.pagesByNumber.values.firstNotNullOfOrNull { it.find() }
             ?: state.ayat.find()
-            ?: state.pageRangeAyat.find()
     }
 
     fun updateLastRead(ref: AyahRef) {

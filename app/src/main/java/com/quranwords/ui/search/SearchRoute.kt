@@ -17,21 +17,13 @@ fun SearchRoute(
     viewModel: SearchViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val querySnapshot = uiState.query
     SearchScreen(
         uiState = uiState,
         onEvent = viewModel::onEvent,
         onNavigateBack = onNavigateBack,
-        onNavigateToRootDetail = { id ->
-            if (querySnapshot.isNotBlank()) viewModel.recordRecent(querySnapshot)
-            onNavigateToRootDetail(id)
-        },
-        onNavigateToSurahDetail = { surahId, ayah ->
-            if (querySnapshot.isNotBlank()) viewModel.recordRecent(querySnapshot)
-            onNavigateToSurahDetail(surahId, ayah)
-        },
-        onRecordRecent = { q -> if (q.isNotBlank()) viewModel.recordRecent(q) },
-        bookmarkedAyat = uiState.bookmarkedAyat,
-        onToggleAyahBookmark = { s, a -> viewModel.toggleAyahBookmark(s, a) }
+        onNavigateToRootDetail = onNavigateToRootDetail,
+        onNavigateToSurahDetail = onNavigateToSurahDetail,
+        onRecordRecent = { q -> viewModel.onEvent(SearchEvent.RecordRecent(q)) },
+        onToggleAyahBookmark = { s, a -> viewModel.onEvent(SearchEvent.ToggleAyahBookmark(s, a)) }
     )
 }

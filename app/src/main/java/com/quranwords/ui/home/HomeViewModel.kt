@@ -12,7 +12,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -24,10 +23,7 @@ class HomeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _featuredRoots = MutableStateFlow<List<RootItem>>(emptyList())
-    val featuredRoots: StateFlow<List<RootItem>> = _featuredRoots.asStateFlow()
-
     private val _isDbReady = MutableStateFlow(repository.isDatabaseReady())
-    val isDbReady: StateFlow<Boolean> = _isDbReady.asStateFlow()
 
     private val _bookmarkedSurahs = MutableStateFlow<Set<String>>(emptySet())
     private val _bookmarkedAyat = MutableStateFlow<Set<String>>(emptySet())
@@ -60,22 +56,28 @@ class HomeViewModel @Inject constructor(
      * (Decision 14). Last-read is combined reactively from DataStore so
      * returning to Home after reading updates the Continue card immediately.
      */
+    private data class HomeFlowsA(
+        val featuredRoots: List<RootItem>,
+        val isDbReady: Boolean,
+        val lastSurah: Int,
+        val lastAyah: Int,
+        val bookmarkedSurahs: Set<String>
+    )
+
+    /** Typed state assembly (P2-1/P2-2). */
     val uiState: StateFlow<HomeUiState> = combine(
-        _featuredRoots,
-        _isDbReady,
-        preferences.lastReadSurah,
-        preferences.lastReadAyah,
-        _bookmarkedSurahs,
-        _bookmarkedAyat
-    ) { values ->
-        @Suppress("UNCHECKED_CAST")
+        _featuredRoots, _isDbReady, preferences.lastReadSurah,
+        preferences.lastReadAyah, _bookmarkedSurahs
+    ) { roots, ready, lastSurah, lastAyah, bookmarkedSurahs ->
+        HomeFlowsA(roots, ready, lastSurah, lastAyah, bookmarkedSurahs)
+    }.combine(_bookmarkedAyat) { core, bookmarkedAyat ->
         HomeUiState(
-            featuredRoots = values[0] as List<RootItem>,
-            isDbReady = values[1] as Boolean,
-            lastReadSurah = values[2] as Int,
-            lastReadAyah = values[3] as Int,
-            bookmarkedSurahs = values[4] as Set<String>,
-            bookmarkedAyat = values[5] as Set<String>
+            featuredRoots = core.featuredRoots,
+            isDbReady = core.isDbReady,
+            lastReadSurah = core.lastSurah,
+            lastReadAyah = core.lastAyah,
+            bookmarkedSurahs = core.bookmarkedSurahs,
+            bookmarkedAyat = bookmarkedAyat
         )
     }.stateIn(viewModelScope, SharingStarted.Eagerly, HomeUiState())
 }

@@ -42,7 +42,9 @@ data class SetupUiState(
     val installedVersion: DbInstalledVersion = DbInstalledVersion(),
     val isCheckingUpdate: Boolean = false,
     /** Failure of the manual "check for update" action, with Retry in the UI. */
-    val manifestError: String? = null
+    val manifestError: String? = null,
+    val importDialogVisible: Boolean = false,
+    val releaseNotesExpanded: Boolean = false
 ) {
     val isBusy: Boolean
         get() = download is SetupDownload.Progress || download is SetupDownload.Extracting
@@ -52,4 +54,6 @@ sealed interface SetupEvent {
     data object StartDownload : SetupEvent
     data object CheckForUpdate : SetupEvent
     data class ImportDatabase(val uri: Uri) : SetupEvent
+    data class SetImportDialogVisible(val visible: Boolean) : SetupEvent
+    data class SetReleaseNotesExpanded(val expanded: Boolean) : SetupEvent
 }

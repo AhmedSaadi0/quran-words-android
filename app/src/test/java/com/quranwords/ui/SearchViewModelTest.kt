@@ -123,6 +123,18 @@ class SearchViewModelTest {
     }
 
     @Test
+    fun recent_recorded_once_per_navigation() = runTest {
+        val prefs = com.quranwords.fake.FakeUserPreferences()
+        val repo = repository()
+        val vm = SearchViewModel(repo, com.quranwords.domain.usecase.SearchUseCase(repo), prefs)
+
+        vm.onEvent(SearchEvent.RecordRecent("كتب"))
+        advanceUntilIdle()
+
+        assertEquals(listOf("كتب"), prefs.recentSearchesState.value)
+    }
+
+    @Test
     fun `blank query resets results`() = runTest {
         val vm = viewModel(repository())
         vm.onEvent(SearchEvent.QueryChanged("كتب"))

@@ -97,20 +97,20 @@ class RootMeaningsTest {
         val vm = RootDetailViewModel(FakeMeaningsRepository(), FakeUserPreferences(), SavedStateHandle())
         advanceUntilIdle()
 
-        assertFalse(vm.meaningSelection.value.isSelectionMode)
+        assertFalse(vm.uiState.value.meanings.isSelectionMode)
         vm.onEvent(RootDetailEvent.EnterMeaningSelection(1))
-        assertTrue(vm.meaningSelection.value.isSelectionMode)
-        assertEquals(setOf(1), vm.meaningSelection.value.selectedIds)
+        assertTrue(vm.uiState.value.meanings.isSelectionMode)
+        assertEquals(setOf(1), vm.uiState.value.meanings.selectedIds)
 
         vm.onEvent(RootDetailEvent.ToggleMeaning(2))
-        assertEquals(setOf(1, 2), vm.meaningSelection.value.selectedIds)
+        assertEquals(setOf(1, 2), vm.uiState.value.meanings.selectedIds)
 
         vm.onEvent(RootDetailEvent.ToggleMeaning(1))
-        assertEquals(setOf(2), vm.meaningSelection.value.selectedIds)
+        assertEquals(setOf(2), vm.uiState.value.meanings.selectedIds)
 
         vm.onEvent(RootDetailEvent.ClearMeaningSelection)
-        assertTrue(vm.meaningSelection.value.selectedIds.isEmpty())
-        assertFalse(vm.meaningSelection.value.isSelectionMode)
+        assertTrue(vm.uiState.value.meanings.selectedIds.isEmpty())
+        assertFalse(vm.uiState.value.meanings.isSelectionMode)
     }
 
     @Test
@@ -119,8 +119,8 @@ class RootMeaningsTest {
         vm.loadRootDetail(1)
         advanceUntilIdle()
         vm.onEvent(RootDetailEvent.SelectAllMeanings)
-        assertEquals(setOf(1, 2, 3), vm.meaningSelection.value.selectedIds)
-        assertTrue(vm.meaningSelection.value.isSelectionMode)
+        assertEquals(setOf(1, 2, 3), vm.uiState.value.meanings.selectedIds)
+        assertTrue(vm.uiState.value.meanings.isSelectionMode)
     }
 
     @Test

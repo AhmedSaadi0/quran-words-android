@@ -14,7 +14,9 @@ data class SettingsUiState(
 
 sealed interface SettingsEvent {
     data class DarkModeChanged(val mode: Int) : SettingsEvent
+    data object ToggleDarkMode : SettingsEvent
     data class DynamicColorChanged(val enabled: Boolean) : SettingsEvent
+    data object ToggleDynamicColor : SettingsEvent
     data class LanguageChanged(val tag: String) : SettingsEvent
     data class QuranFontChanged(val key: String) : SettingsEvent
 }

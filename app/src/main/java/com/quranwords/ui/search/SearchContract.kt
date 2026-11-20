@@ -50,4 +50,6 @@ sealed interface SearchEvent {
     data object ClearRecents : SearchEvent
     data object Retry : SearchEvent
     data class LoadMore(val tab: SearchTab) : SearchEvent
+    data class RecordRecent(val query: String) : SearchEvent
+    data class ToggleAyahBookmark(val surahId: Int, val ayahNum: Int) : SearchEvent
 }

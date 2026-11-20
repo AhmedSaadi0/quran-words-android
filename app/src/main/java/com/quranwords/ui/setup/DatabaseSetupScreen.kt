@@ -43,9 +43,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -70,8 +67,6 @@ fun DatabaseSetupScreen(
     val latestRelease = uiState.latestRelease
     val installedVersion = uiState.installedVersion
     val isCheckingUpdate = uiState.isCheckingUpdate
-    var showImportDialog by remember { mutableStateOf(false) }
-    var showNotes by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -159,8 +154,8 @@ fun DatabaseSetupScreen(
                     latestRelease = latestRelease,
                     isChecking = isCheckingUpdate,
                     manifestError = uiState.manifestError,
-                    showNotes = showNotes,
-                    onToggleNotes = { showNotes = !showNotes },
+                    showNotes = uiState.releaseNotesExpanded,
+                    onToggleNotes = { onEvent(SetupEvent.SetReleaseNotesExpanded(!uiState.releaseNotesExpanded)) },
                     onCheckClick = { onEvent(SetupEvent.CheckForUpdate) }
                 )
             }
@@ -394,7 +389,7 @@ fun DatabaseSetupScreen(
             if (!isBusy) {
                 item {
                     OutlinedButton(
-                        onClick = { showImportDialog = true },
+                        onClick = { onEvent(SetupEvent.SetImportDialogVisible(true)) },
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -421,9 +416,9 @@ fun DatabaseSetupScreen(
         }
     }
 
-    if (showImportDialog) {
+    if (uiState.importDialogVisible) {
         AlertDialog(
-            onDismissRequest = { showImportDialog = false },
+            onDismissRequest = { onEvent(SetupEvent.SetImportDialogVisible(false)) },
             title = { Text(text = stringResource(R.string.db_import_dialog_title), fontWeight = FontWeight.Bold) },
             text = {
                 Text(
@@ -434,7 +429,7 @@ fun DatabaseSetupScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showImportDialog = false
+                        onEvent(SetupEvent.SetImportDialogVisible(false))
                         onPickImportFile()
                     },
                     modifier = Modifier.testTag("confirm_import_button")
@@ -443,7 +438,7 @@ fun DatabaseSetupScreen(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showImportDialog = false }) {
+                TextButton(onClick = { onEvent(SetupEvent.SetImportDialogVisible(false)) }) {
                     Text(stringResource(R.string.cd_cancel))
                 }
             }
