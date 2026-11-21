@@ -1,6 +1,6 @@
 # UI_AUDIT_FIX_PLAN — UI Audit Remediation (plan of record)
 
-> **Status:** Phases 0–4 implemented; Phase 5 pending. Build/test verification not yet recorded. **Source report:** `docs/UI_AUDIT_FIX_PLAN.md` (this file) supersedes the chat audit dated 2026-11-18 for tracking purposes.
+> **Status:** Phases 0–5 implemented; final verification (P5-9) pending. Build/test verification not yet recorded. **Source report:** `docs/UI_AUDIT_FIX_PLAN.md` (this file) supersedes the chat audit dated 2026-11-18 for tracking purposes.
 > **Scope:** `app/src/main/java/com/quranwords/ui/**`, plus the small domain/dependency changes needed to fix UI error paths (Phase 1).
 > **Rules:** `AGENTS.md` §4 (dependency rule), §6 (fail fast), §9–§13 (domain/UI/errors), §16 (agent never runs Gradle), §20 (Decision Log). Execute phases in order; do not mix phases.
 >
@@ -362,37 +362,37 @@ Previous audit (A1–A20), the first follow-up round (N1–N8), and this round (
 
 > Rule: one good test per fixed bug, not coverage theatre. All tests run by the user (AGENTS §16).
 
-- [ ] **P5-1 — Test harness for Composables** (`app/src/test/java/com/quranwords/...`, dependency `androidx.compose.ui.test.junit4` already in `app/build.gradle.kts`).
+- [x] **P5-1 — Test harness for Composables** (`app/src/test/java/com/quranwords/...`, dependency `androidx.compose.ui.test.junit4` already in `app/build.gradle.kts`).
   - **Root cause:** only `HomeTitleScreenshotTest.kt` uses Compose today (A15).
   - **Fix:** add a small `TestTag` constants file if needed (convention `<feature>_<element>_<id>` per AGENTS §15) and a `setContent { MyApplicationTheme { ... } }` helper with LTR/RTL parameter; no new dependency.
   - **Acceptance:** helper compiles under Robolectric; existing screenshot test still passes.
   - **Test:** `ComposeTestFixtures.kt` self-check rendering a `Text` with a testTag.
 
-- [ ] **P5-2 — Search card tests** (`SearchResultCards.kt`).
+- [x] **P5-2 — Search card tests** (`SearchResultCards.kt`).
   - **Fix/tests:** `SearchResultCardsTest.kt::real_ayah_marker_for_matched_query`, `::real_ayah_marker_for_unmatched_query` (P0-1), `::bookmark_description_reflects_state` (P4-6), `::page_juz_suffix_uses_resources` (P4-1).
   - **Acceptance:** hardcoded `٠` and "Remove bookmark" regressions fail these tests.
 
-- [ ] **P5-3 — Bookmark action test** (`SurahDetailViewModel.kt::bookmarkSelection`).
+- [x] **P5-3 — Bookmark action test** (`SurahDetailViewModel.kt::bookmarkSelection`).
   - **Fix/tests:** `SurahDetailViewModelTest.kt::bookmark_selection_preserves_existing_bookmarks`, `::bookmark_selection_writes_once_for_all_refs`, `::bookmark_failure_is_surfaced` (P0-3).
   - **Acceptance:** mixed-state selection ends fully bookmarked; no toggle is called.
 
-- [ ] **P5-4 — Reader behaviour tests** (`SurahDetailScreen.kt`, `MushafFlowBlock.kt`, `SurahAyatList.kt`).
+- [x] **P5-4 — Reader behaviour tests** (`SurahDetailScreen.kt`, `MushafFlowBlock.kt`, `SurahAyatList.kt`).
   - **Fix/tests:** `WordActionPointerTest.kt::outside_tap_dismisses_only_popup` (P0-8), `SurahDetailViewModelTest.kt::last_read_after_uncached_page_loads` (P0-9), `SurahAyatListUnpagedTest.kt::null_page_number_is_safe` (P0-10), `SurahDetailErrorUiTest.kt::error_message_and_retry` (P0-5).
   - **Acceptance:** all four failure cases fail if their Phase 0 fix is reverted.
 
-- [ ] **P5-5 — RootDetail and WordAyat failure/retry tests** (`RootDetailViewModel.kt`, `WordAyatViewModel.kt`).
+- [x] **P5-5 — RootDetail and WordAyat failure/retry tests** (`RootDetailViewModel.kt`, `WordAyatViewModel.kt`).
   - **Fix/tests:** `RootDetailErrorTest.kt::detail_error_and_retry`, `::paging_error_and_retry`; `WordAyatViewModelTest.kt::paging_error_keeps_has_more_and_retry_loads_next_page` (P0-4/P0-6).
   - **Acceptance:** no spinner-only state; Retry advances one page.
 
-- [ ] **P5-6 — Search paging failure test** (`SearchViewModel.kt`).
+- [x] **P5-6 — Search paging failure test** (`SearchViewModel.kt`).
   - **Fix/tests:** `SearchViewModelTest.kt::paging_error_preserves_results_and_offset`, `::inline_retry_resumes_paging`, `::recent_recorded_once_per_navigation` (P0-7/P2-8).
   - **Acceptance:** global error view reserved for initial query failures only.
 
-- [ ] **P5-7 — Mushaf text equivalence test** (`MushafTextBuilder.kt` from P3-1).
+- [x] **P5-7 — Mushaf text equivalence test** (`MushafTextBuilder.kt` from P3-1).
   - **Fix/tests:** `MushafTextBuilderTest.kt::character_equivalence_between_render_and_fit_builders` with cases: one ayah with words, ayah without words, multi-ayah page, two surahs on one page, Eastern-digit markers, selection/bookmark spans present vs absent (only `.text` compared).
   - **Acceptance:** removing the shared builder cannot reintroduce two divergent copies.
 
-- [ ] **P5-8 — Update/DB-version tests** (`CheckDbUpdateUseCase.kt`, `DbUpdateViewModel.kt`, `UpdateBanner.kt`, `DatabaseSetupViewModel.kt`).
+- [x] **P5-8 — Update/DB-version tests** (`CheckDbUpdateUseCase.kt`, `DbUpdateViewModel.kt`, `UpdateBanner.kt`, `DatabaseSetupViewModel.kt`).
   - **Fix/tests:** rewrite `DbUpdateTest.kt::network_failure_is_surfaced_as_check_failed` (P1-3); `UpdateBannerTest.kt::failed_banner_renders_message_and_dismiss_action` (P0-2); `DatabaseSetupViewModelTest.kt::progress_and_completed_states_map_to_ui` (P1-1); `ShareHandlerTest.kt::open_url_without_browser_shows_snackbar` (P1-2).
   - **Acceptance:** no silent `Success(Unknown)` on exception; failure banners are testable.
 

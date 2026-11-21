@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
 @HiltViewModel
 class RootDetailViewModel @Inject constructor(
     private val repository: QuranRepository,
@@ -32,7 +33,11 @@ class RootDetailViewModel @Inject constructor(
     private val copyFormatter: RootCopyFormatter = RootCopyFormatter(repository)
 ) : ViewModel() {
 
-    private val paginator = RootOccurrencePaginator(repository, savedStateHandle) { _error.value = it }
+    private var pagingError: String? = null
+    private val paginator = RootOccurrencePaginator(repository, savedStateHandle) { message ->
+        pagingError = message
+        _error.value = message
+    }
 
     private val _rootDetail = MutableStateFlow<com.quranwords.domain.model.RootDetail?>(null)
     private val _isLoading = MutableStateFlow(false)
@@ -52,6 +57,7 @@ class RootDetailViewModel @Inject constructor(
 
     fun loadRootDetail(rootId: Int) {
         if (paginator.isLoaded(rootId) && _rootDetail.value?.item?.id == rootId && !_isLoading.value) return
+        pagingError = null
         val restoreTarget = paginator.resetFor(rootId)
         clearWordSelection()
         clearMeaningSelection()
@@ -228,7 +234,13 @@ class RootDetailViewModel @Inject constructor(
             is RootDetailEvent.AyatNearingEnd -> loadMoreOccurrencesIfNeeded(event.lastVisibleIndex)
             RootDetailEvent.ShowReport -> setReportVisible(true)
             RootDetailEvent.DismissReport -> setReportVisible(false)
-            RootDetailEvent.Retry -> paginator.rootId?.let(::loadRootDetail)
+            RootDetailEvent.Retry -> {
+                if (pagingError != null && _rootDetail.value != null && paginator.hasMore.value) {
+                    pagingError = null
+                    _error.value = null
+                    loadMoreOccurrences()
+                } else paginator.rootId?.let(::loadRootDetail)
+            }
             is RootDetailEvent.CopyAiSection,
             RootDetailEvent.CopyAllMeanings, RootDetailEvent.ShareAllMeanings,
             RootDetailEvent.CopySelectedMeanings, RootDetailEvent.ShareSelectedMeanings,

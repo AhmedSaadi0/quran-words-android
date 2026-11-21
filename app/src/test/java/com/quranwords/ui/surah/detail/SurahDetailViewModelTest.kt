@@ -45,6 +45,22 @@ class SurahDetailViewModelTest {
         }
     }
 
+    private class CountingPreferences : FakeUserPreferences() {
+        var bookmarkWriteCount = 0
+            private set
+
+        override suspend fun setAyahBookmarked(keys: Set<String>, bookmarked: Boolean) {
+            bookmarkWriteCount++
+            super.setAyahBookmarked(keys, bookmarked)
+        }
+    }
+
+    private class FailingPreferences : FakeUserPreferences() {
+        override suspend fun setAyahBookmarked(keys: Set<String>, bookmarked: Boolean) {
+            throw IllegalStateException("storage failed")
+        }
+    }
+
     @Test
     fun load_error_sets_error_state_and_retry_reloads() = runTest {
         val repo = FailingAyatRepository()
@@ -89,6 +105,33 @@ class SurahDetailViewModelTest {
     }
 
     @Test
+    fun last_read_after_uncached_page_loads() = runTest {
+        val pageAyat = listOf(pageAyah(2, 10, 60))
+        val repo = FakeQuranRepository(
+            ayatBySurah = mapOf(2 to pageAyat),
+            ayatByPage = mapOf(60 to pageAyat),
+            failPages = mutableSetOf(60)
+        )
+        val prefs = FakeUserPreferences()
+        val vm = SurahDetailViewModel(repo, prefs)
+        vm.onEvent(SurahDetailEvent.Load(2))
+        advanceUntilIdle()
+
+        vm.onEvent(SurahDetailEvent.PageChanged(60))
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.pageAyahs.isEmpty())
+
+        repo.failPages.clear()
+        vm.onEvent(SurahDetailEvent.RetryPage(60))
+        advanceUntilIdle()
+        vm.onEvent(SurahDetailEvent.AyahVisible(AyahRef(2, 10)))
+        advanceUntilIdle()
+
+        assertEquals(2, prefs.lastReadSurahState.value)
+        assertEquals(10, prefs.lastReadAyahState.value)
+    }
+
+    @Test
     fun `bookmark selection clears selection immediately and persists pair keys`() = runTest {
         val prefs = FakeUserPreferences()
         val vm = SurahDetailViewModel(FakeQuranRepository(), prefs)
@@ -120,6 +163,33 @@ class SurahDetailViewModelTest {
 
         assertEquals(setOf("2:3", "2:5"), prefs.ayahBookmarkState.value)
         assertEquals(setOf("2:3", "2:5") to true, prefs.lastAyahBookmarkWrite)
+    }
+
+    @Test
+    fun bookmark_selection_writes_once_for_all_refs() = runTest {
+        val prefs = CountingPreferences()
+        val vm = SurahDetailViewModel(FakeQuranRepository(), prefs)
+        vm.onEvent(SurahDetailEvent.EnterSelection(AyahRef(2, 3)))
+        vm.onEvent(SurahDetailEvent.ToggleAyahSelection(AyahRef(2, 5)))
+        vm.onEvent(SurahDetailEvent.ToggleAyahSelection(AyahRef(2, 7)))
+
+        vm.onEvent(SurahDetailEvent.BookmarkSelection)
+        advanceUntilIdle()
+
+        assertEquals(1, prefs.bookmarkWriteCount)
+        assertEquals(setOf("2:3", "2:5", "2:7"), prefs.ayahBookmarkState.value)
+    }
+
+    @Test
+    fun bookmark_failure_is_surfaced() = runTest {
+        val vm = SurahDetailViewModel(FakeQuranRepository(), FailingPreferences())
+        vm.onEvent(SurahDetailEvent.EnterSelection(AyahRef(2, 3)))
+
+        vm.onEvent(SurahDetailEvent.BookmarkSelection)
+        advanceUntilIdle()
+
+        assertEquals("storage failed", vm.uiState.value.error)
+        assertFalse(vm.uiState.value.isSelectionMode)
     }
 
     @Test

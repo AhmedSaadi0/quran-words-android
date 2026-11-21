@@ -1,10 +1,13 @@
 package com.quranwords.ui.search
 
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.fetchSemanticsNode
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import com.quranwords.domain.model.Ayah
 import com.quranwords.ui.search.components.HighlightedAyahText
 import com.quranwords.ui.theme.MyApplicationTheme
 import org.junit.Assert.assertFalse
@@ -15,7 +18,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [36], qualifiers = "en")
 class SearchResultCardsTest {
 
     @get:Rule
@@ -48,5 +51,23 @@ class SearchResultCardsTest {
         composeTestRule.onNodeWithTag("search_ayah_text")
             .assertTextContains("﴿٣٥﴾", substring = true)
         assertFalse(renderedText().contains("﴿٠﴾"))
+    }
+
+    @Test
+    fun page_juz_suffix_uses_resources() {
+        val ayah = Ayah(
+            id = 1, surah = 1, ayah = 1,
+            textUthmani = "آية", textUthmaniPlain = "آية", textImlaei = "آية",
+            wordCount = 1, pageNumber = 5, juz = 3
+        )
+        composeTestRule.setContent {
+            MyApplicationTheme {
+                com.quranwords.ui.search.components.AyahSearchCard(
+                    ayah = ayah, query = "", isBookmarked = false,
+                    onToggleBookmark = {}, onClick = {}
+                )
+            }
+        }
+        composeTestRule.onNodeWithText(" • Page ٥ • Juz ٣", substring = true).assertExists()
     }
 }
