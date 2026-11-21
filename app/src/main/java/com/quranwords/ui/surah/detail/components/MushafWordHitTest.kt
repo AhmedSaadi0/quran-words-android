@@ -12,8 +12,6 @@ import com.quranwords.domain.model.WordToken
  * it to the ayah's final word. Pressing the marker resolves to an ayah hit;
  * taps on the gluing NBSP fall back to nearest-word resolution.
  */
-internal const val FLOW_MARKER_TAG = "ayah_marker"
-
 /**
  * Winner of a word hit test: the resolved pair the morphology action needs,
  * plus its drawn bounds (in the Text's own coordinates) used to anchor the

@@ -81,7 +81,7 @@ fun CitedBodyText(
     // numbering follows first appearance across blocks, and `orderedRefs`
     // below is complete before any child reads it. Children stay pure —
     // they render pre-computed fragments and never mutate the session.
-    val session = remember(body, mutableListOf<String>()) { CitationMatcher.Session(mutableListOf<String>()) }
+    val session = rememberCitationSession(body)
     val fragmentsByBlock = remember(visibleBlocks, session) {
         visibleBlocks.map { block -> session.citeRanges(block.text) }
     }
@@ -216,3 +216,8 @@ private fun CitedBlockText(
         }
     }
 }
+
+/** Body text is the citation session identity; recomposition must not reset it. */
+@Composable
+internal fun rememberCitationSession(body: String): CitationMatcher.Session =
+    remember(body) { CitationMatcher.Session(mutableListOf()) }

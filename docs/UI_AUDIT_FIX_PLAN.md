@@ -1,6 +1,6 @@
 # UI_AUDIT_FIX_PLAN — UI Audit Remediation (plan of record)
 
-> **Status:** planned, not started. **Source report:** `docs/UI_AUDIT_FIX_PLAN.md` (this file) supersedes the chat audit dated 2026-11-18 for tracking purposes.
+> **Status:** Phases 0–3 implemented (Phase 3 is currently uncommitted); Phases 4–5 pending. Build/test verification not yet recorded. **Source report:** `docs/UI_AUDIT_FIX_PLAN.md` (this file) supersedes the chat audit dated 2026-11-18 for tracking purposes.
 > **Scope:** `app/src/main/java/com/quranwords/ui/**`, plus the small domain/dependency changes needed to fix UI error paths (Phase 1).
 > **Rules:** `AGENTS.md` §4 (dependency rule), §6 (fail fast), §9–§13 (domain/UI/errors), §16 (agent never runs Gradle), §20 (Decision Log). Execute phases in order; do not mix phases.
 >
@@ -232,49 +232,49 @@ Previous audit (A1–A20), the first follow-up round (N1–N8), and this round (
 
 > Rule: behaviour-preserving moves only. Each split lands with the existing tests still green; no new features, no visual changes.
 
-- [ ] **P3-1 — Single shared mushaf text builder** (`app/src/main/java/com/quranwords/ui/surah/detail/components/MushafFlowBlock.kt`: `buildAnnotatedString { ... }` inside `annotated` remember L105–146 with the "mirrored by mushafBlockLayoutText" comment L112–113; `app/src/main/java/com/quranwords/ui/surah/detail/components/MushafFontSizeFit.kt`: `mushafBlockLayoutText` L105–121 with "Keep both builders in sync" comment L111).
+- [x] **P3-1 — Single shared mushaf text builder** (`app/src/main/java/com/quranwords/ui/surah/detail/components/MushafFlowBlock.kt`: `buildAnnotatedString { ... }` inside `annotated` remember L105–146 with the "mirrored by mushafBlockLayoutText" comment L112–113; `app/src/main/java/com/quranwords/ui/surah/detail/components/MushafFontSizeFit.kt`: `mushafBlockLayoutText` L105–121 with "Keep both builders in sync" comment L111).
   - **Root cause (verified):** the render builder and the fit-measurement builder duplicate character construction (sanitized words, inter-ayah/inter-word spaces, `\u00A0﴿n﴾` markers). Any drift makes the fit measure text that is not what is drawn.
   - **Fix:** extract a pure `buildMushafAnnotatedString(ayat, fontSize, options)` in a new `MushafTextBuilder.kt` in the same package. Options control paint-only spans/annotations (selection, bookmark, word/marker tags, long-press focus); the character stream and layout-affecting `SpanStyle(fontSize = fontSize*0.9, bold)` are produced by one code path. Render and fit both call it; fit passes no annotations.
   - **Acceptance:** `mushafBlockLayoutText(...).text == renderBuilder(...).text` for paged/unpaged, single/multi-surah and wordless-ayah fixtures; existing `MushafFontSizeFitTest` unchanged.
   - **Test:** `MushafTextBuilderTest.kt::character_equivalence_between_render_and_fit_builders` (P5-7).
 
-- [ ] **P3-2 — Split `SurahDetailScreen.kt` (567 lines)** (symbols: `rememberSurahReadingScroll` call L134, derived progress L163–180, system-bars L256–272, `BackHandler`s L277–281, load L283, initial placement L311, pulse L330, last-read L343, page chip L364, mode flip L374–391, content switch L429–474, chrome L478–540).
+- [x] **P3-2 — Split `SurahDetailScreen.kt` (567 lines)** (symbols: `rememberSurahReadingScroll` call L134, derived progress L163–180, system-bars L256–272, `BackHandler`s L277–281, load L283, initial placement L311, pulse L330, last-read L343, page chip L364, mode flip L374–391, content switch L429–474, chrome L478–540).
   - **Root cause:** one Composable owns seven unrelated jobs (A10).
   - **Fix:** extract, in this order and without behaviour change: `ReaderPlacementEffects.kt` (initial scroll, pulse, last-read, page chip), `ReaderChromeHost.kt` (AnimatedContent, scrim, ReadingTopBarOverlay/SelectionTopBar), `ReaderContentSwitch.kt` (pager vs list + loading/empty states), `WordInteractionCallbacks.kt` (move the existing data class out of `SurahPagesPager.kt` into its own file). Screen keeps orchestration only, target <200 lines.
   - **Acceptance:** screen <200 lines; all current LaunchedEffect keys and ordering preserved; existing reader tests pass (especially P0-8/P0-9).
   - **Test:** existing `SurahDetailViewModelTest`, `SurahReadingScrollTest`, plus new Compose smoke test `SurahDetailScreenSmokeTest.kt::scroll_and_pages_modes_render`.
 
-- [ ] **P3-3 — Split `MushafFlowBlock.kt` (559 lines)** (symbols: annotated builder L105–146, pulse geometry L365–450, `drawWithContent` L350–430, `handleTap`/`handleLongPress` L207–248, semantics L292–345).
+- [x] **P3-3 — Split `MushafFlowBlock.kt` (559 lines)** (symbols: annotated builder L105–146, pulse geometry L365–450, `drawWithContent` L350–430, `handleTap`/`handleLongPress` L207–248, semantics L292–345).
   - **Root cause:** rendering, hit testing, accessibility, pulse animation and popup hosting in one file (A10).
   - **Fix:** move pure helpers first: `pulseGeometry`, `ayahAt`, `lastLine*` into `MushafPulseGeometry.kt`; move gesture handlers into `MushafGestures.kt` (with the P0-8 updated-state fix); move the overlay drawing into `MushafPulseOverlay.kt`; keep annotated building in the shared builder from P3-1; accessibility actions get their own `rememberMushafActions` helper (P4-2).
   - **Acceptance:** block Composable <180 lines; pure helpers unit-tested; no visual/gesture regression.
   - **Test:** `MushafWordHitTestTest`, `SurahReadingScrollTest`, new `MushafPulseGeometryTest`.
 
-- [ ] **P3-4 — Split `SurahDetailViewModel.kt` (497 lines)** (symbols: `ReaderCoreState` L43–68, `PageCache` L73–83, prefs init L118–124, `loadSurah` L227–316, `loadPageIfMissing` L323, `onPageChanged` L340–382, `retryPage`/`setEntryPage` L387–420, selection/copy L430–497).
+- [x] **P3-4 — Split `SurahDetailViewModel.kt` (497 lines)** (symbols: `ReaderCoreState` L43–68, `PageCache` L73–83, prefs init L118–124, `loadSurah` L227–316, `loadPageIfMissing` L323, `onPageChanged` L340–382, `retryPage`/`setEntryPage` L387–420, selection/copy L430–497).
   - **Root cause:** pages-mode cache, preferences, selection, copy and last-read in one VM.
   - **Fix:** extract `MushafPageCache.kt` (bounded LRU + pinned entry, pure/main-confined as today) and `SurahReaderSelection.kt` (selection + formatter helpers); keep the VM as orchestrator with `onEvent`. Do not split the VM into multiple VMs (would break shared state).
   - **Acceptance:** VM <300 lines; page-cache tests (`SurahDetailViewModelTest` L229–333) still pass unchanged.
   - **Test:** `PageCacheTest.kt::lru_eviction_keeps_pinned_entry`.
 
-- [ ] **P3-5 — Split `RootDetailViewModel.kt` (461 lines)** (symbols: pagination fields L43–52, copy flags L56–73, selections L76–86, `loadRootDetail` L109, `loadRootWords` L162, `loadMoreOccurrences` L181, formatting L229–320, `uiState` combine L332–380, `onEvent` L404–462).
+- [x] **P3-5 — Split `RootDetailViewModel.kt` (461 lines)** (symbols: pagination fields L43–52, copy flags L56–73, selections L76–86, `loadRootDetail` L109, `loadRootWords` L162, `loadMoreOccurrences` L181, formatting L229–320, `uiState` combine L332–380, `onEvent` L404–462).
   - **Root cause:** detail loading, paging, copy formatting and event routing in one class (A10).
   - **Fix:** extract `RootOccurrencePaginator.kt` (offset/hasMore/savedState restoration) and `RootCopyFormatter.kt` (all `get*Formatted` methods returning `Result<String>` from P1-2); delete legacy copy flag after P2-2. VM keeps UiState assembly + events.
   - **Acceptance:** VM <300 lines; error paths from P0-4 and copy paths from P1-2 still covered.
   - **Test:** `RootOccurrencePaginatorTest.kt`, plus existing `RootDetailRefactorTest`/`RootWordsTest`.
 
-- [ ] **P3-6 — Split `DatabaseSetupScreen.kt` (575 lines)** (symbols: state branches inside `Crossfade` L177–319, `VersionStatusCard` L363–480, `downloadErrorMessage` L483, `formatVersionSize` L497).
+- [x] **P3-6 — Split `DatabaseSetupScreen.kt` (575 lines)** (symbols: state branches inside `Crossfade` L177–319, `VersionStatusCard` L363–480, `downloadErrorMessage` L483, `formatVersionSize` L497).
   - **Root cause:** five download states + version card + dialog + helpers in one file (A10).
   - **Fix:** extract `SetupDownloadStates.kt` (Idle/Progress/Extracting/Completed/Error bodies as small stateless composables), `SetupVersionCard.kt`, `SetupImportDialog.kt`, `SetupFormatters.kt`. Screen keeps Scaffold/LazyColumn composition.
   - **Acceptance:** screen <200 lines; no change to testTags (`start_download_button`, `retry_download_button`, `finish_setup_button`, `db_version_card`, etc.).
   - **Test:** Compose `DatabaseSetupScreenTest.kt::each_download_state_renders_expected_cta` (tags asserted).
 
-- [ ] **P3-7 — Split `RootDetailRoute.kt` event handler + format long lines** (`app/src/main/java/com/quranwords/ui/roots/detail/RootDetailRoute.kt`: top-level `handleRootDetailEvent` L60–154 with 12 platform branches; `aiSectionFor` L157–162; `app/src/main/java/com/quranwords/ui/roots/detail/RootDetailScreen.kt`: pager tab calls L100–110 are 584–852 characters).
+- [x] **P3-7 — Split `RootDetailRoute.kt` event handler + format long lines** (`app/src/main/java/com/quranwords/ui/roots/detail/RootDetailRoute.kt`: top-level `handleRootDetailEvent` L60–154 with 12 platform branches; `aiSectionFor` L157–162; `app/src/main/java/com/quranwords/ui/roots/detail/RootDetailScreen.kt`: pager tab calls L100–110 are 584–852 characters).
   - **Root cause:** one function switches over every copy/share variant (A10), and tab call sites are unreadable.
   - **Fix:** group handlers into `handleMeaningsCopyShare`, `handleWordsCopyShare`, `handleOccurrencesCopyShare`, `handleReportActions` in a new `RootDetailPlatformEvents.kt`; format each tab call as a multi-line invocation with named arguments. No behaviour change.
   - **Acceptance:** no line >120 characters in these two files; Route body <60 lines.
   - **Test:** existing `RootDetailRefactorTest` + a Route-level Compose test for one copy and one share path.
 
-- [ ] **P3-8 — Fix `CitedBodyText` citation-session memoization** (`app/src/main/java/com/quranwords/ui/roots/detail/components/cards/CitedBodyText.kt`: `val session = remember(body, mutableListOf<String>()) { CitationMatcher.Session(mutableListOf<String>()) }` L84; `fragmentsByBlock` L85–87; `CitedBlockText` `remember(block, fragments, style, colors)` L173 and `pointerInput(annotated)` L180; highlight reset L89–95).
+- [x] **P3-8 — Fix `CitedBodyText` citation-session memoization** (`app/src/main/java/com/quranwords/ui/roots/detail/components/cards/CitedBodyText.kt`: `val session = remember(body, mutableListOf<String>()) { CitationMatcher.Session(mutableListOf<String>()) }` L84; `fragmentsByBlock` L85–87; `CitedBlockText` `remember(block, fragments, style, colors)` L173 and `pointerInput(annotated)` L180; highlight reset L89–95).
   - **Root cause (verified):** a freshly allocated `mutableListOf<String>()` is used as a `remember` key, so it is never equal across recompositions. The `Session`, every cited `AnnotatedString`, and the pointer-input node are rebuilt on every recomposition (e.g. the 1.5 s highlight reset), defeating the cache its own comment promises. Grep confirms this is the only fresh-collection `remember` key in `ui/`.
   - **Fix:** `remember(body) { CitationMatcher.Session(mutableListOf()) }`; document that `body` is the session identity. No citation-numbering or rendering change intended.
   - **Acceptance:** with unchanged `body`, the same Session instance survives recomposition, citation numbers/refs are identical, and cite taps still highlight.

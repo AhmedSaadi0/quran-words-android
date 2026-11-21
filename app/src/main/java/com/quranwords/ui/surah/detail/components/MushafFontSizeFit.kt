@@ -6,23 +6,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.PlatformTextStyle
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.quranwords.core.util.sanitizeUthmanicText
-import com.quranwords.core.util.toEasternArabicDigits
 import com.quranwords.domain.model.Ayah
 import com.quranwords.ui.theme.QuranFont
 import kotlin.math.floor
@@ -113,30 +108,9 @@ internal fun mushafBlockTextStyle(
         )
     )
 
-/**
- * Character-identical mirror of the MushafFlowBlock AnnotatedString: sanitized
- * words, inter-ayah/inter-word spaces and the ﴿n﴾ end markers (marker size
- * ×0.9 bold, both layout-affecting) with paint-only styling omitted. The fit
- * measures each surah segment with it, so spans (selection/bookmark/tap) never
- * affect layout. Keep both builders in sync.
- */
+/** Fit measurement uses the same character builder as the renderer (P3-1). */
 internal fun mushafBlockLayoutText(ayat: List<Ayah>, fontSize: Float): AnnotatedString =
-    buildAnnotatedString {
-        ayat.forEachIndexed { ayahIndex, ayah ->
-            if (ayahIndex > 0) append(" ")
-            if (ayah.words.isNotEmpty()) {
-                ayah.words.forEachIndexed { wordIndex, word ->
-                    if (wordIndex > 0) append(" ")
-                    append(sanitizeUthmanicText(word.text))
-                }
-            } else {
-                append(sanitizeUthmanicText(ayah.textUthmani))
-            }
-            withStyle(SpanStyle(fontSize = (fontSize * 0.9f).sp, fontWeight = FontWeight.Bold)) {
-                append("\u00A0﴿${ayah.ayah.toEasternArabicDigits()}﴾")
-            }
-        }
-    }
+    buildMushafAnnotatedString(ayat, fontSize)
 
 /**
  * Pure sub-pixel-safe line-spacing resolver. The per-line extra is floored to

@@ -48,17 +48,6 @@ data class WordActionTarget(
     val visualRect: Rect
 )
 
-/** Shared gesture seam passed from the screen to both reading modes. */
-data class WordInteractionCallbacks(
-    /** TalkBack-only: opens the morphology sheet for this exact word/ayah. */
-    val onOpenWord: (WordToken, Ayah) -> Unit,
-    val onWordLongPressed: (WordActionTarget) -> Unit,
-    /** Single tap outside selection mode: toggle the reading chrome. */
-    val onToggleChrome: () -> Unit,
-    val onDismissWordAction: () -> Unit,
-    val onCopyWord: (String) -> Unit
-)
-
 /**
  * Pure popup placement: combine the anchor composable's window bounds with the
  * word's block-local rect, center horizontally, prefer above the word, flip
