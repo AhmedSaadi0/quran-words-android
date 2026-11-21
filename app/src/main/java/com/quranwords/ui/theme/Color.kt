@@ -1,7 +1,6 @@
 package com.quranwords.ui.theme
 
 import androidx.compose.ui.graphics.Color
-
 // ==========================================
 // Natural Tones Design Theme Palette
 // Design tokens extracted from Natural Tones specification:
@@ -55,6 +54,8 @@ val NaturalPrimaryDark = Color(0xFFA4AD96)
 val NaturalPrimaryContainerDark = Color(0xFF323B2B)
 val NaturalSecondaryDark = Color(0xFFBCC6AF)
 val NaturalSecondaryContainerDark = Color(0xFF3E4636)
+val NaturalOutlineVariantDark = Color(0xFF293023)
+val NaturalSecondaryContainerLight = Color(0xFFE5EBDB)
 
 // Compatibility Aliases for Existing Emerald & Gold References
 val Emerald900 = NaturalOlive900
@@ -98,6 +99,7 @@ val PosPrepositionColor = Color(0xFF4B6434) // moss green
 val PosPronounColor = Color(0xFF5E4E6E) // earthy heather
 val PosAdjectiveColor = Color(0xFF886326) // warm amber
 val PosDefaultColor = Color(0xFF56624B) // natural olive
+val SearchHighlight = Color(0xFF285C4F)
 
 /**
  * Temporary word-focus wash for the long-press action toolbar. Distinct from
@@ -118,4 +120,3 @@ fun harmonizeWithBrand(color: Color, blendRatio: Float = 0.25f): Color {
         alpha = color.alpha
     )
 }
-

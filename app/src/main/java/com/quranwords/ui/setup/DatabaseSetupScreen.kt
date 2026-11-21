@@ -10,11 +10,10 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.CheckCircle
@@ -39,7 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.R
-
+import com.quranwords.ui.theme.ShapeSmall
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DatabaseSetupScreen(
@@ -103,7 +102,7 @@ fun DatabaseSetupScreen(
                 item {
                     OutlinedButton(
                         onClick = { onEvent(SetupEvent.SetImportDialogVisible(true)) },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeSmall,
                         modifier = Modifier.fillMaxWidth().testTag("import_db_button")
                     ) { Text(stringResource(R.string.db_import_title)) }
                 }
@@ -111,7 +110,7 @@ fun DatabaseSetupScreen(
             item {
                 OutlinedButton(
                     onClick = onNavigateBack,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = ShapeSmall,
                     modifier = Modifier.fillMaxWidth()
                 ) { Text(stringResource(R.string.db_preview_action)) }
             }

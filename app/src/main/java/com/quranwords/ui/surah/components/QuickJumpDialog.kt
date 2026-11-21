@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -25,7 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.core.util.SurahMetadata
-
+import com.quranwords.ui.theme.ShapeSmall
 /**
  * Quick-jump dialog (Full Plan v2, D3): jump by page (1..604) or by
  * surah:ayah (validated against metadata ayah counts).
@@ -61,7 +60,7 @@ fun QuickJumpDialog(
                     onValueChange = { pageText = it; error = null },
                     label = { Text(stringResource(R.string.quick_jump_page_label)) },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
+                    shape = ShapeSmall,
                     modifier = Modifier.fillMaxWidth().testTag("quick_jump_page")
                 )
                 Button(
@@ -82,7 +81,7 @@ fun QuickJumpDialog(
                         onValueChange = { surahText = it; error = null },
                         label = { Text(stringResource(R.string.quick_jump_surah_label)) },
                         singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeSmall,
                         modifier = Modifier.weight(1f).testTag("quick_jump_surah")
                     )
                     OutlinedTextField(
@@ -90,7 +89,7 @@ fun QuickJumpDialog(
                         onValueChange = { ayahText = it; error = null },
                         label = { Text(stringResource(R.string.quick_jump_ayah_label)) },
                         singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
+                        shape = ShapeSmall,
                         modifier = Modifier.weight(1f).testTag("quick_jump_ayah")
                     )
                 }

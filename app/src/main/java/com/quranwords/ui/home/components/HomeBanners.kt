@@ -26,12 +26,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
-import com.quranwords.ui.components.DbUpdateBanner
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.ShapeMedium
 import com.quranwords.ui.theme.ShapeSmall
-
-/** Database-missing banner (Decision 13: 💾 → vector). */
+/** Database-missing banner. */
 @Composable
 fun DbSetupBanner(
     onNavigateToSetup: () -> Unit,
@@ -94,23 +92,6 @@ fun DbSetupBanner(
             }
         }
     }
-}
-
-/** Update-available banner (wraps the shared DbUpdateBanner component). */
-@Composable
-fun HomeUpdateBanner(
-    info: com.quranwords.domain.model.DbReleaseInfo,
-    onUpdateClick: () -> Unit,
-    onDismissClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    DbUpdateBanner(
-        info = info,
-        installedName = "",
-        onUpdateClick = onUpdateClick,
-        onDismissClick = onDismissClick,
-        modifier = modifier
-    )
 }
 
 /** Visible failure for the manual DB-version check (P1-3). */

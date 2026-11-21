@@ -16,11 +16,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.core.util.SurahMetadata
 import com.quranwords.core.util.SurahMetadata.JuzRange
-
+import com.quranwords.ui.theme.AppTextSize
 /**
  * Interleaved juz boundary band (Full Plan v2, D3): a full-bleed tinted strip
  * showing "الجزء N" and its "start – end" span, between the flat surah rows
@@ -46,13 +45,13 @@ fun JuzHeaderRow(
         ) {
             Text(
                 text = stringResource(R.string.juz_label, juzId),
-                fontSize = 13.5.sp,
+                fontSize = AppTextSize.Section,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = range?.localizedRange() ?: "",
-                fontSize = 13.5.sp,
+                fontSize = AppTextSize.Section,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

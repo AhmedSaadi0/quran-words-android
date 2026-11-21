@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -44,7 +43,7 @@ import com.quranwords.ui.roots.components.RootsFilterBar
 import com.quranwords.ui.roots.components.RootsSortMenu
 import com.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
 import com.quranwords.ui.theme.AppMotion
-
+import com.quranwords.ui.theme.ShapeSmall
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RootsListScreen(
@@ -109,7 +108,7 @@ fun RootsListScreen(
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = ShapeSmall,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 10.dp)

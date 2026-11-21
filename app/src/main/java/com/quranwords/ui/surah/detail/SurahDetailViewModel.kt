@@ -3,7 +3,6 @@ package com.quranwords.ui.surah.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
 import com.quranwords.core.util.AyahRef
 import com.quranwords.core.util.FontSizePreference
 import com.quranwords.core.util.PillTransparencyPreference
@@ -16,6 +15,7 @@ import com.quranwords.domain.model.WordToken
 import com.quranwords.domain.repository.QuranRepository
 import com.quranwords.domain.repository.UserPreferencesRepository
 import com.quranwords.ui.theme.QuranFont
+import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
 /**
  * Owns the surah reader: vertical mode is surah-scoped, Pages mode paginates
  * real mushaf pages 1..N with a bounded lazy window. Selection/bookmarks are
@@ -59,7 +58,7 @@ class SurahDetailViewModel @Inject constructor(
     private val _effect = MutableSharedFlow<SurahDetailEffect>(extraBufferCapacity = 8)
     val effect: SharedFlow<SurahDetailEffect> = _effect
 
-    private val fontState = MutableStateFlow(24f)
+    private val fontState = MutableStateFlow(FontSizePreference.DEFAULT)
     private val pillTransparencyState = MutableStateFlow(PillTransparencyPreference.DEFAULT)
     private val pageModeState = MutableStateFlow(ReadingModePreference.DEFAULT)
     private val quranFontState = MutableStateFlow(QuranFont.KFGQPC_HAFS_1441)

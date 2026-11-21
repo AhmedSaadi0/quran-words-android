@@ -3,7 +3,7 @@ package com.quranwords.ui.roots.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
+import com.quranwords.core.util.FontSizePreference
 import com.quranwords.core.util.Result
 import com.quranwords.core.util.SelectionState
 import com.quranwords.core.util.formatAiMetaLine
@@ -12,6 +12,7 @@ import com.quranwords.domain.repository.QuranRepository
 import com.quranwords.domain.repository.UserPreferencesRepository
 import com.quranwords.ui.roots.detail.util.RootDetailTab
 import com.quranwords.ui.theme.QuranFont
+import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
 @HiltViewModel
 class RootDetailViewModel @Inject constructor(
     private val repository: QuranRepository,
@@ -41,7 +41,7 @@ class RootDetailViewModel @Inject constructor(
     private val _isWordsLoading = MutableStateFlow(false)
     private val _wordSelection = MutableStateFlow(SelectionState())
     private val _meaningSelection = MutableStateFlow(SelectionState())
-    private val _fontSize = MutableStateFlow(24f)
+    private val _fontSize = MutableStateFlow(FontSizePreference.DEFAULT)
     private val _quranFontState = MutableStateFlow(QuranFont.KFGQPC_HAFS_1441)
     private val _reportVisible = MutableStateFlow(false)
 

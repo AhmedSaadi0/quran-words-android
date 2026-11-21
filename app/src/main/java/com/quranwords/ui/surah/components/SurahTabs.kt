@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -34,7 +33,8 @@ import com.quranwords.core.util.RevelationFilter
 import com.quranwords.core.util.SurahMetadata
 import com.quranwords.ui.surah.SurahIndexEvent
 import com.quranwords.ui.surah.SurahIndexUiState
-
+import com.quranwords.ui.theme.ShapeMedium
+import com.quranwords.ui.theme.ShapeSmall
 /**
  * Surahs tab of the index — the quran.com-style flat list: full-bleed rows
  * with octagram medallions and hairline dividers, interleaved juz bands when
@@ -69,7 +69,7 @@ fun SurahsTab(
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(16.dp),
+                    shape = ShapeMedium,
                     modifier = Modifier.fillMaxWidth().testTag("surah_search_input")
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -77,19 +77,19 @@ fun SurahsTab(
                         selected = uiState.filter == RevelationFilter.ALL,
                         onClick = { onEvent(SurahIndexEvent.FilterChanged(RevelationFilter.ALL)) },
                         label = { Text(stringResource(R.string.surah_index_filter_all, QuranStats.TOTAL_SURAHS)) },
-                        shape = RoundedCornerShape(12.dp)
+                        shape = ShapeSmall
                     )
                     FilterChip(
                         selected = uiState.filter == RevelationFilter.MECCAN,
                         onClick = { onEvent(SurahIndexEvent.FilterChanged(RevelationFilter.MECCAN)) },
                         label = { Text(stringResource(R.string.surah_index_filter_meccan, QuranStats.MECCAN_SURAHS)) },
-                        shape = RoundedCornerShape(12.dp)
+                        shape = ShapeSmall
                     )
                     FilterChip(
                         selected = uiState.filter == RevelationFilter.MEDINAN,
                         onClick = { onEvent(SurahIndexEvent.FilterChanged(RevelationFilter.MEDINAN)) },
                         label = { Text(stringResource(R.string.surah_index_filter_medinan, QuranStats.MEDINAN_SURAHS)) },
-                        shape = RoundedCornerShape(12.dp)
+                        shape = ShapeSmall
                     )
                 }
             }

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
@@ -35,9 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.core.util.MarkdownBlocks
+import com.quranwords.ui.theme.ShapeSmall
 import com.quranwords.util.MeaningReportLimits
 import com.quranwords.util.MeaningReportType
-
 /**
  * حوار البلاغ عن الملخص الذكي: نوع البلاغ + وصف + تصحيح مقترح.
  * البلاغ مرتبط دائمًا بالمعنى المكتوب بالذكاء الاصطناعي (يُعرض للمراجعة أعلى النموذج)،
@@ -115,7 +114,7 @@ fun ReportMeaningDialog(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
                     ),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = ShapeSmall,
                     border = CardDefaults.outlinedCardBorder()
                 ) {
                     Column(

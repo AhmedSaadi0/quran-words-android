@@ -12,7 +12,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-
 /** Temporary long-press word focus — separate from selection/bookmark washes. */
 val LocalWordFocusHighlight = compositionLocalOf { WordFocusHighlightLight }
 
@@ -36,7 +35,7 @@ private val DarkColorScheme = darkColorScheme(
     surfaceVariant = NaturalSurfaceVariantDark,
     onSurfaceVariant = NaturalTextSecondaryDark,
     outline = NaturalBorderDark,
-    outlineVariant = Color(0xFF293023)
+    outlineVariant = NaturalOutlineVariantDark
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -46,7 +45,7 @@ private val LightColorScheme = lightColorScheme(
     onPrimaryContainer = NaturalTextPrimaryLight, // #1A1C18
     secondary = NaturalOlive700, // #3F4E36
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFE5EBDB),
+    secondaryContainer = NaturalSecondaryContainerLight,
     onSecondaryContainer = NaturalTextPrimaryLight,
     tertiary = NaturalAmber, // #8C6E2D
     onTertiary = Color.White,
@@ -63,11 +62,9 @@ private val LightColorScheme = lightColorScheme(
 )
 
 /**
- * Three-state theme: System / Natural / Dynamic
- * - colorMode: 0 = system (follow darkTheme), 1 = force light Natural, 2 = force dark Natural
- * - useDynamicColor: true = use M3 dynamic on 12+ harmonized with brand
- * Combined: when useDynamicColor true and Android 12+, dynamic scheme is used (harmonized).
- * Otherwise fall back to Natural Tones.
+ * Natural Tones theme with optional M3 dynamic colour on Android 12+.
+ * Dynamic colours are harmonized toward the brand olive; otherwise the
+ * light/dark Natural schemes below are used directly.
  */
 @Composable
 fun MyApplicationTheme(
@@ -94,7 +91,7 @@ fun MyApplicationTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = Typography,
+            typography = AppTypography,
             shapes = AppShapes,
             content = content
         )

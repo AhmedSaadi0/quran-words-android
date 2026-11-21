@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -47,7 +46,7 @@ import com.quranwords.R
 import com.quranwords.core.util.PillTransparencyPreference
 import com.quranwords.core.util.ReadingProgress
 import com.quranwords.ui.theme.AppMotion
-
+import com.quranwords.ui.theme.ShapeLarge
 /**
  * Height of the persistent cluster pill. The reading list reserves this
  * (+ the status bar) as its top content padding, so hiding/showing the chrome
@@ -55,7 +54,7 @@ import com.quranwords.ui.theme.AppMotion
  */
 val ReadingChromePillHeight = 56.dp
 
-private val PillShape = RoundedCornerShape(20.dp)
+private val PillShape = ShapeLarge
 
 /** Back-button scrim (its own surface tint — never the pill's alpha). */
 private const val BackScrimAlpha = 0.95f

@@ -76,6 +76,8 @@
     <string name="cd_clear">مسح</string>
     <string name="cd_cancel">إلغاء</string>
     <string name="cd_remove_bookmark">إزالة العلامة</string>
+    <string name="cd_bookmark_ayah">إضافة علامة للآية</string>
+    <string name="cd_unbookmark_ayah">إزالة علامة الآية</string>
 
     <string name="surah_title_template">سُورَةُ %1$s</string>
     <string name="surah_detail_loading">جاري التحميل...</string>
@@ -96,6 +98,8 @@
     <string name="reading_options_cd">خيارات القراءة</string>
     <string name="reading_menu_settings">إعدادات</string>
     <string name="reading_font_size_title">حجم خط المصحف</string>
+    <string name="font_decrease">A-</string>
+    <string name="font_increase">A+</string>
     <string name="reading_font_pages_auto_note">في وضع «صفحات» يُحسب حجم خط المصحف تلقائيًا بحيث تظهر الصفحة كاملة على الشاشة؛ ويؤثر هذا المتزلج على وضع «تمرير» فقط.</string>
     <string name="reading_font_preview_sample">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</string>
     <string name="cd_page_menu_open">فتح قائمة الصفحات</string>
@@ -144,7 +148,7 @@
     <string name="word_ayat_error">تعذر تحميل مواضع الكلمة.</string>
 
     <string name="bookmarks_empty_title">لا توجد إشارات مرجعية بعد</string>
-    <string name="bookmarks_empty_hint">استخدم أيقونة ☆ في صفحة السور والآيات لحفظ ما تريد الرجوع إليه</string>
+    <string name="bookmarks_empty_hint">استخدم أيقونة العلامة المرجعية في صفحة السور والآيات لحفظ ما تريد الرجوع إليه</string>
     <string name="bookmarks_surahs_title">السور المحفوظة (%1$d)</string>
     <string name="bookmarks_ayahs_title">الآيات المحفوظة (%1$d)</string>
     <string name="bookmarks_surah_item">سورة %1$s</string>
@@ -185,6 +189,10 @@
     <string name="search_filter_all_quran">كامل المصحف</string>
     <string name="search_filter_surah">تحديد سورة...</string>
     <string name="search_filter_clear">إلغاء</string>
+    <string name="search_page_suffix"> • الصفحة %1$s</string>
+    <string name="search_juz_suffix"> • الجزء %1$s</string>
+    <string name="search_surah_filter_selected">سورة %1$s</string>
+    <string name="search_surah_menu_item">%1$s. سورة %2$s</string>
     <string name="search_no_words">لا توجد كلمات مطابقة</string>
     <string name="search_no_surahs">لا توجد سور مطابقة</string>
     <string name="search_hint_unified">ابحث بالآية، السورة، الكلمة، أو الجذر...</string>
@@ -279,7 +287,7 @@
     <string name="db_extracting_device">فك الضغط داخل الجهاز...</string>
     <string name="db_progress_ratio">%1$d ميجابايت من %2$d ميجابايت</string>
     <string name="db_progress_single">%1$d ميجابايت</string>
-    <string name="db_update_available">⬆️ يتوفر تحديث جديد %1$s</string>
+    <string name="db_update_available">يتوفر تحديث جديد %1$s</string>
     <string name="db_update_size">حجم التنزيل: %1$s</string>
     <string name="db_update_auto"> • يتم فك الضغط والتثبيت تلقائيًا</string>
     <string name="db_download_update">تنزيل التحديث الآن</string>
@@ -289,7 +297,7 @@
     <string name="db_download_failed">تعذر تنزيل قاعدة البيانات</string>
     <string name="common_retry">إعادة المحاولة</string>
     <string name="page_load_failed">تعذّر تحميل هذه الصفحة</string>
-    <string name="db_import_title">📂 استيراد قاعدة البيانات من الذاكرة</string>
+    <string name="db_import_title">استيراد قاعدة البيانات من الذاكرة</string>
     <string name="db_preview_action">المتابعة باستخدام بيانات المعاينة السريعة</string>
     <string name="db_import_dialog_title">استيراد قاعدة البيانات</string>
     <string name="db_import_dialog_body">اختر ملف قاعدة البيانات (quran_words.db أو quran_words.db.zip) من ذاكرة الجهاز. الملف المضغوط أسرع في النقل وسيتم فك ضغطه تلقائيًا داخل التطبيق.</string>
@@ -349,6 +357,11 @@
     <string name="no_browser">لا يوجد متصفح لفتح هذا الرابط</string>
     <!-- Long-press word action toolbar -->
     <string name="word_action_root">الجذر والتصريف</string>
+    <string name="a11y_ayah_saved_suffix"> (محفوظة)</string>
+    <string name="a11y_mushaf_ayah">الآية %1$s%2$s</string>
+    <string name="a11y_mushaf_range">تحديد المدى حتى الآية %1$s</string>
+    <string name="a11y_mushaf_ayat_range">الآيات %1$s–%2$s</string>
+    <string name="a11y_mushaf_page_range">صفحة %1$s، الآيات %2$s–%3$s</string>
     <string name="word_action_select_ayah">تحديد الآية كاملة</string>
     <string name="word_action_copy">نسخ الكلمة</string>
     <string name="cd_copy_ai_summary">نسخ الملخص الذكي</string>

@@ -91,6 +91,8 @@
     <string name="cd_clear">Clear</string>
     <string name="cd_cancel">Cancel</string>
     <string name="cd_remove_bookmark">Remove bookmark</string>
+    <string name="cd_bookmark_ayah">Bookmark ayah</string>
+    <string name="cd_unbookmark_ayah">Remove ayah bookmark</string>
 
     <!-- Surah header: %1$s = Arabic surah name (data, never translated) -->
     <string name="surah_title_template">Surah %1$s</string>
@@ -115,6 +117,8 @@
     <string name="reading_options_cd">Reading options</string>
     <string name="reading_menu_settings">Settings</string>
     <string name="reading_font_size_title">Mushaf font size</string>
+    <string name="font_decrease">A-</string>
+    <string name="font_increase">A+</string>
     <string name="reading_font_pages_auto_note">In pages mode the mushaf font is auto-fitted so every page fills the screen exactly once; this slider rules scroll mode only.</string>
     <string name="reading_font_preview_sample">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</string>
     <string name="cd_page_menu_open">Open page list</string>
@@ -170,7 +174,7 @@
 
     <!-- Bookmarks -->
     <string name="bookmarks_empty_title">No bookmarks yet</string>
-    <string name="bookmarks_empty_hint">Use the ☆ icon on surah and ayah pages to save items for later</string>
+    <string name="bookmarks_empty_hint">Use the bookmark icon on surah and ayah pages to save items for later</string>
     <string name="bookmarks_surahs_title">Saved surahs (%1$d)</string>
     <string name="bookmarks_ayahs_title">Saved ayat (%1$d)</string>
     <string name="bookmarks_surah_item">Surah %1$s</string>
@@ -212,6 +216,10 @@
     <string name="search_filter_all_quran">Whole Quran</string>
     <string name="search_filter_surah">Filter by surah…</string>
     <string name="search_filter_clear">Clear filter</string>
+    <string name="search_page_suffix"> • Page %1$s</string>
+    <string name="search_juz_suffix"> • Juz %1$s</string>
+    <string name="search_surah_filter_selected">Surah %1$s</string>
+    <string name="search_surah_menu_item">%1$s. Surah %2$s</string>
     <string name="search_no_words">No matching words</string>
     <string name="search_no_surahs">No matching surahs</string>
     <string name="search_hint_unified">Search verse, surah, word or root…</string>
@@ -314,7 +322,7 @@
     <string name="db_extracting_device">Extracting on device…</string>
     <string name="db_progress_ratio">%1$d MB of %2$d MB</string>
     <string name="db_progress_single">%1$d MB</string>
-    <string name="db_update_available">⬆️ New update available %1$s</string>
+    <string name="db_update_available">New update available %1$s</string>
     <string name="db_update_size">Download size: %1$s</string>
     <string name="db_update_auto"> • extracted and installed automatically</string>
     <string name="db_download_update">Download update now</string>
@@ -324,7 +332,7 @@
     <string name="db_download_failed">Could not download the database</string>
     <string name="common_retry">Retry</string>
     <string name="page_load_failed">Couldn’t load this page</string>
-    <string name="db_import_title">📂 Import database from storage</string>
+    <string name="db_import_title">Import database from storage</string>
     <string name="db_preview_action">Continue with quick preview data</string>
     <string name="db_import_dialog_title">Import database</string>
     <string name="db_import_dialog_body">Pick the database file (quran_words.db or quran_words.db.zip) from device storage. The zipped file transfers faster and is extracted automatically inside the app.</string>
@@ -387,6 +395,11 @@
     <string name="no_browser">No browser available to open this link</string>
     <!-- Long-press word action toolbar -->
     <string name="word_action_root">Word root &amp; morphology</string>
+    <string name="a11y_ayah_saved_suffix"> (saved)</string>
+    <string name="a11y_mushaf_ayah">Ayah %1$s%2$s</string>
+    <string name="a11y_mushaf_range">Select range through ayah %1$s</string>
+    <string name="a11y_mushaf_ayat_range">Ayat %1$s–%2$s</string>
+    <string name="a11y_mushaf_page_range">Page %1$s, ayat %2$s–%3$s</string>
     <string name="word_action_select_ayah">Select full ayah</string>
     <string name="word_action_copy">Copy word</string>
     <string name="cd_copy_ai_summary">Copy AI summary</string>

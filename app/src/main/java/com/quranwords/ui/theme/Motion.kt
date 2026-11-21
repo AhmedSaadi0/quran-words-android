@@ -12,7 +12,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.unit.IntOffset
-
 // Telegram-like balanced motion - 250ms, smooth and lively
 object AppMotion {
     const val DurationShort = 200
@@ -86,6 +85,11 @@ object AppMotion {
         targetOffsetX = { if (toLeft) -it else it },
         animationSpec = tween(DurationMedium, easing = EasingStandard)
     ) + fadeOut(animationSpec = tween(180))
+
+    fun itemPlacementSpec() = tween<IntOffset>(
+        durationMillis = DurationMedium,
+        easing = EasingStandard
+    )
 
     // Stagger for list appearance like Telegram
     const val StaggerDelay = 30

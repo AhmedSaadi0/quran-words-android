@@ -22,12 +22,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.core.util.SurahMetadata
 import com.quranwords.core.util.toEasternArabicDigits
 import com.quranwords.domain.model.Ayah
-
+import com.quranwords.ui.theme.AppTextSize
 @Composable
 fun VerseReferenceBanner(
     ayah: Ayah,
@@ -55,7 +54,7 @@ fun VerseReferenceBanner(
             androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.search_exact_title),
-                    fontSize = 11.5.sp,
+                    fontSize = AppTextSize.Caption,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.tertiary
                 )
@@ -64,7 +63,7 @@ fun VerseReferenceBanner(
                         R.string.search_exact_subtitle,
                         surahName, ayah.surah, ayah.ayah
                     ) + (ayah.pageNumber?.let { " (" + it.toEasternArabicDigits() + ")" } ?: ""),
-                    fontSize = 14.sp,
+                    fontSize = AppTextSize.Body,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )

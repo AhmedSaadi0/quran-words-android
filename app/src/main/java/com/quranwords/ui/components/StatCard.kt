@@ -21,14 +21,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.quranwords.core.util.toEasternArabicDigits
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.ShapeMedium
 import com.quranwords.ui.theme.ShapeSmall
 import java.text.NumberFormat
 import java.util.Locale
+internal fun formatStatValue(value: Int, locale: Locale): String {
+    val formatted = NumberFormat.getNumberInstance(locale).format(value)
+    return if (locale.language == "ar") formatted.toEasternArabicDigits() else formatted
+}
 
 @Composable
 fun StatCard(
@@ -40,7 +46,8 @@ fun StatCard(
     // locale-independent tag (defaults to title for backward compatibility).
     tag: String = title
 ) {
-    val formattedValue = NumberFormat.getNumberInstance(Locale.US).format(value)
+    val locale = LocalContext.current.resources.configuration.locales.get(0)
+    val formattedValue = formatStatValue(value, locale)
     Card(
         modifier = modifier
             .clip(ShapeMedium)
@@ -96,4 +103,3 @@ fun StatCard(
         }
     }
 }
-

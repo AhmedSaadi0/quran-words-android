@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,8 +19,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-
+import com.quranwords.ui.theme.AppTextSize
+import com.quranwords.ui.theme.ShapeExtraSmall
 @Composable
 fun SurahPagesHeader(
     pages: List<Int>,
@@ -41,7 +40,7 @@ fun SurahPagesHeader(
             val selected = page == currentPage
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(ShapeExtraSmall)
                     .background(
                         if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
                         else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
@@ -50,7 +49,7 @@ fun SurahPagesHeader(
                         1.dp,
                         if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
                         else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        RoundedCornerShape(8.dp)
+                        ShapeExtraSmall
                     )
                     .clickable { onPageClick(page) }
                     .padding(horizontal = 10.dp, vertical = 6.dp)
@@ -61,7 +60,7 @@ fun SurahPagesHeader(
                     text = page.toString(),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = 12.sp,
+                    fontSize = AppTextSize.Small,
                     color = if (selected) MaterialTheme.colorScheme.primary
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )

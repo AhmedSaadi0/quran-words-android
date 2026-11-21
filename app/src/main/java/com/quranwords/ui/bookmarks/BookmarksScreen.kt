@@ -1,6 +1,5 @@
 package com.quranwords.ui.bookmarks
 
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Close
@@ -49,8 +47,9 @@ import com.quranwords.R
 import com.quranwords.core.util.BookmarkRef
 import com.quranwords.core.util.SurahMetadata
 import com.quranwords.ui.theme.AppMotion
+import com.quranwords.ui.theme.AppTextSize
+import com.quranwords.ui.theme.ShapeExtraSmall
 import com.quranwords.ui.theme.ShapeMedium
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun BookmarksScreen(
@@ -136,7 +135,7 @@ fun BookmarksScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.animateItem(placementSpec = tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))
+                        modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                     )
                 }
                 items(uiState.surahBookmarks, key = { "surah_${it.surahId}" }) { ref ->
@@ -144,7 +143,7 @@ fun BookmarksScreen(
                         ref = ref,
                         onToggle = { onEvent(BookmarksEvent.ToggleSurahBookmark(ref.surahId)) },
                         onNavigateToSurahDetail = onNavigateToSurahDetail,
-                        modifier = Modifier.animateItem(placementSpec = tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))
+                        modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                     )
                 }
             }
@@ -157,7 +156,7 @@ fun BookmarksScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.animateItem(placementSpec = tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))
+                        modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                     )
                 }
                 items(uiState.ayahBookmarks, key = { "ayah_${it.surahId}_${it.ayah}" }) { ref ->
@@ -165,7 +164,7 @@ fun BookmarksScreen(
                         ref = ref,
                         onToggle = { onEvent(BookmarksEvent.ToggleAyahBookmark(ref.surahId, ref.ayah ?: 0)) },
                         onNavigateToSurahDetail = onNavigateToSurahDetail,
-                        modifier = Modifier.animateItem(placementSpec = tween(AppMotion.DurationMedium, easing = AppMotion.EasingStandard))
+                        modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                     )
                 }
             }
@@ -209,7 +208,7 @@ private fun SurahBookmarkCard(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(ShapeExtraSmall)
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
@@ -282,11 +281,11 @@ private fun AyahBookmarkCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(ShapeExtraSmall)
                         .background(MaterialTheme.colorScheme.tertiaryContainer)
                         .padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
-                    Text("﴿$ayahNum﴾", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary, fontSize = 13.sp)
+                    Text("﴿$ayahNum﴾", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.tertiary, fontSize = AppTextSize.Meta)
                 }
                 Column {
                     Text(

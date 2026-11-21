@@ -5,9 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -17,11 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.quranwords.R
 import com.quranwords.core.util.FontSizePreference
-
+import com.quranwords.ui.theme.AppTextSize
+import com.quranwords.ui.theme.ShapeLarge
+import com.quranwords.ui.theme.ShapeSmall
 @Composable
 fun FontSizeControls(
     fontSize: Float,
@@ -30,9 +32,9 @@ fun FontSizeControls(
 ) {
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(ShapeLarge)
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), ShapeLarge)
             .padding(horizontal = 4.dp, vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -44,10 +46,10 @@ fun FontSizeControls(
                 }
             },
             modifier = Modifier
-                .size(32.dp)
+                .minimumInteractiveComponentSize()
                 .testTag("decrease_font_size")
         ) {
-            Text("A-", fontWeight = FontWeight.Bold, fontSize = 11.sp)
+            Text(stringResource(R.string.font_decrease), fontWeight = FontWeight.Bold, fontSize = AppTextSize.Micro)
         }
 
         // Slider spans the same bounds as the preference clamp
@@ -70,16 +72,16 @@ fun FontSizeControls(
                 }
             },
             modifier = Modifier
-                .size(32.dp)
+                .minimumInteractiveComponentSize()
                 .testTag("increase_font_size")
         ) {
-            Text("A+", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text(stringResource(R.string.font_increase), fontWeight = FontWeight.Bold, fontSize = AppTextSize.Small)
         }
 
         // Live preview chip with numeric value
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
+                .clip(ShapeSmall)
                 .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f))
                 .padding(horizontal = 6.dp, vertical = 3.dp)
                 .testTag("font_size_preview"),
@@ -90,7 +92,7 @@ fun FontSizeControls(
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                fontSize = 11.sp
+                fontSize = AppTextSize.Micro
             )
         }
     }

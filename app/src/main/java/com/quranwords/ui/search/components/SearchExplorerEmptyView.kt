@@ -27,9 +27,8 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.quranwords.R
-
+import com.quranwords.ui.theme.AppTextSize
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SearchExplorerEmptyView(
@@ -47,9 +46,9 @@ fun SearchExplorerEmptyView(
     ) {
         if (recentSearches.isNotEmpty()) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = stringResource(R.string.search_recent_title), fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = stringResource(R.string.search_recent_title), fontSize = AppTextSize.Section, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 TextButton(onClick = onClearRecents) {
-                    Text(text = stringResource(R.string.search_recent_clear), fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                    Text(text = stringResource(R.string.search_recent_clear), fontSize = AppTextSize.Small, color = MaterialTheme.colorScheme.error)
                 }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -62,7 +61,7 @@ fun SearchExplorerEmptyView(
                         modifier = Modifier.testTag("recent_chip_$q")
                     ) {
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 10.dp, end = 4.dp, top = 4.dp, bottom = 4.dp)) {
-                            Text(text = q, fontSize = 12.5.sp, color = MaterialTheme.colorScheme.onSurface)
+                            Text(text = q, fontSize = AppTextSize.Subtitle, color = MaterialTheme.colorScheme.onSurface)
                             Spacer(modifier = Modifier.width(4.dp))
                             IconButton(
                                 onClick = { onRecentRemoved(q) },
@@ -81,12 +80,12 @@ fun SearchExplorerEmptyView(
         }
         if (topRootsCount > 0) {
             TextButton(onClick = onTopRoots, modifier = Modifier.testTag("explorer_top_roots")) {
-                Text(text = stringResource(R.string.search_explorer_roots, topRootsCount), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(text = stringResource(R.string.search_explorer_roots, topRootsCount), fontSize = AppTextSize.Meta, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
             }
         }
         if (recentSearches.isEmpty() && topRootsCount == 0) {
             Box(modifier = Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
-                Text(text = stringResource(R.string.search_explorer_prompt), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = stringResource(R.string.search_explorer_prompt), fontSize = AppTextSize.Meta, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

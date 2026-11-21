@@ -39,10 +39,9 @@ import com.quranwords.R
 import com.quranwords.core.util.QuranStats
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.ShapeMedium
-
 /**
  * Quick-access navigation cards — equal-size via IntrinsicSize; icons are
- * vectors (Decision 13: 📖🌿📐 out).
+ * vectors (Decision 13: emoji out).
  */
 @Composable
 fun QuickNavRow(

@@ -2,17 +2,16 @@ package com.quranwords.ui.search
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -35,29 +34,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.domain.model.WordToken
-import com.quranwords.ui.search.components.AyahSurahFilterBar
 import com.quranwords.ui.search.components.AyahSearchCard
+import com.quranwords.ui.search.components.AyahSurahFilterBar
 import com.quranwords.ui.search.components.EmptySearchNotice
 import com.quranwords.ui.search.components.SearchAllSectionsView
 import com.quranwords.ui.search.components.SearchErrorView
 import com.quranwords.ui.search.components.SearchExplorerEmptyView
-import com.quranwords.ui.search.components.SearchScopeChips
 import com.quranwords.ui.search.components.SearchLexiconBody
 import com.quranwords.ui.search.components.SearchLoadingView
+import com.quranwords.ui.search.components.SearchScopeChips
 import com.quranwords.ui.search.components.SearchWordsBody
 import com.quranwords.ui.search.components.SectionHeader
 import com.quranwords.ui.search.components.SurahSearchCard
+import com.quranwords.ui.theme.ShapeSmall
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-
 private fun activeSearchTab(scope: SearchScope, subScope: LexiconSubScope): SearchTab =
     when (scope) {
         SearchScope.AYAHS -> SearchTab.AYAT
@@ -143,7 +142,7 @@ fun SearchScreen(
                     }
                 },
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp),
+                shape = ShapeSmall,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp).testTag("unified_search_input")
             )
             if (uiState.pagingError != null) {

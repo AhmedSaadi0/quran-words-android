@@ -26,11 +26,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.core.util.AyahRef
+import com.quranwords.core.util.BISMILLAH
 import com.quranwords.domain.model.Ayah
 import com.quranwords.ui.components.PageSeparator
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.QuranFont
-
 @Composable
 fun SurahAyatList(
     ayat: List<Ayah>,
@@ -73,7 +73,7 @@ fun SurahAyatList(
         } else if (hasBasmalah) {
             item(key = "basmalah") {
                 Text(
-                    text = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
+                    text = BISMILLAH,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 16.dp),

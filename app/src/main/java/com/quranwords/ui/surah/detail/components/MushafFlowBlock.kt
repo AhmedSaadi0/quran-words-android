@@ -31,14 +31,13 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import com.quranwords.R
 import com.quranwords.core.util.AyahRef
 import com.quranwords.core.util.toEasternArabicDigits
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.LocalWordFocusHighlight
 import com.quranwords.ui.theme.QuranFont
-
+import kotlinx.coroutines.delay
 /**
  * Continuous-flow Mushaf block: every ayah of [group] concatenated into ONE
  * [Text] with full justification forming a solid rectangular block.
@@ -135,7 +134,10 @@ fun MushafFlowBlock(
     val firstNum = group.ayat.firstOrNull()?.ayah?.toEasternArabicDigits().orEmpty()
     val lastNum = group.ayat.lastOrNull()?.ayah?.toEasternArabicDigits().orEmpty()
     val pageNum = group.pageNumber?.toEasternArabicDigits()
-    val description = if (pageNum != null) "صفحة $pageNum، الآيات $firstNum–$lastNum" else "الآيات $firstNum–$lastNum"
+    val ayatRange = stringResource(R.string.a11y_mushaf_ayat_range, firstNum, lastNum)
+    val description = if (pageNum != null) {
+        stringResource(R.string.a11y_mushaf_page_range, pageNum, firstNum, lastNum)
+    } else ayatRange
 
     Box(
         modifier = modifier

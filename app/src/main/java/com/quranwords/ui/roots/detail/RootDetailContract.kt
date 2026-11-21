@@ -1,19 +1,13 @@
 package com.quranwords.ui.roots.detail
 
+import com.quranwords.core.util.FontSizePreference
 import com.quranwords.domain.model.AyahOccurrenceModel
 import com.quranwords.domain.model.RootDetail
 import com.quranwords.domain.model.RootMeaningModel
 import com.quranwords.domain.model.RootWordModel
 import com.quranwords.ui.roots.detail.util.RootDetailTab
 import com.quranwords.ui.theme.QuranFont
-
-/**
- * UDF contract for RootDetail (Phase 3).
- *
- * [RootDetailUiState] is derived in [com.quranwords.ui.roots.detail.RootDetailViewModel]
- * via `combine` of the existing granular flows — no repository change.
- * Old granular flows stay (deprecated) until the UI fully migrates.
- */
+/** UDF contract for RootDetail: one combined UiState plus explicit events/effects. */
 enum class CopyAction {
     COPY_MEANINGS_ALL,
     SHARE_MEANINGS_ALL,
@@ -56,7 +50,7 @@ data class RootDetailUiState(
     val rootText: String = "",
     val aiMetaLine: String? = null,
     val hasAiMeta: Boolean = false,
-    val fontSize: Float = 24f,
+    val fontSize: Float = FontSizePreference.DEFAULT,
     val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
     val tabs: List<RootDetailTabUi> = emptyList(),
     val meanings: MeaningsTabState = MeaningsTabState(),

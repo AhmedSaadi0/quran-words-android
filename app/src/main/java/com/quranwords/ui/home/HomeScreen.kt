@@ -1,6 +1,5 @@
 package com.quranwords.ui.home
 
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -13,20 +12,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.quranwords.domain.model.DbUpdateState
+import com.quranwords.ui.components.DbUpdateBanner
 import com.quranwords.ui.home.components.BookmarksQuickCard
-import com.quranwords.ui.home.components.DbUpdateCheckFailedBanner
 import com.quranwords.ui.home.components.ContinueReadingCard
 import com.quranwords.ui.home.components.DbSetupBanner
+import com.quranwords.ui.home.components.DbUpdateCheckFailedBanner
 import com.quranwords.ui.home.components.FeaturedRootsSection
 import com.quranwords.ui.home.components.HomeHeader
-import com.quranwords.ui.home.components.HomeUpdateBanner
 import com.quranwords.ui.home.components.QuickNavRow
 import com.quranwords.ui.home.components.StatsGrid
 import com.quranwords.ui.theme.AppMotion
-
 /**
  * Stateless home screen: composes the feature sections; all state comes from
  * [HomeUiState] + the banner state, all actions are callbacks.
@@ -75,7 +72,7 @@ fun HomeScreen(
                 item(key = "home_db_banner") {
                     DbSetupBanner(
                         onNavigateToSetup = onNavigateToSetup,
-                        modifier = Modifier.animateItem(placementSpec = placementSpec())
+                        modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                     )
                 }
             }
@@ -85,18 +82,19 @@ fun HomeScreen(
                     DbUpdateCheckFailedBanner(
                         message = updateState.message,
                         onRetry = onRetryDbCheck,
-                        modifier = Modifier.animateItem(placementSpec = placementSpec())
+                        modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                     )
                 }
             }
 
             if (uiState.isDbReady && updateState is DbUpdateState.UpdateAvailable) {
                 item(key = "home_update_banner") {
-                    HomeUpdateBanner(
+                    DbUpdateBanner(
                         info = updateState.info,
+                        installedName = "",
                         onUpdateClick = onNavigateToSetup,
                         onDismissClick = { onDismissUpdate(updateState) },
-                        modifier = Modifier.animateItem(placementSpec = placementSpec())
+                        modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                     )
                 }
             }
@@ -106,7 +104,7 @@ fun HomeScreen(
                     onNavigateToSurahIndex = onNavigateToSurahIndex,
                     onNavigateToRoots = onNavigateToRoots,
                     onNavigateToGuide = onNavigateToGuide,
-                    modifier = Modifier.animateItem(placementSpec = placementSpec())
+                    modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                 )
             }
 
@@ -115,7 +113,7 @@ fun HomeScreen(
                     lastReadSurah = uiState.lastReadSurah,
                     lastReadAyah = uiState.lastReadAyah,
                     onNavigateToSurahDetail = onNavigateToSurahDetail,
-                    modifier = Modifier.animateItem(placementSpec = placementSpec())
+                    modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                 )
             }
 
@@ -124,12 +122,12 @@ fun HomeScreen(
                     bookmarkedSurahs = uiState.bookmarkedSurahs,
                     bookmarkedAyat = uiState.bookmarkedAyat,
                     onNavigateToBookmarks = onNavigateToBookmarks,
-                    modifier = Modifier.animateItem(placementSpec = placementSpec())
+                    modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec())
                 )
             }
 
             item(key = "home_stats_header") {
-                StatsGrid(modifier = Modifier.animateItem(placementSpec = placementSpec()))
+                StatsGrid(modifier = Modifier.animateItem(placementSpec = AppMotion.itemPlacementSpec()))
             }
 
             FeaturedRootsSection(
@@ -140,8 +138,3 @@ fun HomeScreen(
         }
     }
 }
-
-private fun placementSpec() = tween<IntOffset>(
-    durationMillis = AppMotion.DurationMedium,
-    easing = AppMotion.EasingStandard
-)

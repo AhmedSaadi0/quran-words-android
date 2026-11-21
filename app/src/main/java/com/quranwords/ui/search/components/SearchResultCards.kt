@@ -33,8 +33,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.R
@@ -46,7 +46,10 @@ import com.quranwords.domain.model.MasdarModel
 import com.quranwords.domain.model.RootItem
 import com.quranwords.domain.model.Surah
 import com.quranwords.domain.model.WordToken
-
+import com.quranwords.ui.theme.AppTextSize
+import com.quranwords.ui.theme.SearchHighlight
+import com.quranwords.ui.theme.ShapeMedium
+import com.quranwords.ui.theme.ShapeSmall
 @Composable
 fun AyahSearchCard(
     ayah: Ayah,
@@ -57,7 +60,7 @@ fun AyahSearchCard(
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
+        modifier = modifier.fillMaxWidth().clip(ShapeMedium)
             .clickable(onClick = onClick)
             .testTag("ayah_result_${ayah.surah}_${ayah.ayah}"),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -82,7 +85,9 @@ fun AyahSearchCard(
                 ) {
                     Icon(
                         imageVector = if (isBookmarked) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                        contentDescription = stringResource(R.string.cd_remove_bookmark),
+                        contentDescription = stringResource(
+                            if (isBookmarked) R.string.cd_unbookmark_ayah else R.string.cd_bookmark_ayah
+                        ),
                         tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -92,14 +97,13 @@ fun AyahSearchCard(
     }
 }
 
+@Composable
 private fun pageJuzSuffix(ayah: Ayah): String {
     val page = ayah.pageNumber?.toEasternArabicDigits().orEmpty()
     val juz = ayah.juz?.toEasternArabicDigits().orEmpty()
-    return when {
-        page.isNotEmpty() && juz.isNotEmpty() -> " • الصفحة $page • الجزء $juz"
-        page.isNotEmpty() -> " • الصفحة $page"
-        juz.isNotEmpty() -> " • الجزء $juz"
-        else -> ""
+    return buildString {
+        if (page.isNotEmpty()) append(stringResource(R.string.search_page_suffix, page))
+        if (juz.isNotEmpty()) append(stringResource(R.string.search_juz_suffix, juz))
     }
 }
 
@@ -143,7 +147,7 @@ private fun buildAnnotatedStringFix(
     var pos = 0
     for (r in ranges) {
         if (pos < r.first) sb.append(text.substring(pos, r.first))
-        sb.withStyle(SpanStyle(background = androidx.compose.ui.graphics.Color(0xFF285C4F), fontWeight = FontWeight.Bold)) {
+        sb.withStyle(SpanStyle(background = SearchHighlight, fontWeight = FontWeight.Bold)) {
             append(text.substring(r.first, r.last + 1))
         }
         pos = r.last + 1
@@ -158,7 +162,7 @@ private fun buildAnnotatedStringFix(
 fun WordSearchCard(word: WordToken, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = ShapeSmall,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
         modifier = modifier.fillMaxWidth().testTag("word_result_${word.wordId}")
@@ -168,7 +172,7 @@ fun WordSearchCard(word: WordToken, onClick: () -> Unit, modifier: Modifier = Mo
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = word.text,
-                        fontSize = 20.sp,
+                        fontSize = AppTextSize.Word,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -181,7 +185,7 @@ fun WordSearchCard(word: WordToken, onClick: () -> Unit, modifier: Modifier = Mo
                         ) {
                             Text(
                                 text = stringResource(R.string.search_word_root_label) + ": " + word.rootText,
-                                fontSize = 11.sp,
+                                fontSize = AppTextSize.Micro,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.tertiary,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -191,7 +195,7 @@ fun WordSearchCard(word: WordToken, onClick: () -> Unit, modifier: Modifier = Mo
                 }
                 if (word.translation.isNotBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = word.translation, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(text = word.translation, fontSize = AppTextSize.Small, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }
@@ -202,7 +206,7 @@ fun WordSearchCard(word: WordToken, onClick: () -> Unit, modifier: Modifier = Mo
 fun SurahSearchCard(surah: Surah, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = ShapeSmall,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
         modifier = modifier.fillMaxWidth().testTag("surah_result_${surah.id}")
@@ -210,7 +214,7 @@ fun SurahSearchCard(surah: Surah, onClick: () -> Unit, modifier: Modifier = Modi
         Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = surah.id.toEasternArabicDigits(),
-                fontSize = 16.sp,
+                fontSize = AppTextSize.Emphasized,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.width(36.dp)
@@ -218,13 +222,13 @@ fun SurahSearchCard(surah: Surah, onClick: () -> Unit, modifier: Modifier = Modi
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = stringResource(R.string.bookmarks_surah_item, surah.nameAr),
-                    fontSize = 16.sp,
+                    fontSize = AppTextSize.Emphasized,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = surah.nameEn + " • " + pluralStringResource(R.plurals.ayah_count, surah.ayahCount, surah.ayahCount),
-                    fontSize = 12.sp,
+                    fontSize = AppTextSize.Small,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -236,15 +240,15 @@ fun SurahSearchCard(surah: Surah, onClick: () -> Unit, modifier: Modifier = Modi
 fun RootSearchCard(root: RootItem, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(12.dp),
+        shape = ShapeSmall,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
         modifier = modifier.fillMaxWidth().testTag("root_result_${root.id}")
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(text = root.root, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            Text(text = root.root, fontSize = AppTextSize.Title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
             if (!root.glossAr.isNullOrBlank()) {
-                Text(text = root.glossAr, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = root.glossAr, fontSize = AppTextSize.Meta, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -256,7 +260,7 @@ fun MasdarSearchCard(masdar: MasdarModel, onClick: () -> Unit, modifier: Modifie
         onClick = onClick,
         modifier = modifier.fillMaxWidth().testTag("masdar_result_${masdar.id}"),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
+        shape = ShapeMedium,
         border = CardDefaults.outlinedCardBorder()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -276,7 +280,7 @@ fun DerivativeSearchCard(derivative: DerivativeModel, onClick: () -> Unit, modif
         onClick = onClick,
         modifier = modifier.fillMaxWidth().testTag("derivative_result_${derivative.id}"),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
+        shape = ShapeMedium,
         border = CardDefaults.outlinedCardBorder()
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -299,5 +303,5 @@ fun EmptySearchNotice(text: String, modifier: Modifier = Modifier) {
 
 @Composable
 fun SectionHeader(title: String, modifier: Modifier = Modifier) {
-    Text(text = title, fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = modifier)
+    Text(text = title, fontSize = AppTextSize.Section, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = modifier)
 }

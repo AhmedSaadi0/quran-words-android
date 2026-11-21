@@ -1,14 +1,14 @@
 package com.quranwords.ui.surah.detail
 
 import com.quranwords.core.util.AyahRef
+import com.quranwords.core.util.FontSizePreference
 import com.quranwords.core.util.ReadingModePreference
-import com.quranwords.domain.model.Ayah
 import com.quranwords.domain.model.AiExtendedSummary
+import com.quranwords.domain.model.Ayah
 import com.quranwords.domain.model.Surah
 import com.quranwords.domain.model.WordToken
 import com.quranwords.ui.surah.detail.components.WordActionTarget
 import com.quranwords.ui.theme.QuranFont
-
 data class SurahDetailUiState(
     val surah: Surah? = null,
     /** Surah-scoped ayat — vertical reading mode only. */
@@ -40,7 +40,7 @@ data class SurahDetailUiState(
     val aiModel: String? = null,
     val aiGeneratedAt: String? = null,
     val pulseAyah: AyahRef? = null,
-    val fontSize: Float = 24f,
+    val fontSize: Float = FontSizePreference.DEFAULT,
     val quranFont: QuranFont = QuranFont.KFGQPC_HAFS_1441,
     /** Pill transparency while the status bar is hidden (0 opaque .. 0.8). */
     val pillTransparency: Float = 0.4f,

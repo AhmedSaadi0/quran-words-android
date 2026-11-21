@@ -13,11 +13,10 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.core.util.SurahMetadata
 import com.quranwords.core.util.toEasternArabicDigits
-
+import com.quranwords.ui.theme.AppTextSize
 /**
  * Mushaf page header (Full Plan v2): "سورة X | الجزء Y (• الحزب H) • صفحة Z"
  * above each page block — Lexicon's header in flat tokens, no image frame.
@@ -47,7 +46,7 @@ fun PageHeaderRow(
     ) {
         Text(
             text = stringResource(R.string.bookmarks_surah_item, surahName),
-            fontSize = 11.5.sp,
+            fontSize = AppTextSize.Caption,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -62,7 +61,7 @@ fun PageHeaderRow(
                 pageNumber != null -> stringResource(R.string.page_header_page, pageNumber.toEasternArabicDigits())
                 else -> ""
             },
-            fontSize = 11.5.sp,
+            fontSize = AppTextSize.Caption,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

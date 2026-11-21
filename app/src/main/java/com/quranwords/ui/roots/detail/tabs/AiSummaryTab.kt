@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +33,6 @@ import com.quranwords.ui.roots.detail.components.PaddedPagerItem
 import com.quranwords.ui.roots.detail.components.cards.AiSectionCard
 import com.quranwords.ui.roots.detail.components.cards.CitedBodyText
 import com.quranwords.ui.roots.detail.components.cards.EmptyTabNotice
-
 /**
  * AI summary tab as pure foldable cards (Decisions #33/#34): المعنى الأصلي
  * (the only card opened by default), then التطور الدلالي and الفروق collapsed.
@@ -103,7 +103,7 @@ fun AiSummaryTab(
                                         IconButton(
                                             onClick = { onCopySection(tag) },
                                             modifier = Modifier
-                                                .size(28.dp)
+                                                .minimumInteractiveComponentSize()
                                                 .testTag("copy_ai_section_$tag")
                                         ) {
                                             Icon(

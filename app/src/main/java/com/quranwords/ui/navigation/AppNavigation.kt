@@ -31,7 +31,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.compose.NavHost
@@ -42,19 +41,19 @@ import androidx.navigation.toRoute
 import com.quranwords.R
 import com.quranwords.core.util.ReadingModePreference
 import com.quranwords.ui.bookmarks.BookmarksRoute
+import com.quranwords.ui.guide.MorphologyGuideScreen
+import com.quranwords.ui.home.HomeRoute
 import com.quranwords.ui.roots.RootsListRoute
 import com.quranwords.ui.roots.detail.RootDetailRoute
 import com.quranwords.ui.roots.word.WordAyatRoute
-import com.quranwords.ui.setup.DatabaseSetupRoute
-import com.quranwords.ui.guide.MorphologyGuideScreen
-import com.quranwords.ui.home.HomeRoute
-import com.quranwords.ui.surah.detail.SurahDetailRoute
 import com.quranwords.ui.search.SearchRoute
+import com.quranwords.ui.setup.DatabaseSetupRoute
 import com.quranwords.ui.surah.SurahIndexRoute
+import com.quranwords.ui.surah.detail.SurahDetailRoute
 import com.quranwords.ui.theme.AppMotion
+import com.quranwords.ui.theme.AppTextSize
 import com.quranwords.ui.update.AppUpdateFlowLauncher
 import com.quranwords.ui.update.InAppUpdateHandler
-
 data class BottomNavItem(
     val route: Any,
     val labelRes: Int,
@@ -125,7 +124,7 @@ fun AppNavigation(
                                 Text(
                                     text = stringResource(item.labelRes),
                                     fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 12.sp
+                                    fontSize = AppTextSize.Small
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(

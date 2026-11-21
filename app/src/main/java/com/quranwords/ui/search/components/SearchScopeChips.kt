@@ -21,10 +21,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.ui.search.SearchScope
-
+import com.quranwords.ui.theme.AppTextSize
 @Composable
 fun SearchScopeChips(
     scope: SearchScope,
@@ -63,7 +62,7 @@ private fun ScopeChip(label: String, selected: Boolean, count: Int?, onClick: ()
         ) {
             Text(
                 text = label,
-                fontSize = 12.5.sp,
+                fontSize = AppTextSize.Subtitle,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                 color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -75,7 +74,7 @@ private fun ScopeChip(label: String, selected: Boolean, count: Int?, onClick: ()
                 ) {
                     Text(
                         text = "$count",
-                        fontSize = 10.5.sp,
+                        fontSize = AppTextSize.Tiny,
                         fontWeight = FontWeight.Bold,
                         color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)

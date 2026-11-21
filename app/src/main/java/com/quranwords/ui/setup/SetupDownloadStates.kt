@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -27,10 +26,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
+import com.quranwords.core.util.SizeUnit
+import com.quranwords.core.util.formatFileSize
 import com.quranwords.domain.model.DbInstalledVersion
 import com.quranwords.domain.model.DbReleaseInfo
+import com.quranwords.ui.components.formattedFileSize
 import com.quranwords.ui.theme.AppMotion
-
+import com.quranwords.ui.theme.ShapeMedium
+import com.quranwords.ui.theme.ShapeSmall
 /** The five download states, isolated from the setup shell (P3-6). */
 @Composable
 internal fun SetupDownloadStates(
@@ -44,7 +47,7 @@ internal fun SetupDownloadStates(
         modifier = Modifier.fillMaxWidth()
             .animateContentSize(animationSpec = tween(AppMotion.DurationMedium)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
+        shape = ShapeMedium,
         border = CardDefaults.outlinedCardBorder()
     ) {
         Column(
@@ -84,7 +87,7 @@ private fun IdleState(onEvent: (SetupEvent) -> Unit) {
             fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         Button(onClick = { onEvent(SetupEvent.StartDownload) },
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            shape = RoundedCornerShape(12.dp),
+            shape = ShapeSmall,
             modifier = Modifier.fillMaxWidth().testTag("start_download_button")) {
             Text(stringResource(R.string.db_start_download))
         }
@@ -109,12 +112,14 @@ private fun ProgressState(state: SetupDownload.Progress) {
         }
         LinearProgressIndicator(
             progress = { state.percentage / 100f },
-            modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(12.dp)),
+            modifier = Modifier.fillMaxWidth().height(10.dp).clip(ShapeSmall),
             color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.surfaceVariant
         )
-        val done = state.downloadedBytes / (1024 * 1024)
-        val total = state.totalBytes / (1024 * 1024)
+        val doneSize = formatFileSize(state.downloadedBytes)
+        val totalSize = formatFileSize(state.totalBytes)
+        val done = if (doneSize?.unit == SizeUnit.MB) doneSize.value else 0
+        val total = if (totalSize?.unit == SizeUnit.MB) totalSize.value else 0
         Text(
             text = if (extract) stringResource(R.string.db_extracting_device)
             else if (total > 0) stringResource(R.string.db_progress_ratio, done, total)
@@ -132,7 +137,7 @@ private fun ExtractingState(state: SetupDownload.Extracting) {
             fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         LinearProgressIndicator(
             progress = { state.percentage / 100f },
-            modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(12.dp)),
+            modifier = Modifier.fillMaxWidth().height(10.dp).clip(ShapeSmall),
             color = MaterialTheme.colorScheme.primary,
             trackColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -154,12 +159,12 @@ private fun CompletedState(
         if (pending != null) {
             Text(stringResource(R.string.db_update_available, pending.versionName), style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, textAlign = TextAlign.Center)
-            Text(stringResource(R.string.db_update_size, formatVersionSize(pending.compressedSize)) +
+            Text(stringResource(R.string.db_update_size, formattedFileSize(pending.compressedSize)) +
                 stringResource(R.string.db_update_auto), style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
             Button(onClick = { onEvent(SetupEvent.StartDownload) },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(12.dp),
+                shape = ShapeSmall,
                 modifier = Modifier.fillMaxWidth().testTag("start_update_download_button")) {
                 Text(stringResource(R.string.db_download_update))
             }
@@ -171,7 +176,7 @@ private fun CompletedState(
         }
         Button(onClick = onNavigateBack,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            shape = RoundedCornerShape(12.dp),
+            shape = ShapeSmall,
             modifier = Modifier.fillMaxWidth().testTag("finish_setup_button")) {
             Text(stringResource(R.string.db_back_to_app))
         }
@@ -188,7 +193,7 @@ private fun ErrorState(state: SetupDownload.Error, onEvent: (SetupEvent) -> Unit
             color = MaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
         Button(onClick = { onEvent(SetupEvent.StartDownload) },
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            shape = RoundedCornerShape(12.dp),
+            shape = ShapeSmall,
             modifier = Modifier.fillMaxWidth().testTag("retry_download_button")) {
             Text(stringResource(R.string.common_retry))
         }

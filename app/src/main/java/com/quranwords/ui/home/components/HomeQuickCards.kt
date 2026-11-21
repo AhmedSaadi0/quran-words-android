@@ -33,8 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.core.util.SurahMetadata
 import com.quranwords.ui.theme.ShapeMedium
-
-/** Continue-reading card (Decision 13: 🔖 → vector). */
+/** Continue-reading card with vector action icon. */
 @Composable
 fun ContinueReadingCard(
     lastReadSurah: Int,
@@ -103,7 +102,7 @@ fun ContinueReadingCard(
     }
 }
 
-/** Bookmarks quick-access card (Decision 13: ⭐/🔖 → vectors). */
+/** Bookmarks quick-access card with vector action icon. */
 @Composable
 fun BookmarksQuickCard(
     bookmarkedSurahs: Set<String>,

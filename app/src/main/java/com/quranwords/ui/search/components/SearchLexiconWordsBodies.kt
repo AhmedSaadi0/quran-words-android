@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,7 +24,7 @@ import com.quranwords.ui.components.RootItemCard
 import com.quranwords.ui.search.LexiconSubScope
 import com.quranwords.ui.search.SearchScope
 import com.quranwords.ui.search.SearchUiState
-
+import com.quranwords.ui.theme.ShapeSmall
 @Composable
 fun SearchLexiconBody(
     uiState: SearchUiState,
@@ -104,7 +103,7 @@ private fun LexiconSubTab(label: String, selected: Boolean, onClick: () -> Unit)
         selected = selected,
         onClick = onClick,
         label = { Text(text = label, fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal) },
-        shape = RoundedCornerShape(12.dp)
+        shape = ShapeSmall
     )
 }
 

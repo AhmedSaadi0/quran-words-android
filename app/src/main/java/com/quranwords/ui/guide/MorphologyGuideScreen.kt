@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
@@ -40,7 +39,8 @@ import com.quranwords.R
 import com.quranwords.core.util.MorphologyMaps
 import com.quranwords.ui.guide.components.GuideReferencesCard
 import com.quranwords.ui.theme.AppMotion
-
+import com.quranwords.ui.theme.ShapeLarge
+import com.quranwords.ui.theme.ShapeMedium
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun MorphologyGuideScreen(
@@ -94,7 +94,7 @@ fun MorphologyGuideScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
                     ),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = ShapeLarge,
                     border = CardDefaults.outlinedCardBorder()
                 ) {
                     Column(
@@ -132,7 +132,7 @@ fun MorphologyGuideScreen(
                         .fillMaxWidth()
                         .animateItem(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = ShapeMedium,
                     border = CardDefaults.outlinedCardBorder()
                 ) {
                     Row(
@@ -181,7 +181,7 @@ fun MorphologyGuideScreen(
                         .fillMaxWidth()
                         .animateItem(),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = ShapeMedium,
                     border = CardDefaults.outlinedCardBorder()
                 ) {
                     Column(

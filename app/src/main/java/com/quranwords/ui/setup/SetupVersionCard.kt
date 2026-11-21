@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -22,7 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.quranwords.R
 import com.quranwords.domain.model.DbReleaseInfo
-
+import com.quranwords.ui.components.formattedFileSize
+import com.quranwords.ui.theme.ShapeMedium
 @Composable
 internal fun VersionStatusCard(
     installedCode: Int,
@@ -37,7 +37,7 @@ internal fun VersionStatusCard(
     Card(
         modifier = Modifier.fillMaxWidth().testTag("db_version_card"),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
+        shape = ShapeMedium,
         border = CardDefaults.outlinedCardBorder()
     ) {
         Column(
@@ -81,9 +81,9 @@ internal fun VersionStatusCard(
                     else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = stringResource(R.string.db_update_size, formatVersionSize(latestRelease.compressedSize)) +
+                    text = stringResource(R.string.db_update_size, formattedFileSize(latestRelease.compressedSize)) +
                         (if (latestRelease.uncompressedSize > 0)
-                            stringResource(R.string.db_size_after, formatVersionSize(latestRelease.uncompressedSize)) else ""),
+                            stringResource(R.string.db_size_after, formattedFileSize(latestRelease.uncompressedSize)) else ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

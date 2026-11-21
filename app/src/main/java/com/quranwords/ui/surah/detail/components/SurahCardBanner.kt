@@ -33,10 +33,11 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 import com.quranwords.R
+import com.quranwords.core.util.BISMILLAH
 import com.quranwords.domain.model.Surah
-
+import com.quranwords.ui.theme.AppTextSize
+import kotlin.math.roundToInt
 /**
  * Measured from the original `chapter_hdr.png` (3420 × 360, now downscaled to
  * 1368 × 144 for cheaper decode): visible ink spans x 29..3385, y 32..326;
@@ -50,8 +51,6 @@ private const val HEADER_CENTER_WIDTH = (2653f - 760f) / (3385f - 29f)
 private const val BANNER_GAP_DP = 4
 private const val BANNER_TOP_PADDING_DP = 16
 private const val BANNER_H_PADDING_DP = 2
-
-private const val BISMILLAH = "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ"
 
 /**
  * Deterministic height of [SurahCardBanner] for the fit pass. The Basmalah
@@ -74,7 +73,7 @@ internal fun surahBannerHeightPx(
             textMeasurer.measure(
                 text = BISMILLAH,
                 style = baseStyle.copy(
-                    fontSize = 18.sp,
+                    fontSize = AppTextSize.Title,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 ),
@@ -140,7 +139,7 @@ fun SurahCardBanner(
             ) {
                 Text(
                     text = stringResource(R.string.surah_title_template, surah.nameAr),
-                    fontSize = 16.sp,
+                    fontSize = AppTextSize.Emphasized,
                     lineHeight = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -152,7 +151,7 @@ fun SurahCardBanner(
         if (showBismillah) {
             Text(
                 text = BISMILLAH,
-                fontSize = 18.sp,
+                fontSize = AppTextSize.Title,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,

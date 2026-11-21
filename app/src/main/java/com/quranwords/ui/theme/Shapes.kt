@@ -3,7 +3,6 @@ package com.quranwords.ui.theme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
-
 // M3 unified shape scale - 12 / 16 / 20 as requested
 val AppShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
@@ -13,8 +12,9 @@ val AppShapes = Shapes(
     extraLarge = RoundedCornerShape(28.dp)
 )
 
-// Aliases for semantic use
-val ShapeSmall = RoundedCornerShape(12.dp)
-val ShapeMedium = RoundedCornerShape(16.dp)
-val ShapeLarge = RoundedCornerShape(20.dp)
-val ShapeExtraLarge = RoundedCornerShape(28.dp)
+// Aliases for semantic use — derive from AppShapes so radii stay in sync.
+val ShapeExtraSmall = AppShapes.extraSmall
+val ShapeSmall = AppShapes.small
+val ShapeMedium = AppShapes.medium
+val ShapeLarge = AppShapes.large
+val ShapeExtraLarge = AppShapes.extraLarge

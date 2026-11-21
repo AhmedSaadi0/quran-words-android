@@ -5,8 +5,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-
-val Typography = Typography(
+val AppTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.Bold,
@@ -99,3 +98,18 @@ val Typography = Typography(
         letterSpacing = 0.5.sp
     )
 )
+
+/** Named text sizes for compact chrome that has no Material 3 style slot. */
+object AppTextSize {
+    val Tiny = 10.5.sp
+    val Micro = 11.sp
+    val Caption = 11.5.sp
+    val Small = 12.sp
+    val Subtitle = 12.5.sp
+    val Meta = 13.sp
+    val Section = 13.5.sp
+    val Body = 14.sp
+    val Emphasized = 16.sp
+    val Title = 18.sp
+    val Word = 20.sp
+}

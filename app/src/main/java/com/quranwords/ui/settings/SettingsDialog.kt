@@ -24,9 +24,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.core.util.AppLanguage
+import com.quranwords.ui.theme.AppTextSize
 import com.quranwords.ui.theme.QuranFont
 import com.quranwords.ui.theme.ShapeMedium
-
 @Composable
 fun SettingsDialog(
     uiState: SettingsUiState,
@@ -171,14 +171,14 @@ private fun FontOptionRow(
             Text(
                 text = name,
                 fontFamily = font.fontFamily,
-                fontSize = 18.sp,
+                fontSize = AppTextSize.Title,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = preview,
                 fontFamily = font.fontFamily,
-                fontSize = 16.sp,
+                fontSize = AppTextSize.Emphasized,
                 lineHeight = (16f * font.lineHeightMultiplier).sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

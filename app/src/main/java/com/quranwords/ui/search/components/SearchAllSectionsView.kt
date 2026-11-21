@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.R
 import com.quranwords.domain.model.SearchResult
-
+import com.quranwords.ui.theme.AppTextSize
 @Composable
 fun SearchAllSectionsView(
     query: String,
@@ -54,7 +54,7 @@ fun SearchAllSectionsView(
                 ) {
                     SectionHeader(title = stringResource(R.string.search_section_words, results.words.size))
                     if (results.words.size > 4) {
-                        TextButton(onClick = onSeeAllWords) { Text(text = stringResource(R.string.search_see_all, results.words.size), fontSize = 12.sp) }
+                        TextButton(onClick = onSeeAllWords) { Text(text = stringResource(R.string.search_see_all, results.words.size), fontSize = AppTextSize.Small) }
                     }
                 }
             }
@@ -75,7 +75,7 @@ fun SearchAllSectionsView(
                 ) {
                     SectionHeader(title = stringResource(R.string.search_section_ayat, results.ayat.size))
                     if (results.ayat.size > 5) {
-                        TextButton(onClick = onSeeAllAyahs) { Text(text = stringResource(R.string.search_see_all, results.ayat.size), fontSize = 12.sp) }
+                        TextButton(onClick = onSeeAllAyahs) { Text(text = stringResource(R.string.search_see_all, results.ayat.size), fontSize = AppTextSize.Small) }
                     }
                 }
             }

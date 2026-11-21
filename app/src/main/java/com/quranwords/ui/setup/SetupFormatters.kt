@@ -3,7 +3,6 @@ package com.quranwords.ui.setup
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.quranwords.R
-
 @Composable
 internal fun downloadErrorMessage(error: SetupError): String = stringResource(
     when (error) {
@@ -20,11 +19,3 @@ internal fun downloadErrorMessage(error: SetupError): String = stringResource(
         SetupError.UNKNOWN -> R.string.dl_err_unknown
     }
 )
-
-@Composable
-internal fun formatVersionSize(bytes: Long): String {
-    if (bytes <= 0) return "—"
-    val mb = bytes / (1024 * 1024)
-    if (mb >= 1) return stringResource(R.string.db_size_mb, mb)
-    return stringResource(R.string.db_size_kb, bytes / 1024)
-}

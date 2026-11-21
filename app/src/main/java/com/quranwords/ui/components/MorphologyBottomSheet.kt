@@ -4,8 +4,6 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +11,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.R
+import com.quranwords.core.util.FontSizePreference
 import com.quranwords.core.util.formatAiMetaLine
 import com.quranwords.domain.model.AiExtendedSummary
 import com.quranwords.domain.model.Ayah
@@ -47,7 +48,6 @@ import com.quranwords.ui.roots.detail.components.cards.CitedBodyText
 import com.quranwords.ui.theme.AppMotion
 import com.quranwords.ui.theme.ShapeMedium
 import com.quranwords.ui.theme.ShapeSmall
-
 /** Expanded-tags list keys for the sheet's foldable AI cards (Decision #33). */
 private const val SECTION_HISSI = "hissi"
 
@@ -63,7 +63,7 @@ fun MorphologyBottomSheet(
     aiExtended: AiExtendedSummary? = null,
     aiModel: String? = null,
     aiGeneratedAt: String? = null,
-    fontSize: Float = 24f
+    fontSize: Float = FontSizePreference.DEFAULT
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,

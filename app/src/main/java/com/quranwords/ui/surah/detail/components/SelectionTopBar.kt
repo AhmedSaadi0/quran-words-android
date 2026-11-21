@@ -1,16 +1,16 @@
 package com.quranwords.ui.surah.detail.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Close
@@ -31,10 +31,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import com.quranwords.R
 import com.quranwords.ui.theme.AppMotion
-
 /**
  * Contextual selection TopAppBar (multi-ayah bookmark/copy/share). Decision 13:
- * ✓/📋/↗ emoji replaced with vectors; platform execution lives in the Route.
+ * Legacy glyph actions were replaced with vectors; platform execution lives in the Route.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

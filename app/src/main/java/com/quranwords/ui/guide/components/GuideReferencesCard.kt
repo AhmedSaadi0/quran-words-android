@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -17,7 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.quranwords.R
-
+import com.quranwords.ui.theme.ShapeLarge
 /**
  * References card for the morphology guide: AI root-summary sources from
  * ROOT_SUMMARY_METHODOLOGY.md (v2.1), grouped by the three semantic sections.
@@ -34,7 +33,7 @@ fun GuideReferencesCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = ShapeLarge,
         border = CardDefaults.outlinedCardBorder()
     ) {
         Column(
